@@ -13,7 +13,7 @@ abstract class AppRoutes {
   static const aiMentor    = '/mentor';
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 GoRouter appRouter(AppRouterRef ref) {
   // Auth guard will be wired in Phase 2
   return GoRouter(

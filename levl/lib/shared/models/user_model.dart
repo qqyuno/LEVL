@@ -74,13 +74,14 @@ class CharacterStats with _$CharacterStats {
       _$CharacterStatsFromJson(json);
 }
 
-// XP required for next level
+// XP required per level (each level = 100 XP)
+// Level formula: level = floor(xp / 100) + 1
+// Level N starts at (N-1)*100 XP and ends at N*100 XP
 int xpForLevel(int level) => level * 100;
 
 // Progress to next level (0.0 - 1.0)
 double levelProgress(int xp, int level) {
-  final currentLevelXp = xpForLevel(level - 1) * (level - 1);
-  final nextLevelXp = xpForLevel(level);
-  if (nextLevelXp == 0) return 0;
-  return ((xp - currentLevelXp) / nextLevelXp).clamp(0.0, 1.0);
+  final levelStartXp = (level - 1) * 100; // XP where current level began
+  final levelEndXp = level * 100;         // XP where next level begins
+  return ((xp - levelStartXp) / (levelEndXp - levelStartXp)).clamp(0.0, 1.0);
 }

@@ -20,7 +20,7 @@ class DashboardPage extends ConsumerWidget {
     );
 
     final mockQuests = [
-      const Quest(
+      Quest(
         id: '1', userId: 'mock',
         title: 'Утренняя цитадель',
         description: 'Медитация 10 минут перед началом дня',
@@ -30,7 +30,7 @@ class DashboardPage extends ConsumerWidget {
         difficulty: QuestDifficulty.easy,
         createdAt: _mockDate,
       ),
-      const Quest(
+      Quest(
         id: '2', userId: 'mock',
         title: 'Кодекс Знаний',
         description: 'Прочитать 20 страниц книги по профессии',
@@ -40,7 +40,7 @@ class DashboardPage extends ConsumerWidget {
         difficulty: QuestDifficulty.medium,
         createdAt: _mockDate,
       ),
-      const Quest(
+      Quest(
         id: '3', userId: 'mock',
         title: 'Контракт с телом',
         description: 'Тренировка 30 минут',
@@ -52,7 +52,7 @@ class DashboardPage extends ConsumerWidget {
       ),
     ];
 
-    final mainQuest = const Quest(
+    final mainQuest = Quest(
       id: 'main', userId: 'mock',
       title: 'Запуск первой версии LEVL',
       description: 'Создать рабочий прототип приложения и показать первым 10 пользователям.',
@@ -146,8 +146,8 @@ class DashboardPage extends ConsumerWidget {
   }
 }
 
-// Temporary mock date constant
-const _mockDate = DateTime.utc(2026, 3, 28);
+// Mock date for placeholder data — DateTime has no const constructor
+final _mockDate = DateTime.utc(2026, 3, 28);
 
 // --- Header Widget ---
 class _DashboardHeader extends StatelessWidget {
