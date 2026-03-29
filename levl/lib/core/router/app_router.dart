@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../theme/app_colors.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/auth/presentation/screens/welcome_page.dart';
 import '../../features/dashboard/presentation/screens/dashboard_page.dart';
+import '../../features/character/presentation/screens/character_page.dart';
 import '../../features/onboarding/presentation/screens/onboarding_page.dart';
 import '../../features/onboarding/presentation/providers/onboarding_provider.dart';
 
@@ -57,25 +60,84 @@ GoRouter appRouter(AppRouterRef ref) {
         name: 'onboarding',
         builder: (_, __) => const OnboardingPage(),
       ),
-      GoRoute(
-        path: AppRoutes.dashboard,
-        name: 'dashboard',
-        builder: (_, __) => const DashboardPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.character,
-        name: 'character',
-        builder: (_, __) => const Scaffold(
-          body: Center(child: Text('Character Sheet — Phase 6')),
-        ),
-      ),
-      GoRoute(
-        path: AppRoutes.aiMentor,
-        name: 'aiMentor',
-        builder: (_, __) => const Scaffold(
-          body: Center(child: Text('AI Ментор — Phase 7')),
-        ),
+
+      // --- Main app with bottom navigation ---
+      ShellRoute(
+        builder: (context, state, child) => _MainShell(child: child),
+        routes: [
+          GoRoute(
+            path: AppRoutes.dashboard,
+            name: 'dashboard',
+            builder: (_, __) => const DashboardPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.character,
+            name: 'character',
+            builder: (_, __) => const CharacterPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.aiMentor,
+            name: 'aiMentor',
+            builder: (_, __) => const Scaffold(
+              body: Center(child: Text('AI Ментор — Phase 6')),
+            ),
+          ),
+        ],
       ),
     ],
   );
+}
+
+/// Shell widget with bottom navigation bar.
+class _MainShell extends StatelessWidget {
+  final Widget child;
+  const _MainShell({required this.child});
+
+  static const _tabs = [
+    AppRoutes.dashboard,
+    AppRoutes.character,
+    AppRoutes.aiMentor,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final location = GoRouterState.of(context).matchedLocation;
+    final currentIndex = _tabs.indexOf(location).clamp(0, 2);
+
+    return Scaffold(
+      body: child,
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: AppColors.divider, width: 0.5)),
+        ),
+        child: NavigationBar(
+          selectedIndex: currentIndex,
+          onDestinationSelected: (index) {
+            context.go(_tabs[index]);
+          },
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          indicatorColor: AppColors.textPrimary.withValues(alpha: 0.08),
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          destinations: [
+            NavigationDestination(
+              icon: const Icon(Icons.home_outlined, color: AppColors.textSecondary),
+              selectedIcon: const Icon(Icons.home, color: AppColors.textPrimary),
+              label: 'Путь',
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.person_outline, color: AppColors.textSecondary),
+              selectedIcon: const Icon(Icons.person, color: AppColors.textPrimary),
+              label: 'Персонаж',
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.auto_awesome_outlined, color: AppColors.textSecondary),
+              selectedIcon: const Icon(Icons.auto_awesome, color: AppColors.gold),
+              label: 'Система',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
