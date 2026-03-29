@@ -20,6 +20,7 @@ class UserProfileLocal {
 
   // Serialized as JSON string
   late String goalsJson;
+  late String spheresJson;     // comma-separated sphere keys
   late String lifeContext;
   late String mainGoal;
   late String workStyle;

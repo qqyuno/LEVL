@@ -7,6 +7,8 @@ import '../../../../core/router/app_router.dart';
 import '../providers/onboarding_provider.dart';
 import '../widgets/step_life_context.dart';
 import '../widgets/step_pain_points.dart';
+import '../widgets/step_spheres.dart';
+import '../widgets/step_sphere_goals.dart';
 import '../widgets/step_work_style.dart';
 import '../widgets/step_main_goal.dart';
 import '../widgets/step_daily_minutes.dart';
@@ -22,7 +24,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   final _controller = PageController();
   int _currentStep = 0;
   bool _saving = false;
-  static const _totalSteps = 5;
+  static const _totalSteps = 7;
 
   void _next() {
     final data = ref.read(onboardingNotifierProvider);
@@ -60,12 +62,15 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     final messages = [
       'Расскажи немного о себе',
       'Выбери хотя бы одно',
+      'Выбери от 2 до 4 сфер',
+      'Напиши цель для каждой сферы',
       'Выбери стиль работы',
       'Напиши свою цель',
       '',
     ];
     if (messages[_currentStep].isEmpty) return;
 
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -170,6 +175,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 children: const [
                   StepLifeContext(),
                   StepPainPoints(),
+                  StepSpheres(),
+                  StepSphereGoals(),
                   StepWorkStyle(),
                   StepMainGoal(),
                   StepDailyMinutes(),

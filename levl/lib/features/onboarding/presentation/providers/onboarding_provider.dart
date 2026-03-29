@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/supabase/isar_service.dart';
 import '../../../../shared/models/user_model.dart';
@@ -5,17 +7,39 @@ import '../../../../core/supabase/supabase_service.dart';
 
 part 'onboarding_provider.g.dart';
 
+/// The 6 life spheres a user can develop.
+class Sphere {
+  final String key;
+  final String label;
+  final String icon;
+
+  const Sphere(this.key, this.label, this.icon);
+
+  static const all = [
+    Sphere('discipline', 'Дисциплина', '⚡'),
+    Sphere('knowledge', 'Знания', '📚'),
+    Sphere('relations', 'Отношения', '🤝'),
+    Sphere('energy', 'Энергия', '🔥'),
+    Sphere('will', 'Воля', '🎯'),
+    Sphere('wisdom', 'Мудрость', '🧠'),
+  ];
+}
+
 /// Immutable data collected during onboarding.
 class OnboardingData {
-  final String lifeContext;    // Step 1
-  final String painPoints;     // Step 2
-  final String workStyle;      // Step 3
-  final String mainGoal;       // Step 4
-  final int dailyMinutes;      // Step 5
+  final String lifeContext;         // Step 1
+  final String painPoints;          // Step 2
+  final List<String> spheres;       // Step 3 — selected sphere keys (2-4)
+  final Map<String, String> sphereGoals; // Step 4 — goal per sphere
+  final String workStyle;           // Step 5
+  final String mainGoal;            // Step 6
+  final int dailyMinutes;           // Step 7
 
   const OnboardingData({
     this.lifeContext = '',
     this.painPoints = '',
+    this.spheres = const [],
+    this.sphereGoals = const {},
     this.workStyle = '',
     this.mainGoal = '',
     this.dailyMinutes = 30,
@@ -24,6 +48,8 @@ class OnboardingData {
   OnboardingData copyWith({
     String? lifeContext,
     String? painPoints,
+    List<String>? spheres,
+    Map<String, String>? sphereGoals,
     String? workStyle,
     String? mainGoal,
     int? dailyMinutes,
@@ -31,6 +57,8 @@ class OnboardingData {
     return OnboardingData(
       lifeContext: lifeContext ?? this.lifeContext,
       painPoints: painPoints ?? this.painPoints,
+      spheres: spheres ?? this.spheres,
+      sphereGoals: sphereGoals ?? this.sphereGoals,
       workStyle: workStyle ?? this.workStyle,
       mainGoal: mainGoal ?? this.mainGoal,
       dailyMinutes: dailyMinutes ?? this.dailyMinutes,
@@ -41,9 +69,11 @@ class OnboardingData {
   bool canProceed(int step) => switch (step) {
     0 => lifeContext.trim().length >= 3,
     1 => painPoints.isNotEmpty,
-    2 => workStyle.isNotEmpty,
-    3 => mainGoal.trim().length >= 3,
-    4 => true, // slider always has a value
+    2 => spheres.length >= 2,                          // min 2 spheres
+    3 => spheres.isNotEmpty && spheres.every((s) => (sphereGoals[s] ?? '').trim().length >= 3),
+    4 => workStyle.isNotEmpty,
+    5 => mainGoal.trim().length >= 3,
+    6 => true, // slider always has a value
     _ => true,
   };
 }
@@ -59,6 +89,25 @@ class OnboardingNotifier extends _$OnboardingNotifier {
   void setPainPoints(String value) =>
       state = state.copyWith(painPoints: value);
 
+  void toggleSphere(String key) {
+    final current = List<String>.from(state.spheres);
+    if (current.contains(key)) {
+      current.remove(key);
+      // Also remove goal for deselected sphere
+      final goals = Map<String, String>.from(state.sphereGoals)..remove(key);
+      state = state.copyWith(spheres: current, sphereGoals: goals);
+    } else if (current.length < 4) {
+      current.add(key);
+      state = state.copyWith(spheres: current);
+    }
+  }
+
+  void setSphereGoal(String sphereKey, String goal) {
+    final goals = Map<String, String>.from(state.sphereGoals);
+    goals[sphereKey] = goal;
+    state = state.copyWith(sphereGoals: goals);
+  }
+
   void setWorkStyle(String value) =>
       state = state.copyWith(workStyle: value);
 
@@ -67,6 +116,13 @@ class OnboardingNotifier extends _$OnboardingNotifier {
 
   void setDailyMinutes(int value) =>
       state = state.copyWith(dailyMinutes: value);
+
+  String _buildGoalsJson() {
+    final list = state.sphereGoals.entries
+        .map((e) => {'sphere': e.key, 'goal': e.value})
+        .toList();
+    return jsonEncode(list);
+  }
 
   /// Save profile to Isar after onboarding completes.
   /// Returns error message on failure, null on success.
@@ -88,7 +144,8 @@ class OnboardingNotifier extends _$OnboardingNotifier {
         ..xp = 0
         ..currentStreak = 0
         ..dailyMinutes = state.dailyMinutes
-        ..goalsJson = '[]'
+        ..goalsJson = _buildGoalsJson()
+        ..spheresJson = state.spheres.join(',')
         ..lifeContext = state.lifeContext
         ..mainGoal = state.mainGoal
         ..workStyle = state.workStyle
