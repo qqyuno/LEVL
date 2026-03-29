@@ -51,7 +51,7 @@ const allAchievements = [
   // --- Level milestones ---
   Achievement(
     id: 'first_step',
-    title: 'Первый шаг',
+    title: 'Начало пути',
     description: 'Достигни 2 уровня',
     icon: Icons.looks_one,
     condition: UnlockCondition.level,
@@ -59,7 +59,7 @@ const allAchievements = [
   ),
   Achievement(
     id: 'rising',
-    title: 'На подъёме',
+    title: 'Пять уровней',
     description: 'Достигни 5 уровня',
     icon: Icons.trending_up,
     condition: UnlockCondition.level,
@@ -67,7 +67,7 @@ const allAchievements = [
   ),
   Achievement(
     id: 'decade',
-    title: 'Десятка',
+    title: 'Десять',
     description: 'Достигни 10 уровня',
     icon: Icons.workspace_premium,
     condition: UnlockCondition.level,
@@ -76,25 +76,25 @@ const allAchievements = [
 
   // --- Streak milestones ---
   Achievement(
-    id: 'week_warrior',
-    title: 'Воин недели',
-    description: '7 дней подряд',
+    id: 'week_streak',
+    title: '7 дней',
+    description: 'Не случайность',
     icon: Icons.local_fire_department,
     condition: UnlockCondition.streak,
     requiredValue: 7,
   ),
   Achievement(
-    id: 'month_master',
-    title: 'Хозяин месяца',
-    description: '30 дней подряд',
+    id: 'month_streak',
+    title: '30 дней',
+    description: 'Это уже ты',
     icon: Icons.shield,
     condition: UnlockCondition.streak,
     requiredValue: 30,
   ),
   Achievement(
-    id: 'unstoppable',
-    title: 'Неудержимый',
-    description: '100 дней подряд',
+    id: 'hundred_streak',
+    title: '100 дней',
+    description: 'Система работает',
     icon: Icons.diamond,
     condition: UnlockCondition.streak,
     requiredValue: 100,

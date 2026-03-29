@@ -78,9 +78,15 @@
 
 ## 🔜 ДАЛЬШЕ (после Phase 4)
 
-### Phase 5 — Character Sheet
-- [ ] 6 характеристик (discipline, knowledge, relations, energy, will, wisdom)
-- [ ] Экипировка — разблокируется за достижения
+## ✅ Phase 5 — Character Sheet (ГОТОВО)
+- [x] StatsRadarChart — кастомный hexagonal radar (CustomPainter, без пакетов)
+- [x] 6 характеристик с иконками сфер и цветами
+- [x] StatBar — горизонтальные progress bars для каждой характеристики
+- [x] Achievement model — 12 достижений (уровень, стрик, квесты, сферы)
+- [x] AchievementCard — золотой бордер для разблокированных, серый для locked
+- [x] CharacterPage — avatar, title по уровню, radar chart, stat bars, achievements grid
+- [x] Bottom Navigation — 3 таба (Путь, Персонаж, Система) через ShellRoute
+- [x] GoRouter обновлён — ShellRoute для dashboard/character/mentor
 
 ### Phase 6 — AI Ментор
 - [ ] Чат с контекстом прогресса

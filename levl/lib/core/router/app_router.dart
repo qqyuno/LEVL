@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../theme/app_colors.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
@@ -119,20 +118,20 @@ class _MainShell extends StatelessWidget {
           elevation: 0,
           indicatorColor: AppColors.textPrimary.withValues(alpha: 0.08),
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          destinations: [
+          destinations: const [
             NavigationDestination(
-              icon: const Icon(Icons.home_outlined, color: AppColors.textSecondary),
-              selectedIcon: const Icon(Icons.home, color: AppColors.textPrimary),
+              icon: Icon(Icons.home_outlined, color: AppColors.textSecondary),
+              selectedIcon: Icon(Icons.home, color: AppColors.textPrimary),
               label: 'Путь',
             ),
             NavigationDestination(
-              icon: const Icon(Icons.person_outline, color: AppColors.textSecondary),
-              selectedIcon: const Icon(Icons.person, color: AppColors.textPrimary),
+              icon: Icon(Icons.person_outline, color: AppColors.textSecondary),
+              selectedIcon: Icon(Icons.person, color: AppColors.textPrimary),
               label: 'Персонаж',
             ),
             NavigationDestination(
-              icon: const Icon(Icons.auto_awesome_outlined, color: AppColors.textSecondary),
-              selectedIcon: const Icon(Icons.auto_awesome, color: AppColors.gold),
+              icon: Icon(Icons.auto_awesome_outlined, color: AppColors.textSecondary),
+              selectedIcon: Icon(Icons.auto_awesome, color: AppColors.gold),
               label: 'Система',
             ),
           ],
