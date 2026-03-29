@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:isar/isar.dart';
+import '../../core/theme/app_colors.dart';
 
 part 'quest_model.freezed.dart';
 part 'quest_model.g.dart';
@@ -27,6 +29,7 @@ class QuestLocal {
   late String tip;
   late int xpReward;
   late int estimatedMinutes;
+  late bool isMainGoalTask;
 
   @Enumerated(EnumType.name)
   QuestStatus status = QuestStatus.pending;
@@ -48,6 +51,8 @@ class QuestLocal {
 // --- Freezed model (in-memory / UI state) ---
 @freezed
 class Quest with _$Quest {
+  const Quest._(); // enables methods on Freezed class
+
   const factory Quest({
     required String id,
     required String userId,
@@ -56,6 +61,7 @@ class Quest with _$Quest {
     required String tip,
     required int xpReward,
     @Default(30) int estimatedMinutes,
+    @Default(false) bool isMainGoalTask,
     @Default(QuestStatus.pending) QuestStatus status,
     @Default(QuestDifficulty.medium) QuestDifficulty difficulty,
     @Default(QuestType.daily) QuestType type,
@@ -66,6 +72,30 @@ class Quest with _$Quest {
 
   factory Quest.fromJson(Map<String, dynamic> json) =>
       _$QuestFromJson(json);
+
+  /// Build a Quest from Edge Function JSON response
+  factory Quest.fromEdgeFunction(Map<String, dynamic> json, String oderId, String userId) {
+    return Quest(
+      id: '${userId}_${DateTime.now().toIso8601String()}_$oderId',
+      userId: userId,
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      tip: json['tip'] as String? ?? '',
+      xpReward: json['xpReward'] as int? ?? 25,
+      estimatedMinutes: json['estimatedMinutes'] as int? ?? 15,
+      isMainGoalTask: json['isMainGoalTask'] as bool? ?? false,
+      difficulty: QuestDifficulty.values.firstWhere(
+        (d) => d.name == json['difficulty'],
+        orElse: () => QuestDifficulty.medium,
+      ),
+      category: QuestCategory.values.firstWhere(
+        (c) => c.name == json['sphere'],
+        orElse: () => QuestCategory.discipline,
+      ),
+      type: json['isMainGoalTask'] == true ? QuestType.main : QuestType.daily,
+      createdAt: DateTime.now(),
+    );
+  }
 }
 
 // XP values by difficulty
@@ -84,5 +114,35 @@ extension QuestDifficultyXp on QuestDifficulty {
     QuestDifficulty.medium  => 3,
     QuestDifficulty.hard    => 4,
     QuestDifficulty.epic    => 5,
+  };
+}
+
+// Sphere visual mapping — icon + color for quest cards
+extension QuestCategoryVisual on QuestCategory {
+  IconData get icon => switch (this) {
+    QuestCategory.discipline => Icons.bolt,
+    QuestCategory.knowledge  => Icons.menu_book,
+    QuestCategory.relations  => Icons.people,
+    QuestCategory.energy     => Icons.local_fire_department,
+    QuestCategory.will       => Icons.my_location,
+    QuestCategory.wisdom     => Icons.psychology,
+  };
+
+  Color get color => switch (this) {
+    QuestCategory.discipline => AppColors.sphereDiscipline,
+    QuestCategory.knowledge  => AppColors.sphereKnowledge,
+    QuestCategory.relations  => AppColors.sphereRelations,
+    QuestCategory.energy     => AppColors.sphereEnergy,
+    QuestCategory.will       => AppColors.sphereWill,
+    QuestCategory.wisdom     => AppColors.sphereWisdom,
+  };
+
+  String get label => switch (this) {
+    QuestCategory.discipline => 'Дисциплина',
+    QuestCategory.knowledge  => 'Знания',
+    QuestCategory.relations  => 'Отношения',
+    QuestCategory.energy     => 'Энергия',
+    QuestCategory.will       => 'Воля',
+    QuestCategory.wisdom     => 'Мудрость',
   };
 }
