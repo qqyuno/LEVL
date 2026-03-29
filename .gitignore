@@ -1,0 +1,30 @@
+# Secrets
+.env
+*.env
+
+# Flutter
+levl/build/
+levl/.dart_tool/
+levl/.packages
+levl/.flutter-plugins
+levl/.flutter-plugins-dependencies
+
+# Generated
+*.g.dart
+*.freezed.dart
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Other projects (not LEVL)
+altyn_bot/
+robots63/
+
+# Dependencies
+levl/.pub-cache/

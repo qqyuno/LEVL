@@ -2,32 +2,32 @@ import 'package:flutter/material.dart';
 
 abstract class AppColors {
   // --- Backgrounds ---
-  static const background = Color(0xFF0D0D0F);      // deep dark
-  static const surface = Color(0xFF1A1A1F);          // card surface
-  static const surfaceElevated = Color(0xFF242428);  // elevated elements
+  static const background = Color(0xFFF8F8F6);       // тёплый белый
+  static const surface = Color(0xFFFFFFFF);           // карточки
+  static const surfaceElevated = Color(0xFFF0F0ED);   // elevated элементы
 
   // --- Text ---
-  static const textPrimary = Color(0xFFE8E8E2);      // warm white
-  static const textSecondary = Color(0xFF8A8A82);    // muted
-  static const textDisabled = Color(0xFF4A4A46);
+  static const textPrimary = Color(0xFF0A0A0A);       // почти чёрный
+  static const textSecondary = Color(0xFF6B6B68);     // приглушённый
+  static const textDisabled = Color(0xFFB0B0AB);
 
   // --- Brand / Accent ---
-  static const gold = Color(0xFFB8962E);             // EARNED ONLY — never decorative
-  static const goldLight = Color(0xFFD4AF4A);        // hover / shimmer
+  static const gold = Color(0xFFB8962E);              // ТОЛЬКО за заслуги — никогда декоративно
+  static const goldLight = Color(0xFFD4AF4A);         // hover / shimmer
 
   // --- Dividers ---
-  static const divider = Color(0xFF2A2A2F);
+  static const divider = Color(0xFFE2E2DE);
 
   // --- Skill category colors ---
-  static const skillDiscipline = Color(0xFF4A90D9);  // blue — дисциплина
-  static const skillKnowledge  = Color(0xFF7B68EE);  // purple — знания
-  static const skillRelations  = Color(0xFF50C878);  // green — отношения
-  static const skillEnergy     = Color(0xFFFF6B35);  // orange — энергия
-  static const skillWill       = Color(0xFFDC143C);  // crimson — воля
-  static const skillWisdom     = Color(0xFF20B2AA);  // teal — мудрость
+  static const skillDiscipline = Color(0xFF2D6DB5);   // blue — дисциплина
+  static const skillKnowledge  = Color(0xFF5B47C4);   // purple — знания
+  static const skillRelations  = Color(0xFF2E8B57);   // green — отношения
+  static const skillEnergy     = Color(0xFFD4541A);   // orange — энергия
+  static const skillWill       = Color(0xFFB01030);   // crimson — воля
+  static const skillWisdom     = Color(0xFF138080);   // teal — мудрость
 
   // --- Status ---
-  static const success = Color(0xFF50C878);
-  static const error   = Color(0xFFDC143C);
-  static const warning = Color(0xFFFFB347);
+  static const success = Color(0xFF2E8B57);
+  static const error   = Color(0xFFB01030);
+  static const warning = Color(0xFFCC8800);
 }

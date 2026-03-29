@@ -11,7 +11,7 @@ class DashboardPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // TODO: Replace with real providers in Phase 4
-    final mockUser = const UserProfile(
+    const mockUser = UserProfile(
       id: 'mock',
       name: 'Артём',
       level: 3,
@@ -93,8 +93,8 @@ class DashboardPage extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
                 child: Text(
                   'ЗАДАЧИ ДНЯ',
-                  style: GoogleFonts.cinzel(
-                    fontSize: 12,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textSecondary,
                     letterSpacing: 2,
@@ -133,11 +133,11 @@ class DashboardPage extends ConsumerWidget {
         ),
         label: Text(
           'Система',
-          style: GoogleFonts.cinzel(
+          style: GoogleFonts.dmSans(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: AppColors.gold,
-            letterSpacing: 1,
+            letterSpacing: 0.5,
           ),
         ),
         icon: const Icon(Icons.auto_awesome, size: 18),
@@ -166,7 +166,7 @@ class _DashboardHeader extends StatelessWidget {
             children: [
               Text(
                 'УРОВЕНЬ ${user.level}',
-                style: GoogleFonts.cinzel(
+                style: GoogleFonts.dmSerifDisplay(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: AppColors.gold,
@@ -176,7 +176,7 @@ class _DashboardHeader extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 'Из Хаоса в Контроль',
-                style: GoogleFonts.cinzel(
+                style: GoogleFonts.dmSerifDisplay(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
@@ -241,7 +241,7 @@ class _HeroSegment extends StatelessWidget {
             child: Center(
               child: Text(
                 user.name[0].toUpperCase(),
-                style: GoogleFonts.cinzel(
+                style: GoogleFonts.dmSerifDisplay(
                   fontSize: 32,
                   fontWeight: FontWeight.w700,
                   color: AppColors.gold,
@@ -254,7 +254,7 @@ class _HeroSegment extends StatelessWidget {
           // Name
           Text(
             user.name,
-            style: GoogleFonts.cinzel(
+            style: GoogleFonts.dmSerifDisplay(
               fontSize: 20,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
@@ -317,7 +317,7 @@ class _MainQuestCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 1),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,7 +326,7 @@ class _MainQuestCard extends StatelessWidget {
             children: [
               Text(
                 'ГЛАВНАЯ ЦЕЛЬ',
-                style: GoogleFonts.cinzel(
+                style: GoogleFonts.dmSerifDisplay(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color: AppColors.gold,
@@ -350,7 +350,7 @@ class _MainQuestCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             quest.title,
-            style: GoogleFonts.cinzel(
+            style: GoogleFonts.dmSerifDisplay(
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
@@ -458,7 +458,7 @@ class _QuestCard extends StatelessWidget {
             children: [
               Text(
                 '+${quest.xpReward}',
-                style: GoogleFonts.cinzel(
+                style: GoogleFonts.dmSerifDisplay(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: AppColors.gold,
