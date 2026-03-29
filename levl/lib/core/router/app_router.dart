@@ -6,6 +6,7 @@ import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/auth/presentation/screens/welcome_page.dart';
 import '../../features/dashboard/presentation/screens/dashboard_page.dart';
 import '../../features/character/presentation/screens/character_page.dart';
+import '../../features/ai_mentor/presentation/screens/chat_page.dart';
 import '../../features/onboarding/presentation/screens/onboarding_page.dart';
 import '../../features/onboarding/presentation/providers/onboarding_provider.dart';
 
@@ -77,9 +78,7 @@ GoRouter appRouter(AppRouterRef ref) {
           GoRoute(
             path: AppRoutes.aiMentor,
             name: 'aiMentor',
-            builder: (_, __) => const Scaffold(
-              body: Center(child: Text('AI Ментор — Phase 6')),
-            ),
+            builder: (_, __) => const ChatPage(),
           ),
         ],
       ),

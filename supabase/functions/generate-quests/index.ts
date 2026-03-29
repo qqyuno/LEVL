@@ -1,12 +1,13 @@
 // LEVL — Edge Function: Generate Daily Quests
 // Called once per day. Returns 3 quests tailored to user's spheres + main goal.
-// Uses Claude API (claude-sonnet-4-20250514) for generation.
+// Free tier: Gemini Flash (free API). PRO tier: Claude Sonnet (paid API).
 // Caches results in quest_cache table (key = userId_YYYY-MM-DD).
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 interface QuestOutput {
   title: string;
@@ -86,44 +87,24 @@ serve(async (req: Request) => {
     const dayOfYear = getDayOfYear(new Date());
     const todaySpheres = getRotatedSpheres(spheres, dayOfYear);
 
-    // --- Build Claude prompt ---
+    // --- Build prompt ---
     const prompt = buildPrompt(profile, sphereGoals, todaySpheres);
 
-    // --- Call Claude API ---
-    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!anthropicKey) {
-      return jsonResponse({ error: "ANTHROPIC_API_KEY not configured" }, 500);
+    // --- Call AI based on user tier ---
+    const userTier = profile.tier ?? "free"; // "free" or "pro"
+    let rawText: string;
+
+    if (userTier === "pro") {
+      rawText = await callClaude(prompt);
+    } else {
+      rawText = await callGemini(prompt);
     }
 
-    const claudeResponse = await fetch(ANTHROPIC_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": anthropicKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-      }),
-    });
-
-    if (!claudeResponse.ok) {
-      const errText = await claudeResponse.text();
-      console.error("Claude API error:", errText);
+    if (!rawText) {
       return jsonResponse({ error: "AI generation failed" }, 502);
     }
 
-    const claudeData = await claudeResponse.json();
-    const rawText = claudeData.content?.[0]?.text ?? "";
-
-    // --- Parse JSON from Claude response ---
+    // --- Parse JSON from AI response ---
     const quests = parseQuestsFromResponse(rawText);
 
     if (!quests || quests.length === 0) {
@@ -255,6 +236,62 @@ ${sphereLines}
     "tip": "Голос Системы."
   }
 ]`;
+}
+
+async function callClaude(prompt: string): Promise<string> {
+  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
+
+  const response = await fetch(ANTHROPIC_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1024,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error("Claude API error:", errText);
+    return "";
+  }
+
+  const data = await response.json();
+  return data.content?.[0]?.text ?? "";
+}
+
+async function callGemini(prompt: string): Promise<string> {
+  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
+
+  const url = `${GEMINI_API_URL}?key=${apiKey}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 1024,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error("Gemini API error:", errText);
+    return "";
+  }
+
+  const data = await response.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 }
 
 function parseQuestsFromResponse(text: string): QuestOutput[] | null {
