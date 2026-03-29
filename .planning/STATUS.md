@@ -1,6 +1,6 @@
 # LEVL — Статус разработки
 
-> Обновлено: 2026-03-29
+> Обновлено: 2026-03-30
 
 ---
 
@@ -88,9 +88,13 @@
 - [x] Bottom Navigation — 3 таба (Путь, Персонаж, Система) через ShellRoute
 - [x] GoRouter обновлён — ShellRoute для dashboard/character/mentor
 
-### Phase 6 — AI Ментор
-- [ ] Чат с контекстом прогресса
-- [ ] Edge Function для диалога
+### ✅ Phase 6 — AI Ментор (ГОТОВО)
+- [x] Edge Function `ai-mentor/index.ts` — Claude Sonnet, контекст профиля + задач дня
+- [x] System prompt — голос Системы (короткий, без эмодзи, без восклицаний)
+- [x] ChatProvider — сообщения, отправка, clearChat
+- [x] ChatPage UI — bubbles, typing indicator, auto-scroll
+- [x] Edge Function `generate-quests` — добавлены callClaude (PRO) + callGemini (Free)
+- [x] Router подключен — вкладка "Система"
 
 ### Phase 7 — Polish
 - [ ] Rive/Lottie анимации
