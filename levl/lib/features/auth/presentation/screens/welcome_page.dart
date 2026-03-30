@@ -80,6 +80,24 @@ class WelcomePage extends ConsumerWidget {
 
               const SizedBox(height: 24),
 
+              // Guest sign-in
+              GestureDetector(
+                onTap: isLoading
+                    ? null
+                    : () => ref.read(authNotifierProvider.notifier).signInAnonymously(),
+                child: Text(
+                  'Войти как гость',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                    decoration: TextDecoration.underline,
+                    decorationColor: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
               // Loading indicator
               if (isLoading)
                 const SizedBox(

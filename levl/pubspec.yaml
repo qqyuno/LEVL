@@ -27,9 +27,9 @@ dependencies:
   # UI & Fonts
   google_fonts: ^7.0.0
 
-  # Animations
-  rive: ^0.13.0
-  lottie: ^3.1.0
+  # Animations (Phase 7 — uncomment when needed)
+  # rive: ^0.13.0
+  # lottie: ^3.1.0
 
   # Utils
   path_provider: ^2.1.0

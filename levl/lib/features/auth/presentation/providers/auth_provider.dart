@@ -54,6 +54,18 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
+  /// Sign in anonymously (guest mode).
+  Future<void> signInAnonymously() async {
+    state = const AsyncLoading();
+    try {
+      final client = ref.read(supabaseClientProvider);
+      final response = await client.auth.signInAnonymously();
+      state = AsyncData(response.session);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+
   /// Sign out and clear session.
   Future<void> signOut() async {
     try {
