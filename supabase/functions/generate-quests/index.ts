@@ -1,13 +1,13 @@
 // LEVL — Edge Function: Generate Daily Quests
 // Called once per day. Returns 3 quests tailored to user's spheres + main goal.
-// Free tier: Gemini Flash (free API). PRO tier: Claude Sonnet (paid API).
+// Free tier: Groq (Llama 3.3 70B, free API). PRO tier: Claude Sonnet (paid API).
 // Caches results in quest_cache table (key = userId_YYYY-MM-DD).
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 interface QuestOutput {
   title: string;
@@ -97,7 +97,7 @@ serve(async (req: Request) => {
     if (userTier === "pro") {
       rawText = await callClaude(prompt);
     } else {
-      rawText = await callGemini(prompt);
+      rawText = await callGroq(prompt);
     }
 
     if (!rawText) {
@@ -266,32 +266,32 @@ async function callClaude(prompt: string): Promise<string> {
   return data.content?.[0]?.text ?? "";
 }
 
-async function callGemini(prompt: string): Promise<string> {
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
-  if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
+async function callGroq(prompt: string): Promise<string> {
+  const apiKey = Deno.env.get("GROQ_API_KEY");
+  if (!apiKey) throw new Error("GROQ_API_KEY not configured");
 
-  const url = `${GEMINI_API_URL}?key=${apiKey}`;
-
-  const response = await fetch(url, {
+  const response = await fetch(GROQ_API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 1024,
-      },
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+      max_tokens: 1024,
     }),
   });
 
   if (!response.ok) {
     const errText = await response.text();
-    console.error("Gemini API error:", errText);
+    console.error("Groq API error:", errText);
     return "";
   }
 
   const data = await response.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  return data.choices?.[0]?.message?.content ?? "";
 }
 
 function parseQuestsFromResponse(text: string): QuestOutput[] | null {
