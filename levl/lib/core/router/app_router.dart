@@ -9,6 +9,7 @@ import '../../features/character/presentation/screens/character_page.dart';
 import '../../features/ai_mentor/presentation/screens/chat_page.dart';
 import '../../features/onboarding/presentation/screens/onboarding_page.dart';
 import '../../features/onboarding/presentation/providers/onboarding_provider.dart';
+import '../../shared/widgets/level_up_overlay.dart';
 
 part 'app_router.g.dart';
 
@@ -103,7 +104,12 @@ class _MainShell extends StatelessWidget {
     final currentIndex = _tabs.indexOf(location).clamp(0, 2);
 
     return Scaffold(
-      body: child,
+      body: Stack(
+        children: [
+          child,
+          const LevelUpOverlay(),
+        ],
+      ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           border: Border(top: BorderSide(color: AppColors.divider, width: 0.5)),

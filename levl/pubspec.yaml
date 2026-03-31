@@ -27,9 +27,11 @@ dependencies:
   # UI & Fonts
   google_fonts: ^7.0.0
 
-  # Animations (Phase 7 — uncomment when needed)
-  # rive: ^0.13.0
-  # lottie: ^3.1.0
+  # Animations
+  lottie: ^3.1.0
+
+  # Audio
+  just_audio: ^0.9.40
 
   # Utils
   path_provider: ^2.1.0
@@ -55,4 +57,6 @@ flutter:
   assets:
     - assets/character/
     - assets/animations/
+    - assets/animations/lottie/
+    - assets/sounds/
     - .env

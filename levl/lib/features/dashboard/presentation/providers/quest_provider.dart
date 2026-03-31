@@ -1,12 +1,15 @@
 import 'dart:convert';
 
+import 'package:flutter/services.dart';
 import 'package:isar/isar.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/audio/audio_service.dart';
 import '../../../../core/supabase/isar_service.dart';
 import '../../../../core/supabase/supabase_service.dart';
 import '../../../../shared/models/quest_model.dart';
 import '../../../../shared/models/user_model.dart';
+import '../../../../shared/providers/level_up_provider.dart';
 
 part 'quest_provider.g.dart';
 
@@ -147,6 +150,8 @@ class QuestNotifier extends _$QuestNotifier {
     final profile = profiles.firstOrNull;
     if (profile == null) return;
 
+    final oldLevel = profile.level;
+
     profile.xp += xp;
     profile.level = (profile.xp ~/ 100) + 1;
     profile.lastActiveDate = DateTime.now();
@@ -157,6 +162,13 @@ class QuestNotifier extends _$QuestNotifier {
 
     // Invalidate user provider so UI updates
     ref.invalidate(userProfileNotifierProvider);
+
+    // Level-up event
+    if (profile.level > oldLevel) {
+      HapticFeedback.heavyImpact();
+      ref.read(audioServiceProvider).playLevelUp();
+      ref.read(levelUpNotifierProvider.notifier).trigger(profile.level);
+    }
   }
 
   Future<void> _syncCompletionToSupabase(String questId, int xp) async {

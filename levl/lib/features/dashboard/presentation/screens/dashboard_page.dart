@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart';
+import '../../../../core/audio/audio_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/models/quest_model.dart';
@@ -16,54 +18,58 @@ class DashboardPage extends ConsumerWidget {
     final questsAsync = ref.watch(questNotifierProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: userAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.gold),
+          ),
           error: (e, _) => Center(child: Text('Ошибка: $e')),
           data: (user) => CustomScrollView(
+            physics: const BouncingScrollPhysics(),
             slivers: [
-              // --- Header ---
-              SliverToBoxAdapter(
-                child: _DashboardHeader(user: user),
-              ),
+              SliverToBoxAdapter(child: _DashboardHeader(user: user)),
+              SliverToBoxAdapter(child: _HeroSegment(user: user)),
 
-              // --- Hero: Avatar + XP ---
-              SliverToBoxAdapter(
-                child: _HeroSegment(user: user),
-              ),
-
-              // --- Main Quest (first isMainGoalTask quest) ---
+              // Main Quest
               SliverToBoxAdapter(
                 child: questsAsync.when(
                   loading: () => const Padding(
                     padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator(color: AppColors.gold)),
+                    child: Center(
+                      child: CircularProgressIndicator(color: AppColors.gold),
+                    ),
                   ),
                   error: (e, _) => Padding(
                     padding: const EdgeInsets.all(16),
                     child: _ErrorCard(
                       message: 'Не удалось загрузить задания',
-                      onRetry: () => ref.read(questNotifierProvider.notifier).fetchFromEdgeFunction(),
+                      onRetry: () => ref
+                          .read(questNotifierProvider.notifier)
+                          .fetchFromEdgeFunction(),
                     ),
                   ),
                   data: (quests) {
-                    final mainQuest = quests.where((q) => q.isMainGoalTask).firstOrNull;
+                    final mainQuest =
+                        quests.where((q) => q.isMainGoalTask).firstOrNull;
                     if (mainQuest == null) return const SizedBox.shrink();
                     return Padding(
                       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
                       child: _MainQuestCard(
                         quest: mainQuest,
-                        onComplete: () => ref.read(questNotifierProvider.notifier).completeQuest(mainQuest.id),
+                        onComplete: () => ref
+                            .read(questNotifierProvider.notifier)
+                            .completeQuest(mainQuest.id),
                       ),
                     );
                   },
                 ),
               ),
 
-              // --- Daily Quests label ---
+              // Section label
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
                   child: Text(
                     'ЗАДАЧИ ДНЯ',
                     style: GoogleFonts.dmSans(
@@ -76,17 +82,13 @@ class DashboardPage extends ConsumerWidget {
                 ),
               ),
 
-              // --- Daily Quest Cards ---
+              // Daily Quests
               questsAsync.when(
-                loading: () => const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                ),
+                loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
                 error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
                 data: (quests) {
-                  final daily = quests.where((q) => !q.isMainGoalTask).toList();
+                  final daily =
+                      quests.where((q) => !q.isMainGoalTask).toList();
                   return SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     sliver: SliverList(
@@ -95,7 +97,9 @@ class DashboardPage extends ConsumerWidget {
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _QuestCard(
                             quest: daily[index],
-                            onComplete: () => ref.read(questNotifierProvider.notifier).completeQuest(daily[index].id),
+                            onComplete: () => ref
+                                .read(questNotifierProvider.notifier)
+                                .completeQuest(daily[index].id),
                           ),
                         ),
                         childCount: daily.length,
@@ -111,9 +115,8 @@ class DashboardPage extends ConsumerWidget {
         ),
       ),
 
-      // --- FAB: AI Mentor ---
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {}, // TODO: Phase 6
+        onPressed: () {},
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.gold,
         elevation: 0,
@@ -136,39 +139,52 @@ class DashboardPage extends ConsumerWidget {
   }
 }
 
-// --- Error Card ---
-class _ErrorCard extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-  const _ErrorCard({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          Text(message, style: GoogleFonts.dmSans(fontSize: 14, color: AppColors.textSecondary)),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: onRetry,
-            child: Text('Повторить', style: GoogleFonts.dmSans(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// --- Header Widget ---
-class _DashboardHeader extends StatelessWidget {
+// ---------------------------------------------------------------------------
+// Header: уровень + суперцель + streak с пульсом
+// ---------------------------------------------------------------------------
+class _DashboardHeader extends StatefulWidget {
   final UserProfile user;
   const _DashboardHeader({required this.user});
+
+  @override
+  State<_DashboardHeader> createState() => _DashboardHeaderState();
+}
+
+class _DashboardHeaderState extends State<_DashboardHeader>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _scale = Tween(begin: 1.0, end: 1.3).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+    if (widget.user.currentStreak > 0) {
+      Future.delayed(const Duration(milliseconds: 600), _pulseTwice);
+    }
+  }
+
+  Future<void> _pulseTwice() async {
+    if (!mounted) return;
+    await _ctrl.forward();
+    await _ctrl.reverse();
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (!mounted) return;
+    await _ctrl.forward();
+    await _ctrl.reverse();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -181,7 +197,7 @@ class _DashboardHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'УРОВЕНЬ ${user.level}',
+                'УРОВЕНЬ ${widget.user.level}',
                 style: GoogleFonts.dmSans(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -191,10 +207,11 @@ class _DashboardHeader extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                user.mainGoal.isNotEmpty ? user.mainGoal : 'Путь начинается',
+                widget.user.mainGoal.isNotEmpty
+                    ? widget.user.mainGoal
+                    : 'Путь начинается',
                 style: GoogleFonts.dmSerifDisplay(
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                   letterSpacing: 0.5,
                 ),
@@ -203,7 +220,8 @@ class _DashboardHeader extends StatelessWidget {
               ),
             ],
           ),
-          // Streak
+
+          // Streak badge с пульсом
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -212,12 +230,21 @@ class _DashboardHeader extends StatelessWidget {
               border: Border.all(color: AppColors.divider),
             ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.local_fire_department,
-                    color: AppColors.warning, size: 16),
+                RepaintBoundary(
+                  child: ScaleTransition(
+                    scale: _scale,
+                    child: const Icon(
+                      Icons.local_fire_department,
+                      color: AppColors.warning,
+                      size: 16,
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 4),
                 Text(
-                  '${user.currentStreak}',
+                  '${widget.user.currentStreak}',
                   style: GoogleFonts.dmSans(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -233,7 +260,9 @@ class _DashboardHeader extends StatelessWidget {
   }
 }
 
-// --- Hero Segment ---
+// ---------------------------------------------------------------------------
+// Hero: аватар + анимированный XP bar
+// ---------------------------------------------------------------------------
 class _HeroSegment extends StatelessWidget {
   final UserProfile user;
   const _HeroSegment({required this.user});
@@ -241,13 +270,14 @@ class _HeroSegment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = levelProgress(user.xp, user.level);
-    final xpToNext = xpForLevel(user.level);
+    final xpInLevel = user.xp % 100;
+    final xpToNext = 100 - xpInLevel;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
       child: Column(
         children: [
-          // Avatar placeholder
+          // Avatar
           Container(
             width: 80,
             height: 80,
@@ -261,7 +291,6 @@ class _HeroSegment extends StatelessWidget {
                 user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
                 style: GoogleFonts.dmSerifDisplay(
                   fontSize: 32,
-                  fontWeight: FontWeight.w700,
                   color: AppColors.gold,
                 ),
               ),
@@ -269,31 +298,35 @@ class _HeroSegment extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Name
           Text(
             user.name,
             style: GoogleFonts.dmSerifDisplay(
               fontSize: 20,
-              fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
               letterSpacing: 1,
             ),
           ),
           const SizedBox(height: 16),
 
-          // XP Bar
+          // XP bar section
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    '${user.xp} XP',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.gold,
+                  // Анимированный XP счётчик
+                  TweenAnimationBuilder<int>(
+                    tween: IntTween(begin: 0, end: user.xp),
+                    duration: const Duration(milliseconds: 800),
+                    curve: Curves.easeOutCubic,
+                    builder: (_, value, __) => Text(
+                      '$value XP',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.gold,
+                      ),
                     ),
                   ),
                   Text(
@@ -306,14 +339,46 @@ class _HeroSegment extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: AppColors.surface,
-                  valueColor: const AlwaysStoppedAnimation(AppColors.gold),
-                  minHeight: 6,
-                ),
+
+              // Анимированный XP bar
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: progress),
+                duration: const Duration(milliseconds: 900),
+                curve: Curves.easeOutCubic,
+                builder: (_, value, __) {
+                  return Stack(
+                    children: [
+                      // Фон
+                      Container(
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: AppColors.divider,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                      // Заполненная часть
+                      FractionallySizedBox(
+                        widthFactor: value.clamp(0.0, 1.0),
+                        child: Container(
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: AppColors.gold,
+                            borderRadius: BorderRadius.circular(3),
+                            boxShadow: value > 0.02
+                                ? [
+                                    BoxShadow(
+                                      color: AppColors.gold.withValues(alpha: 0.45),
+                                      blurRadius: 8,
+                                      spreadRadius: 0,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -323,16 +388,69 @@ class _HeroSegment extends StatelessWidget {
   }
 }
 
-// --- Main Quest Card (суперцель) ---
-class _MainQuestCard extends StatelessWidget {
+// ---------------------------------------------------------------------------
+// Main Quest Card (суперцель) — с Lottie burst при complete
+// ---------------------------------------------------------------------------
+class _MainQuestCard extends ConsumerStatefulWidget {
   final Quest quest;
   final VoidCallback onComplete;
   const _MainQuestCard({required this.quest, required this.onComplete});
 
   @override
-  Widget build(BuildContext context) {
-    final isCompleted = quest.status == QuestStatus.completed;
+  ConsumerState<_MainQuestCard> createState() => _MainQuestCardState();
+}
 
+class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
+  bool _showBurst = false;
+
+  void _handleComplete() {
+    HapticFeedback.mediumImpact();
+    ref.read(audioServiceProvider).playQuestComplete();
+    setState(() => _showBurst = true);
+    widget.onComplete();
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) setState(() => _showBurst = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isCompleted = widget.quest.status == QuestStatus.completed;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        _buildCard(isCompleted),
+        if (_showBurst)
+          Positioned(
+            right: 8,
+            top: -16,
+            child: RepaintBoundary(
+              child: IgnorePointer(
+                child: SizedBox(
+                  width: 80,
+                  height: 80,
+                  child: Lottie.asset(
+                    'assets/animations/lottie/quest_complete.json',
+                    repeat: false,
+                    delegates: LottieDelegates(
+                      values: [
+                        ValueDelegate.color(
+                          const ['**'],
+                          value: AppColors.gold,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildCard(bool isCompleted) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -350,7 +468,6 @@ class _MainQuestCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              // Gold star icon for supergoal
               Container(
                 width: 28,
                 height: 28,
@@ -358,7 +475,11 @@ class _MainQuestCard extends StatelessWidget {
                   color: AppColors.gold.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.stars_rounded, size: 16, color: AppColors.gold),
+                child: const Icon(
+                  Icons.stars_rounded,
+                  size: 16,
+                  color: AppColors.gold,
+                ),
               ),
               const SizedBox(width: 10),
               Text(
@@ -371,10 +492,9 @@ class _MainQuestCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              // Skulls
               Row(
                 children: List.generate(
-                  quest.difficulty.skulls,
+                  widget.quest.difficulty.skulls,
                   (_) => const Padding(
                     padding: EdgeInsets.only(left: 2),
                     child: Icon(Icons.whatshot, size: 12, color: AppColors.gold),
@@ -385,28 +505,30 @@ class _MainQuestCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            quest.title,
+            widget.quest.title,
             style: GoogleFonts.dmSerifDisplay(
               fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: isCompleted ? AppColors.textDisabled : AppColors.textPrimary,
+              color: isCompleted
+                  ? AppColors.textDisabled
+                  : AppColors.textPrimary,
               letterSpacing: 0.5,
-              decoration: isCompleted ? TextDecoration.lineThrough : null,
+              decoration:
+                  isCompleted ? TextDecoration.lineThrough : null,
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            quest.description,
+            widget.quest.description,
             style: GoogleFonts.dmSans(
               fontSize: 14,
               color: AppColors.textSecondary,
               height: 1.5,
             ),
           ),
-          if (quest.tip.isNotEmpty) ...[
+          if (widget.quest.tip.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
-              quest.tip,
+              widget.quest.tip,
               style: GoogleFonts.dmSans(
                 fontSize: 13,
                 color: AppColors.textDisabled,
@@ -417,19 +539,20 @@ class _MainQuestCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              // Time
               const Icon(Icons.schedule, size: 14, color: AppColors.textDisabled),
               const SizedBox(width: 4),
               Text(
-                '${quest.estimatedMinutes} мин',
-                style: GoogleFonts.dmSans(fontSize: 13, color: AppColors.textDisabled),
+                '${widget.quest.estimatedMinutes} мин',
+                style: GoogleFonts.dmSans(
+                  fontSize: 13,
+                  color: AppColors.textDisabled,
+                ),
               ),
               const SizedBox(width: 16),
-              // XP
               const Icon(Icons.bolt, size: 14, color: AppColors.gold),
               const SizedBox(width: 4),
               Text(
-                '+${quest.xpReward} XP',
+                '+${widget.quest.xpReward} XP',
                 style: GoogleFonts.dmSans(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -437,13 +560,9 @@ class _MainQuestCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              // Complete button
               if (!isCompleted)
                 GestureDetector(
-                  onTap: () {
-                    HapticFeedback.mediumImpact();
-                    onComplete();
-                  },
+                  onTap: _handleComplete,
                   child: Container(
                     width: 32,
                     height: 32,
@@ -471,129 +590,255 @@ class _MainQuestCard extends StatelessWidget {
   }
 }
 
-// --- Daily Quest Card ---
-class _QuestCard extends StatelessWidget {
+// ---------------------------------------------------------------------------
+// Daily Quest Card — с Lottie burst при complete
+// ---------------------------------------------------------------------------
+class _QuestCard extends ConsumerStatefulWidget {
   final Quest quest;
   final VoidCallback onComplete;
   const _QuestCard({required this.quest, required this.onComplete});
 
   @override
+  ConsumerState<_QuestCard> createState() => _QuestCardState();
+}
+
+class _QuestCardState extends ConsumerState<_QuestCard> {
+  bool _showBurst = false;
+
+  void _handleComplete() {
+    HapticFeedback.mediumImpact();
+    ref.read(audioServiceProvider).playQuestComplete();
+    setState(() => _showBurst = true);
+    widget.onComplete();
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) setState(() => _showBurst = false);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isCompleted = quest.status == QuestStatus.completed;
-    final sphereColor = quest.category.color;
-    final sphereIcon = quest.category.icon;
+    final isCompleted = widget.quest.status == QuestStatus.completed;
+    final sphereColor = widget.quest.category.color;
+    final sphereIcon = widget.quest.category.icon;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isCompleted ? AppColors.surface.withValues(alpha: 0.7) : AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider, width: 1),
-      ),
-      child: Row(
-        children: [
-          // Sphere icon badge
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: sphereColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Карточка
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isCompleted
+                ? AppColors.surfaceElevated
+                : AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isCompleted
+                  ? AppColors.divider.withValues(alpha: 0.5)
+                  : AppColors.divider,
+              width: 1,
             ),
-            child: Icon(sphereIcon, size: 20, color: sphereColor),
           ),
-          const SizedBox(width: 14),
+          child: Row(
+            children: [
+              // Sphere icon badge
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: isCompleted
+                      ? AppColors.divider.withValues(alpha: 0.4)
+                      : sphereColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  sphereIcon,
+                  size: 20,
+                  color: isCompleted ? AppColors.textDisabled : sphereColor,
+                ),
+              ),
+              const SizedBox(width: 14),
 
-          // Content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  quest.title,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: isCompleted ? AppColors.textDisabled : AppColors.textPrimary,
-                    decoration: isCompleted ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  quest.description,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                Row(
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Time
-                    const Icon(Icons.schedule, size: 12, color: AppColors.textDisabled),
-                    const SizedBox(width: 3),
                     Text(
-                      '${quest.estimatedMinutes} мин',
-                      style: GoogleFonts.dmSans(fontSize: 11, color: AppColors.textDisabled),
-                    ),
-                    const SizedBox(width: 12),
-                    // Sphere label
-                    Text(
-                      quest.category.label,
+                      widget.quest.title,
                       style: GoogleFonts.dmSans(
-                        fontSize: 11,
-                        color: sphereColor,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: isCompleted
+                            ? AppColors.textDisabled
+                            : AppColors.textPrimary,
+                        decoration: isCompleted
+                            ? TextDecoration.lineThrough
+                            : null,
                       ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.quest.description,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.schedule,
+                          size: 12,
+                          color: AppColors.textDisabled,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${widget.quest.estimatedMinutes} мин',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 11,
+                            color: AppColors.textDisabled,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          widget.quest.category.label,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 11,
+                            color: isCompleted
+                                ? AppColors.textDisabled
+                                : sphereColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // XP + complete button
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '+${quest.xpReward}',
-                style: GoogleFonts.dmSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: isCompleted ? AppColors.textDisabled : AppColors.gold,
-                ),
               ),
-              const SizedBox(height: 6),
-              GestureDetector(
-                onTap: isCompleted
-                    ? null
-                    : () {
-                        HapticFeedback.mediumImpact();
-                        onComplete();
-                      },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isCompleted ? sphereColor : Colors.transparent,
-                    border: Border.all(
-                      color: isCompleted ? sphereColor : AppColors.divider,
-                      width: 1.5,
+
+              const SizedBox(width: 12),
+
+              // XP + кнопка
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '+${widget.quest.xpReward}',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isCompleted
+                          ? AppColors.textDisabled
+                          : AppColors.gold,
                     ),
                   ),
-                  child: isCompleted
-                      ? const Icon(Icons.check, size: 16, color: Colors.white)
-                      : null,
-                ),
+                  const SizedBox(height: 6),
+                  GestureDetector(
+                    onTap: isCompleted ? null : _handleComplete,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isCompleted
+                            ? sphereColor
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: isCompleted
+                              ? sphereColor
+                              : AppColors.divider,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: isCompleted
+                          ? const Icon(
+                              Icons.check,
+                              size: 16,
+                              color: Colors.white,
+                            )
+                          : null,
+                    ),
+                  ),
+                ],
               ),
             ],
+          ),
+        ),
+
+        // Gold burst при выполнении
+        if (_showBurst)
+          Positioned(
+            right: 0,
+            top: -20,
+            child: RepaintBoundary(
+              child: IgnorePointer(
+                child: SizedBox(
+                  width: 70,
+                  height: 70,
+                  child: Lottie.asset(
+                    'assets/animations/lottie/quest_complete.json',
+                    repeat: false,
+                    delegates: LottieDelegates(
+                      values: [
+                        ValueDelegate.color(
+                          const ['**'],
+                          value: AppColors.gold,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Error Card
+// ---------------------------------------------------------------------------
+class _ErrorCard extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _ErrorCard({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            message,
+            style: GoogleFonts.dmSans(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: onRetry,
+            child: Text(
+              'Повторить',
+              style: GoogleFonts.dmSans(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
