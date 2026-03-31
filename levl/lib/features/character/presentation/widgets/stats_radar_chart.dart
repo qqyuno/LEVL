@@ -8,13 +8,15 @@ class StatAxis {
   final String label;
   final IconData icon;
   final Color color;
-  final int value; // 0-100
+  final int value;        // accumulated sphere XP (0 → ∞)
+  final String rankName;  // e.g. "Практик"
 
   const StatAxis({
     required this.label,
     required this.icon,
     required this.color,
     required this.value,
+    required this.rankName,
   });
 }
 
@@ -71,9 +73,9 @@ class StatsRadarChart extends StatelessWidget {
               Icon(stats[i].icon, size: 16, color: stats[i].color),
               const SizedBox(height: 2),
               Text(
-                '${stats[i].value}',
+                stats[i].rankName,
                 style: GoogleFonts.dmSans(
-                  fontSize: 12,
+                  fontSize: 9,
                   fontWeight: FontWeight.w700,
                   color: stats[i].color,
                 ),

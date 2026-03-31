@@ -270,8 +270,8 @@ class _HeroSegment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = levelProgress(user.xp, user.level);
-    final xpInLevel = user.xp % 100;
-    final xpToNext = 100 - xpInLevel;
+    final xpInLevel = xpInCurrentLevel(user.xp, user.level);
+    final xpToNext = xpToNextLevel(user.level) - xpInLevel;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),

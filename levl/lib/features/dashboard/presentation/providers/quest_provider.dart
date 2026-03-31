@@ -31,8 +31,42 @@ Future<QuestLocal?> _questQueryFirst(
 class QuestNotifier extends _$QuestNotifier {
   @override
   AsyncValue<List<Quest>> build() {
+    _checkAndUpdateStreak();
     _loadTodayQuests();
     return const AsyncLoading();
+  }
+
+  /// Streak logic: increment if opened day after last visit, reset if skipped days.
+  Future<void> _checkAndUpdateStreak() async {
+    try {
+      final isar = await ref.read(isarProvider.future);
+      final profiles = await isar.userProfileLocals.where().build().findAll();
+      final profile = profiles.firstOrNull;
+      if (profile == null) return;
+
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final lastActive = profile.lastActiveDate;
+
+      if (lastActive == null) {
+        profile.currentStreak = 1;
+      } else {
+        final lastDay = DateTime(lastActive.year, lastActive.month, lastActive.day);
+        final diff = today.difference(lastDay).inDays;
+        if (diff == 0) return; // already checked in today
+        if (diff == 1) {
+          profile.currentStreak += 1; // consecutive day
+        } else {
+          profile.currentStreak = 1; // missed days — reset
+        }
+      }
+
+      profile.lastActiveDate = now;
+      await isar.writeTxn(() async {
+        await isar.userProfileLocals.put(profile);
+      });
+      ref.invalidate(userProfileNotifierProvider);
+    } catch (_) {}
   }
 
   /// Load today's quests: try Isar cache first, then Edge Function
@@ -137,14 +171,14 @@ class QuestNotifier extends _$QuestNotifier {
       });
     }
 
-    // Add XP to profile
-    await _addXpToProfile(quest.xpReward);
+    // Add XP to profile + update sphere stat
+    await _addXpToProfile(quest.xpReward, quest.category);
 
     // Update Supabase (best effort, don't block UI)
     _syncCompletionToSupabase(questId, quest.xpReward);
   }
 
-  Future<void> _addXpToProfile(int xp) async {
+  Future<void> _addXpToProfile(int xp, QuestCategory category) async {
     final isar = await ref.read(isarProvider.future);
     final profiles = await isar.userProfileLocals.where().build().findAll();
     final profile = profiles.firstOrNull;
@@ -153,8 +187,25 @@ class QuestNotifier extends _$QuestNotifier {
     final oldLevel = profile.level;
 
     profile.xp += xp;
-    profile.level = (profile.xp ~/ 100) + 1;
+    profile.level = levelFromXp(profile.xp);
     profile.lastActiveDate = DateTime.now();
+
+    // Grow sphere XP — gain = xp / 3, uncapped (accumulates indefinitely)
+    final gain = (xp / 3).round().clamp(3, 67);
+    switch (category) {
+      case QuestCategory.discipline:
+        profile.statDiscipline += gain;
+      case QuestCategory.knowledge:
+        profile.statKnowledge += gain;
+      case QuestCategory.relations:
+        profile.statRelations += gain;
+      case QuestCategory.energy:
+        profile.statEnergy += gain;
+      case QuestCategory.will:
+        profile.statWill += gain;
+      case QuestCategory.wisdom:
+        profile.statWisdom += gain;
+    }
 
     await isar.writeTxn(() async {
       await isar.userProfileLocals.put(profile);
@@ -252,12 +303,20 @@ class UserProfileNotifier extends _$UserProfileNotifier {
       }
     } catch (_) {}
 
+    // Count total completed quests for achievements
+    final questsCompleted = await isar.questLocals
+        .filter()
+        .statusEqualTo(QuestStatus.completed)
+        .build()
+        .count();
+
     return UserProfile(
       id: local.supabaseId,
       name: local.name,
       level: local.level,
       xp: local.xp,
       currentStreak: local.currentStreak,
+      questsCompleted: questsCompleted,
       dailyMinutes: local.dailyMinutes,
       goals: goals,
       lifeContext: local.lifeContext,

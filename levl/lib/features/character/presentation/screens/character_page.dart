@@ -204,7 +204,7 @@ class CharacterPage extends ConsumerWidget {
                       final unlocked = achievement.isUnlocked(
                         level: user.level,
                         streak: user.currentStreak,
-                        questsCompleted: 0, // TODO: track total quests
+                        questsCompleted: user.questsCompleted,
                         sphereStats: {
                           'discipline': user.stats.discipline,
                           'knowledge': user.stats.knowledge,

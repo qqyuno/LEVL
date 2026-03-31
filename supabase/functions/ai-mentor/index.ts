@@ -38,18 +38,33 @@ serve(async (req: Request) => {
     // --- Parse request ---
     const body = await req.json();
     const messages: ChatMessage[] = body.messages ?? [];
+    const clientContext = body.userContext ?? {}; // context sent from Flutter (offline-first fallback)
     const userMessage = messages[messages.length - 1]?.content ?? "";
 
     if (!userMessage.trim()) {
       return jsonResponse({ error: "Empty message" }, 400);
     }
 
-    // --- Load profile for context ---
-    const { data: profile } = await supabase
+    // --- Load profile for context (Supabase is source of truth; Flutter context is fallback) ---
+    const { data: supabaseProfile } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single();
+
+    // Merge: Supabase wins on overlap, Flutter fills the gaps
+    const profile = supabaseProfile ?? (Object.keys(clientContext).length > 0 ? {
+      name: clientContext.name,
+      level: clientContext.level,
+      xp: clientContext.xp,
+      current_streak: clientContext.streak,
+      main_goal: clientContext.mainGoal,
+      life_context: clientContext.lifeContext,
+      work_style: clientContext.workStyle,
+      daily_minutes: clientContext.dailyMinutes,
+      spheres: clientContext.spheres ? clientContext.spheres.split(",").map((s: string) => s.trim()) : [],
+      goals: clientContext.goals ?? [],
+    } : null);
 
     // --- Load today's quests ---
     const today = new Date().toISOString().split("T")[0];
