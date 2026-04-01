@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/achievement_model.dart';
+import '../../../../shared/models/user_model.dart';
 import '../../../dashboard/presentation/providers/quest_provider.dart';
 import '../widgets/stats_radar_chart.dart';
 
@@ -112,42 +113,12 @@ class CharacterPage extends ConsumerWidget {
                       Center(
                         child: StatsRadarChart(
                           stats: [
-                            StatAxis(
-                              label: 'Дисциплина',
-                              icon: Icons.bolt,
-                              color: AppColors.sphereDiscipline,
-                              value: user.stats.discipline,
-                            ),
-                            StatAxis(
-                              label: 'Знания',
-                              icon: Icons.menu_book,
-                              color: AppColors.sphereKnowledge,
-                              value: user.stats.knowledge,
-                            ),
-                            StatAxis(
-                              label: 'Отношения',
-                              icon: Icons.people,
-                              color: AppColors.sphereRelations,
-                              value: user.stats.relations,
-                            ),
-                            StatAxis(
-                              label: 'Энергия',
-                              icon: Icons.local_fire_department,
-                              color: AppColors.sphereEnergy,
-                              value: user.stats.energy,
-                            ),
-                            StatAxis(
-                              label: 'Воля',
-                              icon: Icons.my_location,
-                              color: AppColors.sphereWill,
-                              value: user.stats.will,
-                            ),
-                            StatAxis(
-                              label: 'Мудрость',
-                              icon: Icons.psychology,
-                              color: AppColors.sphereWisdom,
-                              value: user.stats.wisdom,
-                            ),
+                            StatAxis(label: 'Дисциплина', icon: Icons.bolt,                   color: AppColors.sphereDiscipline, value: user.stats.discipline, rankName: sphereRankName(user.stats.discipline)),
+                            StatAxis(label: 'Знания',     icon: Icons.menu_book,              color: AppColors.sphereKnowledge,  value: user.stats.knowledge,  rankName: sphereRankName(user.stats.knowledge)),
+                            StatAxis(label: 'Отношения',  icon: Icons.people,                 color: AppColors.sphereRelations,  value: user.stats.relations,  rankName: sphereRankName(user.stats.relations)),
+                            StatAxis(label: 'Энергия',    icon: Icons.local_fire_department,  color: AppColors.sphereEnergy,     value: user.stats.energy,     rankName: sphereRankName(user.stats.energy)),
+                            StatAxis(label: 'Воля',       icon: Icons.my_location,            color: AppColors.sphereWill,       value: user.stats.will,       rankName: sphereRankName(user.stats.will)),
+                            StatAxis(label: 'Мудрость',   icon: Icons.psychology,             color: AppColors.sphereWisdom,     value: user.stats.wisdom,     rankName: sphereRankName(user.stats.wisdom)),
                           ],
                         ),
                       ),
@@ -163,11 +134,11 @@ class CharacterPage extends ConsumerWidget {
                   child: Column(
                     children: [
                       _StatBar(label: 'Дисциплина', value: user.stats.discipline, color: AppColors.sphereDiscipline, icon: Icons.bolt),
-                      _StatBar(label: 'Знания', value: user.stats.knowledge, color: AppColors.sphereKnowledge, icon: Icons.menu_book),
-                      _StatBar(label: 'Отношения', value: user.stats.relations, color: AppColors.sphereRelations, icon: Icons.people),
-                      _StatBar(label: 'Энергия', value: user.stats.energy, color: AppColors.sphereEnergy, icon: Icons.local_fire_department),
-                      _StatBar(label: 'Воля', value: user.stats.will, color: AppColors.sphereWill, icon: Icons.my_location),
-                      _StatBar(label: 'Мудрость', value: user.stats.wisdom, color: AppColors.sphereWisdom, icon: Icons.psychology),
+                      _StatBar(label: 'Знания',     value: user.stats.knowledge,  color: AppColors.sphereKnowledge,  icon: Icons.menu_book),
+                      _StatBar(label: 'Отношения',  value: user.stats.relations,  color: AppColors.sphereRelations,  icon: Icons.people),
+                      _StatBar(label: 'Энергия',    value: user.stats.energy,     color: AppColors.sphereEnergy,     icon: Icons.local_fire_department),
+                      _StatBar(label: 'Воля',       value: user.stats.will,       color: AppColors.sphereWill,       icon: Icons.my_location),
+                      _StatBar(label: 'Мудрость',   value: user.stats.wisdom,     color: AppColors.sphereWisdom,     icon: Icons.psychology),
                     ],
                   ),
                 ),
@@ -246,9 +217,11 @@ class CharacterPage extends ConsumerWidget {
 }
 
 // --- Stat Bar ---
+// Shows sphere rank name, animated progress bar within current rank,
+// and XP remaining to next rank.
 class _StatBar extends StatelessWidget {
   final String label;
-  final int value;
+  final int value; // accumulated sphere XP
   final Color color;
   final IconData icon;
 
@@ -261,45 +234,75 @@ class _StatBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final rank      = sphereRankName(value);
+    final progress  = sphereRankProgress(value);
+    final toNext    = sphereXpToNextRank(value);
+    final isMaxRank = toNext == 0;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 90,
-            child: Text(
-              label,
-              style: GoogleFonts.dmSans(
-                fontSize: 13,
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
+          Row(
+            children: [
+              Icon(icon, size: 15, color: color),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: GoogleFonts.dmSans(
+                  fontSize: 13,
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
+              const Spacer(),
+              Text(
+                rank,
+                style: GoogleFonts.dmSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: isMaxRank ? AppColors.gold : color,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isMaxRank ? 'Максимум' : '$toNext до следующего',
+                style: GoogleFonts.dmSans(
+                  fontSize: 11,
+                  color: AppColors.textDisabled,
+                ),
+              ),
+            ],
           ),
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(3),
-              child: LinearProgressIndicator(
-                value: value / 100,
-                backgroundColor: AppColors.divider,
-                valueColor: AlwaysStoppedAnimation(color),
-                minHeight: 6,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 28,
-            child: Text(
-              '$value',
-              style: GoogleFonts.dmSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
-              textAlign: TextAlign.right,
+          const SizedBox(height: 6),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: progress),
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.easeOutCubic,
+            builder: (_, v, __) => Stack(
+              children: [
+                Container(
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: AppColors.divider,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                FractionallySizedBox(
+                  widthFactor: v.clamp(0.0, 1.0),
+                  child: Container(
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: isMaxRank ? AppColors.gold : color,
+                      borderRadius: BorderRadius.circular(3),
+                      boxShadow: v > 0.02
+                          ? [BoxShadow(color: color.withValues(alpha: 0.35), blurRadius: 6)]
+                          : null,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

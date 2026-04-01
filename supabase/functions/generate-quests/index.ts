@@ -58,14 +58,34 @@ serve(async (req: Request) => {
       return jsonResponse({ quests: cached.quests, cached: true });
     }
 
-    // --- Load profile ---
-    const { data: profile, error: profileError } = await supabase
+    // --- Parse client context (Flutter sends this as fallback for new/offline users) ---
+    const body = await req.json().catch(() => ({}));
+    const clientContext = body.userContext ?? {};
+
+    // --- Load profile from Supabase (source of truth) ---
+    const { data: supabaseProfile } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single();
 
-    if (profileError || !profile) {
+    // Merge: Supabase wins, Flutter context fills gaps (covers first-launch before sync)
+    const profile = supabaseProfile ?? (Object.keys(clientContext).length > 0 ? {
+      name: clientContext.name ?? "Путник",
+      life_context: clientContext.lifeContext ?? "—",
+      main_goal: clientContext.mainGoal ?? "—",
+      work_style: clientContext.workStyle ?? "—",
+      daily_minutes: clientContext.dailyMinutes ?? 30,
+      level: clientContext.level ?? 1,
+      current_streak: clientContext.streak ?? 0,
+      spheres: clientContext.spheres
+        ? clientContext.spheres.split(",").map((s: string) => s.trim()).filter(Boolean)
+        : [],
+      goals: clientContext.goals ?? [],
+      pain_points: clientContext.painPoints ?? "",
+    } : null);
+
+    if (!profile) {
       return jsonResponse({ error: "Profile not found" }, 404);
     }
 

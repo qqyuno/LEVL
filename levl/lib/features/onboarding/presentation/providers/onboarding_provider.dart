@@ -125,6 +125,7 @@ class OnboardingNotifier extends _$OnboardingNotifier {
   }
 
   /// Save profile to Isar after onboarding completes.
+  /// Also syncs to Supabase (best-effort — app works offline if it fails).
   /// Returns error message on failure, null on success.
   Future<String?> saveProfile() async {
     try {
@@ -136,6 +137,9 @@ class OnboardingNotifier extends _$OnboardingNotifier {
           user?.userMetadata?['name'] as String? ??
           user?.email?.split('@').first ??
           '';
+
+      // Store painPoints in characterStateJson for AI context
+      final characterState = jsonEncode({'painPoints': state.painPoints});
 
       final profile = UserProfileLocal()
         ..supabaseId = userId
@@ -149,21 +153,56 @@ class OnboardingNotifier extends _$OnboardingNotifier {
         ..lifeContext = state.lifeContext
         ..mainGoal = state.mainGoal
         ..workStyle = state.workStyle
-        ..characterStateJson = '{}'
-        ..statDiscipline = 10
-        ..statKnowledge = 10
-        ..statRelations = 10
-        ..statEnergy = 10
-        ..statWill = 10
-        ..statWisdom = 10;
+        ..characterStateJson = characterState
+        ..statDiscipline = 0
+        ..statKnowledge = 0
+        ..statRelations = 0
+        ..statEnergy = 0
+        ..statWill = 0
+        ..statWisdom = 0;
 
+      // 1. Save locally first — app works even without internet
       await isar.writeTxn(() async {
         await isar.userProfileLocals.put(profile);
       });
+
+      // 2. Sync to Supabase (best-effort — don't block on failure)
+      if (userId != 'local') {
+        _syncProfileToSupabase(client, userId, userName);
+      }
+
       return null;
     } catch (e) {
       return 'Не удалось сохранить: $e';
     }
+  }
+
+  /// Fire-and-forget Supabase sync. Failures are silent — Isar is source of truth.
+  void _syncProfileToSupabase(dynamic client, String userId, String userName) {
+    Future(() async {
+      try {
+        final goals = state.sphereGoals.entries
+            .map((e) => '${e.key}: ${e.value}')
+            .toList();
+
+        await client.from('profiles').upsert({
+          'id': userId,
+          'name': userName,
+          'life_context': state.lifeContext,
+          'main_goal': state.mainGoal,
+          'work_style': state.workStyle,
+          'daily_minutes': state.dailyMinutes,
+          'goals': goals,
+          'spheres': state.spheres,
+          'pain_points': state.painPoints,
+          'level': 1,
+          'xp': 0,
+          'current_streak': 0,
+        });
+      } catch (_) {
+        // Offline or Supabase not configured — Isar has the data
+      }
+    });
   }
 }
 

@@ -36,6 +36,46 @@ class QuestNotifier extends _$QuestNotifier {
     return const AsyncLoading();
   }
 
+  /// Build profile context from Isar to send to Edge Functions as fallback.
+  Future<Map<String, dynamic>> _buildUserContext() async {
+    try {
+      final isar = await ref.read(isarProvider.future);
+      final profiles = await isar.userProfileLocals.where().findAll();
+      final profile = profiles.firstOrNull;
+      if (profile == null) return {};
+
+      List<dynamic> goals = [];
+      try {
+        if (profile.goalsJson.isNotEmpty) {
+          goals = jsonDecode(profile.goalsJson) as List;
+        }
+      } catch (_) {}
+
+      Map<String, dynamic> characterState = {};
+      try {
+        if (profile.characterStateJson.isNotEmpty) {
+          characterState = jsonDecode(profile.characterStateJson) as Map<String, dynamic>;
+        }
+      } catch (_) {}
+
+      return {
+        'name': profile.name,
+        'level': profile.level,
+        'xp': profile.xp,
+        'streak': profile.currentStreak,
+        'mainGoal': profile.mainGoal,
+        'lifeContext': profile.lifeContext,
+        'workStyle': profile.workStyle,
+        'dailyMinutes': profile.dailyMinutes,
+        'spheres': profile.spheresJson,
+        'goals': goals,
+        'painPoints': characterState['painPoints'] ?? '',
+      };
+    } catch (_) {
+      return {};
+    }
+  }
+
   /// Streak logic: increment if opened day after last visit, reset if skipped days.
   Future<void> _checkAndUpdateStreak() async {
     try {
@@ -99,9 +139,14 @@ class QuestNotifier extends _$QuestNotifier {
     state = const AsyncLoading();
     try {
       final client = ref.read(supabaseClientProvider);
+
+      // Build profile context from Isar — Edge Function uses it if Supabase profile is missing
+      final userContext = await _buildUserContext();
+
       final response = await client.functions.invoke(
         'generate-quests',
         method: HttpMethod.post,
+        body: userContext.isNotEmpty ? {'userContext': userContext} : null,
       );
 
       final data = response.data as Map<String, dynamic>;

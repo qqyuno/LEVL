@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/models/user_model.dart';
 
 /// Data for one stat axis on the radar chart.
 class StatAxis {
@@ -145,7 +146,7 @@ class _RadarPainter extends CustomPainter {
 
     for (var i = 0; i < 6; i++) {
       final angle = angleOffset + (2 * pi * i / 6);
-      final value = stats[i].value.clamp(0, 100) / 100;
+      final value = sphereNormalized(stats[i].value);
       final point = Offset(
         center.dx + maxRadius * value * cos(angle),
         center.dy + maxRadius * value * sin(angle),
