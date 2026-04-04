@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -61,21 +60,21 @@ class NotificationService {
 
   // ── Permission ────────────────────────────────────────────────────
   Future<bool> requestPermission() async {
-    if (Platform.isAndroid) {
-      final android = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
-      final granted = await android?.requestNotificationsPermission();
-      return granted ?? false;
+    // Android 13+
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (android != null) {
+      return await android.requestNotificationsPermission() ?? false;
     }
-    if (Platform.isIOS) {
-      final ios = _plugin.resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>();
-      final granted = await ios?.requestPermissions(
+    // iOS
+    final ios = _plugin.resolvePlatformSpecificImplementation<
+        IOSFlutterLocalNotificationsPlugin>();
+    if (ios != null) {
+      return await ios.requestPermissions(
         alert: true,
         badge: true,
         sound: true,
-      );
-      return granted ?? false;
+      ) ?? false;
     }
     return false;
   }

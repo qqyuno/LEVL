@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'dart:io';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 import 'core/supabase/supabase_service.dart';
@@ -11,12 +10,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
   await initSupabase();
-
-  // Init notifications on mobile only
-  if (!Platform.isWindows && !Platform.isLinux) {
-    await NotificationService.instance.init();
-    await NotificationService.instance.requestPermission();
-  }
+  await NotificationService.instance.init();
+  await NotificationService.instance.requestPermission();
 
   runApp(
     const ProviderScope(
