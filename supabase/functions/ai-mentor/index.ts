@@ -1,5 +1,5 @@
 // LEVL — Edge Function: AI Mentor Chat
-// Groq (Llama 3.3 70B) for all users. FREE: 10 msgs/day. PRO: unlimited.
+// Groq (Llama 3.3 70B) for all users. FREE: 10 msgs/day, 200 tokens. PRO: unlimited, 500 tokens, 50 msg context.
 // Profile context sent from Flutter (offline-first) or loaded from Supabase.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -94,7 +94,9 @@ serve(async (req: Request) => {
       completedToday,
       pendingToday
     );
-    const reply = await callGroq(systemPrompt, messages);
+    const maxTokens = tier === "pro" ? 500 : 200;
+    const maxHistory = tier === "pro" ? 50 : 20;
+    const reply = await callGroq(systemPrompt, messages, maxTokens, maxHistory);
 
     if (!reply) {
       return jsonResponse({
@@ -130,13 +132,14 @@ serve(async (req: Request) => {
 // ---------------------------------------------------------------------------
 async function callGroq(
   systemPrompt: string,
-  messages: ChatMessage[]
+  messages: ChatMessage[],
+  maxTokens = 200,
+  maxHistory = 20
 ): Promise<string> {
   const apiKey = Deno.env.get("GROQ_API_KEY");
   if (!apiKey) throw new Error("GROQ_API_KEY not configured");
 
-  // Last 20 messages to fit context window
-  const chatHistory = messages.slice(-20).map((m) => ({
+  const chatHistory = messages.slice(-maxHistory).map((m) => ({
     role: m.role,
     content: m.content,
   }));
@@ -151,7 +154,7 @@ async function callGroq(
       model: "llama-3.3-70b-versatile",
       messages: [{ role: "system", content: systemPrompt }, ...chatHistory],
       temperature: 0.7,
-      max_tokens: 200, // System speaks in 1-3 sentences — 200 tokens is plenty
+      max_tokens: maxTokens,
     }),
   });
 

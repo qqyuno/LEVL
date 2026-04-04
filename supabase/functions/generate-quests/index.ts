@@ -1,12 +1,11 @@
 // LEVL — Edge Function: Generate Daily Quests
 // Called once per day. Returns 3 quests tailored to user's spheres + main goal.
-// Free tier: Groq (Llama 3.3 70B, free API). PRO tier: Claude Sonnet (paid API).
+// All tiers: Groq (Llama 3.3 70B, free API).
 // Caches results in quest_cache table (key = userId_YYYY-MM-DD).
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 interface QuestOutput {
@@ -110,15 +109,8 @@ serve(async (req: Request) => {
     // --- Build prompt ---
     const prompt = buildPrompt(profile, sphereGoals, todaySpheres);
 
-    // --- Call AI based on user tier ---
-    const userTier = profile.tier ?? "free"; // "free" or "pro"
-    let rawText: string;
-
-    if (userTier === "pro") {
-      rawText = await callClaude(prompt);
-    } else {
-      rawText = await callGroq(prompt);
-    }
+    // --- Call Groq (all tiers) ---
+    const rawText = await callGroq(prompt);
 
     if (!rawText) {
       return jsonResponse({ error: "AI generation failed" }, 502);
@@ -256,34 +248,6 @@ ${sphereLines}
     "tip": "Голос Системы."
   }
 ]`;
-}
-
-async function callClaude(prompt: string): Promise<string> {
-  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
-
-  const response = await fetch(ANTHROPIC_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    console.error("Claude API error:", errText);
-    return "";
-  }
-
-  const data = await response.json();
-  return data.content?.[0]?.text ?? "";
 }
 
 async function callGroq(prompt: string): Promise<string> {
