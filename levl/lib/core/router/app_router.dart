@@ -10,6 +10,7 @@ import '../../features/ai_mentor/presentation/screens/chat_page.dart';
 import '../../features/onboarding/presentation/screens/onboarding_page.dart';
 import '../../features/onboarding/presentation/providers/onboarding_provider.dart';
 import '../../shared/widgets/level_up_overlay.dart';
+import '../../features/settings/presentation/screens/notification_settings_page.dart';
 
 part 'app_router.g.dart';
 
@@ -19,6 +20,7 @@ abstract class AppRoutes {
   static const dashboard  = '/dashboard';
   static const character  = '/character';
   static const aiMentor   = '/mentor';
+  static const notificationSettings = '/settings/notifications';
 }
 
 @Riverpod(keepAlive: true)
@@ -60,6 +62,12 @@ GoRouter appRouter(AppRouterRef ref) {
         path: AppRoutes.onboarding,
         name: 'onboarding',
         builder: (_, __) => const OnboardingPage(),
+      ),
+
+      GoRoute(
+        path: AppRoutes.notificationSettings,
+        name: 'notificationSettings',
+        builder: (_, __) => const NotificationSettingsPage(),
       ),
 
       // --- Main app with bottom navigation ---

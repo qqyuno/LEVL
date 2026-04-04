@@ -10,6 +10,7 @@ import '../../../../core/supabase/supabase_service.dart';
 import '../../../../shared/models/quest_model.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/providers/level_up_provider.dart';
+import '../../../../core/notifications/notification_service.dart';
 
 part 'quest_provider.g.dart';
 
@@ -33,6 +34,7 @@ class QuestNotifier extends _$QuestNotifier {
   AsyncValue<List<Quest>> build() {
     _checkAndUpdateStreak();
     _loadTodayQuests();
+    _scheduleNotifications();
     return const AsyncLoading();
   }
 
@@ -106,6 +108,25 @@ class QuestNotifier extends _$QuestNotifier {
         await isar.userProfileLocals.put(profile);
       });
       ref.invalidate(userProfileNotifierProvider);
+    } catch (_) {}
+  }
+
+  /// Schedule/reschedule notifications on app open.
+  Future<void> _scheduleNotifications() async {
+    try {
+      final isar = await ref.read(isarProvider.future);
+      final profiles = await isar.userProfileLocals.where().build().findAll();
+      final profile = profiles.firstOrNull;
+      if (profile == null) return;
+
+      // Cancel return-after-absence (user is here now)
+      await NotificationService.instance.cancelReturn();
+
+      // Reschedule all based on current profile
+      await NotificationService.instance.scheduleAll(
+        dailyMinutes: profile.dailyMinutes,
+        currentStreak: profile.currentStreak,
+      );
     } catch (_) {}
   }
 
@@ -218,6 +239,9 @@ class QuestNotifier extends _$QuestNotifier {
 
     // Add XP to profile + update sphere stat
     await _addXpToProfile(quest.xpReward, quest.category);
+
+    // Cancel streak-at-risk notification (quest done today)
+    NotificationService.instance.cancelStreakAlert();
 
     // Update Supabase (best effort, don't block UI)
     _syncCompletionToSupabase(questId, quest.xpReward);

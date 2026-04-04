@@ -223,38 +223,53 @@ class _DashboardHeaderState extends State<_DashboardHeader>
             ],
           ),
 
-          // Streak badge с пульсом
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.divider),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                RepaintBoundary(
-                  child: ScaleTransition(
-                    scale: _scale,
-                    child: const Icon(
-                      Icons.local_fire_department,
-                      color: AppColors.warning,
-                      size: 16,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Streak badge с пульсом
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RepaintBoundary(
+                      child: ScaleTransition(
+                        scale: _scale,
+                        child: const Icon(
+                          Icons.local_fire_department,
+                          color: AppColors.warning,
+                          size: 16,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${widget.user.currentStreak}',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  '${widget.user.currentStreak}',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
+              ),
+              const SizedBox(width: 8),
+              // Settings gear
+              GestureDetector(
+                onTap: () => context.push(AppRoutes.notificationSettings),
+                child: const Icon(
+                  Icons.settings_outlined,
+                  color: AppColors.textSecondary,
+                  size: 20,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),

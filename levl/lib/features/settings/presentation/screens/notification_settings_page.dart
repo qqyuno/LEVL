@@ -1,0 +1,220 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/notifications/notification_provider.dart';
+import '../../../../core/notifications/notification_service.dart';
+import '../../../dashboard/presentation/providers/quest_provider.dart';
+
+class NotificationSettingsPage extends ConsumerWidget {
+  const NotificationSettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settingsAsync = ref.watch(notificationSettingsNotifierProvider);
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Уведомления'),
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+      ),
+      body: settingsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Ошибка: $e')),
+        data: (settings) => _SettingsBody(settings: settings),
+      ),
+    );
+  }
+}
+
+class _SettingsBody extends ConsumerWidget {
+  final NotificationSettings settings;
+  const _SettingsBody({required this.settings});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(notificationSettingsNotifierProvider.notifier);
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      children: [
+        // System voice hint
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.divider),
+          ),
+          child: const Text(
+            'Система напоминает коротко и по делу.\nБез спама. Максимум 2 раза в день.',
+            style: TextStyle(
+              fontStyle: FontStyle.italic,
+              color: AppColors.textSecondary,
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Master toggle
+        _SettingsTile(
+          title: 'Уведомления',
+          subtitle: 'Полная тишина, если выключить',
+          trailing: Switch.adaptive(
+            value: settings.enabled,
+            activeTrackColor: AppColors.textPrimary,
+            onChanged: (v) async {
+              await notifier.setEnabled(v);
+              await _reschedule(ref);
+            },
+          ),
+        ),
+
+        if (settings.enabled) ...[
+          const SizedBox(height: 16),
+          const Divider(color: AppColors.divider),
+          const SizedBox(height: 16),
+
+          // Morning time
+          _SettingsTile(
+            title: 'Утреннее напоминание',
+            subtitle: _formatTime(settings.morningTime),
+            onTap: () async {
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: settings.morningTime,
+                builder: (context, child) => Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: const ColorScheme.light(
+                      primary: AppColors.textPrimary,
+                      onSurface: AppColors.textPrimary,
+                    ),
+                  ),
+                  child: child!,
+                ),
+              );
+              if (picked != null) {
+                await notifier.setMorningTime(picked);
+                await _reschedule(ref);
+              }
+            },
+            trailing: const Icon(
+              Icons.schedule,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Streak alert
+          _SettingsTile(
+            title: 'Стрик в опасности',
+            subtitle: 'Вечером, если задачи не выполнены',
+            trailing: Switch.adaptive(
+              value: settings.streakAlert,
+              activeTrackColor: AppColors.textPrimary,
+              onChanged: (v) async {
+                await notifier.setStreakAlert(v);
+                await _reschedule(ref);
+              },
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Return alert
+          _SettingsTile(
+            title: 'Возвращение',
+            subtitle: 'Если не заходил 2 дня',
+            trailing: Switch.adaptive(
+              value: settings.returnAlert,
+              activeTrackColor: AppColors.textPrimary,
+              onChanged: (v) async {
+                await notifier.setReturnAlert(v);
+                await _reschedule(ref);
+              },
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _reschedule(WidgetRef ref) async {
+    final profile = ref.read(userProfileNotifierProvider).valueOrNull;
+    await NotificationService.instance.scheduleAll(
+      dailyMinutes: profile?.dailyMinutes ?? 30,
+      currentStreak: profile?.currentStreak ?? 0,
+    );
+  }
+
+  String _formatTime(TimeOfDay time) {
+    final h = time.hour.toString().padLeft(2, '0');
+    final m = time.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+}
+
+class _SettingsTile extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  const _SettingsTile({
+    required this.title,
+    required this.subtitle,
+    this.trailing,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (trailing != null) trailing!,
+          ],
+        ),
+      ),
+    );
+  }
+}
