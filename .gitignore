@@ -24,7 +24,10 @@ Thumbs.db
 
 # Other projects (not LEVL)
 altyn_bot/
-robots63/
+
+# robots63 site — track everything except dependencies/build
+robots63/site/node_modules/
+robots63/site/.next/
 
 # Dependencies
 levl/.pub-cache/

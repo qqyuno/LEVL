@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROBOTS63 — Logo Concepts</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 14px;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            color: #555;
+            margin-bottom: 60px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            border: 1px solid #1a1a2e;
+            border-radius: 16px;
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 350px;
+            transition: border-color 0.3s;
+        }
+
+        .card:hover { border-color: #0066ff33; }
+
+        .card.light {
+            background: #f5f5f7;
+        }
+
+        .card.dark {
+            background: #0d0d14;
+        }
+
+        .card-label {
+            margin-top: 30px;
+            font-size: 12px;
+            letter-spacing: 3px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 11px;
+            letter-spacing: 5px;
+            color: #333;
+            text-transform: uppercase;
+            margin: 60px 0 30px;
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Robots63 &mdash; Logo Concepts</h1>
+
+    <div class="grid">
+
+        <!-- VARIANT 1: Clean Wordmark -->
+        <div class="card dark">
+            <svg width="360" height="80" viewBox="0 0 360 80" xmlns="http://www.w3.org/2000/svg">
+                <!-- ROBOTS text -->
+                <text x="0" y="55" font-family="'Space Grotesk', sans-serif" font-size="52" font-weight="700" fill="#ffffff" letter-spacing="3">ROBOTS</text>
+                <!-- 63 accent -->
+                <text x="262" y="55" font-family="'Space Grotesk', sans-serif" font-size="52" font-weight="700" fill="#0066ff" letter-spacing="3">63</text>
+            </svg>
+            <div class="card-label">Variant 1 &mdash; Clean Wordmark</div>
+        </div>
+
+        <!-- VARIANT 1 on light -->
+        <div class="card light">
+            <svg width="360" height="80" viewBox="0 0 360 80" xmlns="http://www.w3.org/2000/svg">
+                <text x="0" y="55" font-family="'Space Grotesk', sans-serif" font-size="52" font-weight="700" fill="#0a0a0f" letter-spacing="3">ROBOTS</text>
+                <text x="262" y="55" font-family="'Space Grotesk', sans-serif" font-size="52" font-weight="700" fill="#0066ff" letter-spacing="3">63</text>
+            </svg>
+            <div class="card-label" style="color:#999">Variant 1 &mdash; Light</div>
+        </div>
+
+        <!-- VARIANT 2: Icon + Wordmark -->
+        <div class="card dark">
+            <svg width="380" height="80" viewBox="0 0 380 80" xmlns="http://www.w3.org/2000/svg">
+                <!-- Robot head icon - geometric hexagonal -->
+                <g transform="translate(10, 8)">
+                    <!-- Head outline - angular -->
+                    <path d="M20 8 L44 8 L52 20 L52 44 L44 56 L20 56 L12 44 L12 20 Z"
+                          fill="none" stroke="#0066ff" stroke-width="2.5"/>
+                    <!-- Eyes -->
+                    <circle cx="27" cy="30" r="4" fill="#0066ff"/>
+                    <circle cx="37" cy="30" r="4" fill="#0066ff"/>
+                    <!-- Mouth line -->
+                    <line x1="24" y1="42" x2="40" y2="42" stroke="#0066ff" stroke-width="2" stroke-linecap="round"/>
+                    <!-- Antenna -->
+                    <line x1="32" y1="8" x2="32" y2="0" stroke="#0066ff" stroke-width="2"/>
+                    <circle cx="32" cy="0" r="2" fill="#0066ff"/>
+                </g>
+                <!-- Text -->
+                <text x="80" y="48" font-family="'Space Grotesk', sans-serif" font-size="42" font-weight="700" fill="#ffffff" letter-spacing="2">ROBOTS</text>
+                <text x="310" y="48" font-family="'Space Grotesk', sans-serif" font-size="42" font-weight="700" fill="#0066ff" letter-spacing="2">63</text>
+            </svg>
+            <div class="card-label">Variant 2 &mdash; Icon + Wordmark</div>
+        </div>
+
+        <!-- VARIANT 2 on light -->
+        <div class="card light">
+            <svg width="380" height="80" viewBox="0 0 380 80" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(10, 8)">
+                    <path d="M20 8 L44 8 L52 20 L52 44 L44 56 L20 56 L12 44 L12 20 Z"
+                          fill="none" stroke="#0066ff" stroke-width="2.5"/>
+                    <circle cx="27" cy="30" r="4" fill="#0066ff"/>
+                    <circle cx="37" cy="30" r="4" fill="#0066ff"/>
+                    <line x1="24" y1="42" x2="40" y2="42" stroke="#0066ff" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="32" y1="8" x2="32" y2="0" stroke="#0066ff" stroke-width="2"/>
+                    <circle cx="32" cy="0" r="2" fill="#0066ff"/>
+                </g>
+                <text x="80" y="48" font-family="'Space Grotesk', sans-serif" font-size="42" font-weight="700" fill="#0a0a0f" letter-spacing="2">ROBOTS</text>
+                <text x="310" y="48" font-family="'Space Grotesk', sans-serif" font-size="42" font-weight="700" fill="#0066ff" letter-spacing="2">63</text>
+            </svg>
+            <div class="card-label" style="color:#999">Variant 2 &mdash; Light</div>
+        </div>
+
+        <!-- VARIANT 3: Monogram R with robot features -->
+        <div class="card dark">
+            <svg width="340" height="100" viewBox="0 0 340 100" xmlns="http://www.w3.org/2000/svg">
+                <!-- Stylized R monogram -->
+                <g transform="translate(10, 10)">
+                    <!-- R shape with robotic feel -->
+                    <rect x="0" y="0" width="8" height="70" rx="1" fill="#ffffff"/>
+                    <rect x="0" y="0" width="40" height="8" rx="1" fill="#ffffff"/>
+                    <rect x="0" y="31" width="40" height="8" rx="1" fill="#0066ff"/>
+                    <rect x="36" y="0" width="8" height="39" rx="1" fill="#ffffff"/>
+                    <!-- Diagonal leg -->
+                    <polygon points="20,39 28,39 48,70 40,70" fill="#0066ff"/>
+                    <!-- Robot eye in R -->
+                    <circle cx="22" cy="18" r="5" fill="none" stroke="#0066ff" stroke-width="2"/>
+                    <circle cx="22" cy="18" r="2" fill="#0066ff"/>
+                </g>
+                <!-- Text -->
+                <text x="75" y="58" font-family="'Space Grotesk', sans-serif" font-size="38" font-weight="600" fill="#ffffff" letter-spacing="4">OBOTS</text>
+                <text x="265" y="58" font-family="'Space Grotesk', sans-serif" font-size="38" font-weight="700" fill="#0066ff" letter-spacing="4">63</text>
+            </svg>
+            <div class="card-label">Variant 3 &mdash; R Monogram</div>
+        </div>
+
+        <!-- VARIANT 3 on light -->
+        <div class="card light">
+            <svg width="340" height="100" viewBox="0 0 340 100" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(10, 10)">
+                    <rect x="0" y="0" width="8" height="70" rx="1" fill="#0a0a0f"/>
+                    <rect x="0" y="0" width="40" height="8" rx="1" fill="#0a0a0f"/>
+                    <rect x="0" y="31" width="40" height="8" rx="1" fill="#0066ff"/>
+                    <rect x="36" y="0" width="8" height="39" rx="1" fill="#0a0a0f"/>
+                    <polygon points="20,39 28,39 48,70 40,70" fill="#0066ff"/>
+                    <circle cx="22" cy="18" r="5" fill="none" stroke="#0066ff" stroke-width="2"/>
+                    <circle cx="22" cy="18" r="2" fill="#0066ff"/>
+                </g>
+                <text x="75" y="58" font-family="'Space Grotesk', sans-serif" font-size="38" font-weight="600" fill="#0a0a0f" letter-spacing="4">OBOTS</text>
+                <text x="265" y="58" font-family="'Space Grotesk', sans-serif" font-size="38" font-weight="700" fill="#0066ff" letter-spacing="4">63</text>
+            </svg>
+            <div class="card-label" style="color:#999">Variant 3 &mdash; Light</div>
+        </div>
+
+        <!-- VARIANT 4: Ultra minimal line -->
+        <div class="card dark">
+            <svg width="380" height="90" viewBox="0 0 380 90" xmlns="http://www.w3.org/2000/svg">
+                <!-- Top thin line -->
+                <line x1="0" y1="10" x2="380" y2="10" stroke="#1a1a2e" stroke-width="1"/>
+                <!-- Main text -->
+                <text x="20" y="58" font-family="'Inter', sans-serif" font-size="44" font-weight="800" fill="#ffffff" letter-spacing="8">ROBOTS</text>
+                <text x="285" y="58" font-family="'Inter', sans-serif" font-size="44" font-weight="300" fill="#0066ff" letter-spacing="8">63</text>
+                <!-- Bottom thin line -->
+                <line x1="0" y1="75" x2="380" y2="75" stroke="#1a1a2e" stroke-width="1"/>
+                <!-- Dot accent -->
+                <circle cx="370" cy="15" r="3" fill="#0066ff"/>
+            </svg>
+            <div class="card-label">Variant 4 &mdash; Ultra Minimal</div>
+        </div>
+
+        <!-- VARIANT 4 on light -->
+        <div class="card light">
+            <svg width="380" height="90" viewBox="0 0 380 90" xmlns="http://www.w3.org/2000/svg">
+                <line x1="0" y1="10" x2="380" y2="10" stroke="#ddd" stroke-width="1"/>
+                <text x="20" y="58" font-family="'Inter', sans-serif" font-size="44" font-weight="800" fill="#0a0a0f" letter-spacing="8">ROBOTS</text>
+                <text x="285" y="58" font-family="'Inter', sans-serif" font-size="44" font-weight="300" fill="#0066ff" letter-spacing="8">63</text>
+                <line x1="0" y1="75" x2="380" y2="75" stroke="#ddd" stroke-width="1"/>
+                <circle cx="370" cy="15" r="3" fill="#0066ff"/>
+            </svg>
+            <div class="card-label" style="color:#999">Variant 4 &mdash; Light</div>
+        </div>
+
+        <!-- VARIANT 5: Bold stacked -->
+        <div class="card dark" style="grid-column: 1 / -1;">
+            <svg width="500" height="120" viewBox="0 0 500 120" xmlns="http://www.w3.org/2000/svg">
+                <!-- Main bold text -->
+                <text x="50" y="70" font-family="'Space Grotesk', sans-serif" font-size="72" font-weight="700" fill="#ffffff" letter-spacing="6">ROBOTS</text>
+                <text x="393" y="70" font-family="'Space Grotesk', sans-serif" font-size="72" font-weight="700" fill="#0066ff" letter-spacing="6">63</text>
+                <!-- Tagline -->
+                <text x="50" y="100" font-family="'Inter', sans-serif" font-size="13" font-weight="400" fill="#555" letter-spacing="6">ADVANCED ROBOTICS SOLUTIONS</text>
+                <!-- Top accent line -->
+                <rect x="50" y="12" width="60" height="3" rx="1" fill="#0066ff"/>
+            </svg>
+            <div class="card-label">Variant 5 &mdash; Hero / Full Width</div>
+        </div>
+
+    </div>
+
+    <p style="text-align:center; color:#333; margin-top:60px; font-size:12px; letter-spacing:3px;">
+        ROBOTS63.COM &mdash; LOGO CONCEPTS &mdash; 2026
+    </p>
+</body>
+</html>
