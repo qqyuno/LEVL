@@ -234,22 +234,26 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                   key={spec.label}
                   className="spec-row"
                   style={{
-                    display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24,
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 24,
                     padding: "16px 24px",
                     background: i % 2 === 0 ? "#fff" : "var(--bg-soft)",
                     borderBottom: i < product.specs.length - 1 ? "1px solid var(--border-light)" : "none",
-                    alignItems: "center",
+                    alignItems: "flex-start",
                   }}
                 >
                   <div style={{
                     fontFamily: "var(--font-body), sans-serif", fontSize: 14,
                     color: "var(--fg-muted)", fontWeight: 450,
+                    wordBreak: "break-word",
                   }}>
                     {spec.label}
                   </div>
                   <div style={{
                     fontFamily: "var(--font-mono), monospace", fontSize: 14,
                     color: "var(--fg)", fontWeight: 500,
+                    wordBreak: "break-word",
                   }}>
                     {spec.value}
                   </div>
