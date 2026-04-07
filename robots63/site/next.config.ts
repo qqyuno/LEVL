@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
 
   async redirects() {
     return [
-      { source: "/catalog/deep-robotics-s20-w", destination: "/catalog/deep-robotics-x30", permanent: true },
+      { source: "/catalog/deep-robotics-x30", destination: "/catalog/deep-robotics-s20-w", permanent: true },
     ];
   },
 
