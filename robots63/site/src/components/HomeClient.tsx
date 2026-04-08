@@ -96,7 +96,7 @@ export default function HomeClient({ humanoids, robotDogs }: Props) {
                 fontFamily: "var(--font-body)",
                 lineHeight: 1.65,
               }}>
-                Роботы с искусственным интеллектом от Unitree, AgiBot и Deep Robotics. Доставка и поддержка по всему СНГ.
+                Передовые роботы с ИИ от ведущих мировых производителей. Официальные поставки и поддержка по всему СНГ.
               </p>
 
               <div className="flex gap-3 flex-wrap">
@@ -132,7 +132,7 @@ export default function HomeClient({ humanoids, robotDogs }: Props) {
           }}>
             {[
               { num: "10+", label: "Моделей в каталоге" },
-              { num: "4", label: "Мировых бренда" },
+              { num: "5+", label: "Мировых брендов" },
               { num: "100%", label: "Официальные поставки" },
               { num: "СНГ", label: "Россия и весь СНГ" },
             ].map((s) => (
