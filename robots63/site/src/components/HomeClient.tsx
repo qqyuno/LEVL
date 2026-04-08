@@ -75,13 +75,22 @@ export default function HomeClient({ humanoids, robotDogs }: Props) {
                 </span>
               </div>
 
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 mb-6" style={{
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 mb-3" style={{
                 fontFamily: "var(--font-heading)",
                 letterSpacing: "-0.03em",
                 lineHeight: 1.05,
               }}>
                 Гуманоидные роботы и робособаки
               </h1>
+
+              <p className="text-xl md:text-2xl mb-6" style={{
+                fontFamily: "var(--font-heading)",
+                color: "rgba(255,255,255,0.35)",
+                letterSpacing: "-0.02em",
+                fontStyle: "italic",
+              }}>
+                Роботы, которые меняют мир
+              </p>
 
               <p className="text-base md:text-lg text-neutral-400 max-w-lg mb-10" style={{
                 fontFamily: "var(--font-body)",

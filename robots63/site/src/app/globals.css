@@ -167,18 +167,22 @@ img { image-rendering: -webkit-optimize-contrast; }
   background: var(--bg-soft) !important;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .spec-row {
     grid-template-columns: 1fr !important;
-    gap: 8px !important;
+    gap: 4px !important;
     padding: 12px 16px !important;
   }
   .spec-row div:first-child {
     font-size: 13px !important;
-    margin-bottom: 4px;
+    color: var(--fg-muted) !important;
+    margin-bottom: 2px;
   }
   .spec-row div:last-child {
     font-size: 13px !important;
+  }
+  .specs-sticky {
+    position: static !important;
   }
 }
 

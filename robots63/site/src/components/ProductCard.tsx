@@ -17,7 +17,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <div style={{
           aspectRatio: "4/3",
           overflow: "hidden",
-          background: "#F5F5F3",
+          background: "#F0F0EE",
           position: "relative",
         }}>
           <Image
@@ -26,7 +26,7 @@ export default function ProductCard({ product }: { product: Product }) {
             alt={`${product.name} — ${product.tagline}`}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 280px"
-            style={{ objectFit: "cover", objectPosition: "center" }}
+            style={{ objectFit: "contain", objectPosition: "center", padding: "12px" }}
           />
           {/* Category */}
           <div style={{

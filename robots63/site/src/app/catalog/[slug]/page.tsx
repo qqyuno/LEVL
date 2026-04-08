@@ -211,7 +211,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       <section style={{ padding: "72px 24px", background: "#fff", borderTop: "1px solid var(--border)" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 64, alignItems: "flex-start" }} className="desc-grid">
-            <div style={{ position: "sticky", top: 88 }}>
+            <div className="specs-sticky" style={{ position: "sticky", top: 88 }}>
               <div className="section-label">Технические данные</div>
               <h2 style={{
                 fontFamily: "var(--font-heading), sans-serif", fontWeight: 600,
