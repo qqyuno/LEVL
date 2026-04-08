@@ -196,8 +196,8 @@ export const products: Product[] = [
     tagline: "Следующий уровень взаимодействия человека и робота",
     description:
       "AgiBot Soul — перспективная платформа AgiBot для сервисных и коммерческих применений нового поколения. Разрабатывается с акцентом на естественное взаимодействие с людьми: продвинутые системы распознавания эмоций, плавные движения и интуитивный интерфейс. Soul объединяет промышленную надёжность AgiBot с опытом, приближённым к человеческому общению.",
-    image: "/robots/agibot-soul-hero.png",
-    heroImage: "/robots/agibot-soul.jpg",
+    image: "https://agibot.com/public/static/index/en/images/soul-banner1.jpg",
+    heroImage: "/robots/agibot-soul-hero.png",
     hasAI: true,
     videoId: "qNPDD0slKS4",
     updatedAt: "2025-04-01",
