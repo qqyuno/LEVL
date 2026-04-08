@@ -34,7 +34,11 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "www.unitree.com" },
       { protocol: "https", hostname: "oss-global-cdn.unitree.com" },
       { protocol: "https", hostname: "www.agibot.com" },
+      { protocol: "https", hostname: "agibot.com" },
       { protocol: "https", hostname: "owebsite-cdn.ubtrobot.com" },
+      { protocol: "https", hostname: "www.fftai.com" },
+      { protocol: "https", hostname: "upload.wikimedia.org" },
+      { protocol: "https", hostname: "bostondynamics.com" },
     ],
   },
 };

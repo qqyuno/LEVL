@@ -131,7 +131,7 @@ export default function HomeClient({ humanoids, robotDogs }: Props) {
             transition: "all 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.6s",
           }}>
             {[
-              { num: "9", label: "Моделей в каталоге" },
+              { num: "10+", label: "Моделей в каталоге" },
               { num: "4", label: "Мировых бренда" },
               { num: "100%", label: "Официальные поставки" },
               { num: "СНГ", label: "Россия и весь СНГ" },
