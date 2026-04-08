@@ -188,43 +188,6 @@ export const products: Product[] = [
   },
 
   {
-    id: "agibot-soul",
-    slug: "agibot-soul",
-    name: "AgiBot Soul",
-    brand: "AgiBot",
-    category: "humanoid",
-    tagline: "Следующий уровень взаимодействия человека и робота",
-    description:
-      "AgiBot Soul — перспективная платформа AgiBot для сервисных и коммерческих применений нового поколения. Разрабатывается с акцентом на естественное взаимодействие с людьми: продвинутые системы распознавания эмоций, плавные движения и интуитивный интерфейс. Soul объединяет промышленную надёжность AgiBot с опытом, приближённым к человеческому общению.",
-    image: "https://agibot.com/public/static/index/en/images/soul-banner1.jpg",
-    heroImage: "/robots/agibot-soul-hero.png",
-    hasAI: true,
-    videoId: "qNPDD0slKS4",
-    updatedAt: "2025-04-01",
-    tags: ["Сервис", "Следующее поколение", "HRI", "Коммерция"],
-    highlights: [
-      { icon: "🤝", title: "Human-Robot Interaction", desc: "Естественное взаимодействие — распознавание эмоций и плавные движения" },
-      { icon: "🧠", title: "Advanced AI", desc: "WorkGPT с расширенными социальными алгоритмами для работы с людьми" },
-      { icon: "🌐", title: "Универсальный", desc: "Единая платформа для сервиса, коммерции и корпоративных применений" },
-    ],
-    useCases: ["Сервисные операции", "Гостиничный бизнес", "Торговые центры", "Корпоративные офисы", "Выставки и мероприятия"],
-    specs: [
-      { label: "Платформа", value: "AgiBot WorkGPT · расширенная" },
-      { label: "Назначение", value: "Сервис · коммерция · HRI" },
-      { label: "ИИ-система", value: "Да · эмоциональный интеллект" },
-      { label: "Распознавание лиц", value: "99% · расширенное" },
-      { label: "Голосовой интерфейс", value: "Да · многоязычный" },
-      { label: "Навигация", value: "Автономная 3D" },
-      { label: "Обход препятствий 3D", value: "Да" },
-      { label: "Программирование (SDK)", value: "Да" },
-      { label: "Применение", value: "Сервис · гостиничный · ивент" },
-      { label: "Human-Robot Interaction", value: "Продвинутый уровень" },
-      { label: "Статус", value: "Предсерийный · 2026" },
-      { label: "Производитель", value: "AgiBot · Шанхай" },
-    ],
-  },
-
-  {
     id: "fourier-gr2",
     slug: "fourier-gr2",
     name: "Fourier GR-2",
