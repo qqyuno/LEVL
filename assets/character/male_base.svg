@@ -1,0 +1,285 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 720" width="300" height="720" style="background:#F8F8F6">
+
+  <!-- ═══════════════════════════════════════
+       LEVL CHARACTER — MALE BASE (MVP)
+       Layers (bottom → top):
+         1. layer-shoes
+         2. layer-pants
+         3. layer-pants-detail
+         4. layer-shirt
+         5. layer-skin (hands, neck)
+         6. layer-face
+         7. layer-hair
+         8. layer-hat   ← toggle display
+  ════════════════════════════════════════ -->
+
+  <!-- ─── 1. SHOES ──────────────────────────── -->
+  <g id="layer-shoes">
+    <!-- Left shoe — sole -->
+    <ellipse cx="107" cy="684" rx="36" ry="10" fill="#D0D0CE"/>
+    <!-- Left shoe — body -->
+    <path d="M 72 660 L 72 676 Q 72 686 84 686 L 138 686 Q 144 686 144 680 L 144 672 Q 140 660 128 658 Z" fill="#F5F5F3"/>
+    <!-- Left shoe — tongue/top -->
+    <path d="M 92 648 L 92 668 Q 100 665 108 668 L 108 648 Z" fill="#F5F5F3"/>
+    <!-- Left shoe — laces -->
+    <path d="M 93 652 Q 107 650 107 652" stroke="#C8C8C6" stroke-width="1.2" fill="none"/>
+    <path d="M 93 656 Q 107 654 107 656" stroke="#C8C8C6" stroke-width="1.2" fill="none"/>
+    <path d="M 93 660 Q 107 658 107 660" stroke="#C8C8C6" stroke-width="1.2" fill="none"/>
+    <!-- Left shoe — accent stripe -->
+    <path d="M 118 660 Q 136 662 140 670" stroke="#0A0A0A" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.15"/>
+
+    <!-- Right shoe — sole -->
+    <ellipse cx="193" cy="684" rx="36" ry="10" fill="#D0D0CE"/>
+    <!-- Right shoe — body -->
+    <path d="M 156 660 L 156 672 Q 156 686 162 686 L 216 686 Q 228 686 228 676 L 228 660 Q 212 658 192 658 Z" fill="#F5F5F3"/>
+    <!-- Right shoe — tongue/top -->
+    <path d="M 192 648 L 192 668 Q 200 665 208 668 L 208 648 Z" fill="#F5F5F3"/>
+    <!-- Right shoe — laces -->
+    <path d="M 193 652 Q 207 650 207 652" stroke="#C8C8C6" stroke-width="1.2" fill="none"/>
+    <path d="M 193 656 Q 207 654 207 656" stroke="#C8C8C6" stroke-width="1.2" fill="none"/>
+    <path d="M 193 660 Q 207 658 207 660" stroke="#C8C8C6" stroke-width="1.2" fill="none"/>
+    <!-- Right shoe — accent stripe -->
+    <path d="M 162 660 Q 164 670 168 674" stroke="#0A0A0A" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.15"/>
+  </g>
+
+  <!-- ─── 2. PANTS ───────────────────────────── -->
+  <g id="layer-pants">
+    <!-- Left leg -->
+    <path d="M 105 360 L 98 648 Q 97 658 107 658 L 130 658 Q 140 658 140 648 L 134 360 Z" fill="#1E2535"/>
+    <!-- Right leg -->
+    <path d="M 166 360 L 160 648 Q 160 658 170 658 L 193 658 Q 203 658 202 648 L 195 360 Z" fill="#1E2535"/>
+    <!-- Hip/waist join -->
+    <path d="M 105 345 Q 100 365 98 380 L 134 380 L 130 345 Z" fill="#1A2030"/>
+    <path d="M 170 345 Q 200 365 202 380 L 166 380 L 170 345 Z" fill="#1A2030"/>
+    <!-- Crotch area -->
+    <path d="M 105 345 L 130 345 L 134 380 L 166 380 L 170 345 L 195 345 L 200 360 L 150 370 L 100 360 Z" fill="#1E2535"/>
+    <!-- Belt -->
+    <rect x="97" y="334" width="106" height="14" rx="4" fill="#0D111A"/>
+    <!-- Belt buckle -->
+    <rect x="139" y="336" width="22" height="10" rx="2" fill="#2A3040"/>
+    <rect x="141" y="338" width="18" height="6" rx="1" fill="#B8962E" opacity="0.9"/>
+    <rect x="148" y="338" width="4" height="6" fill="#9A7820"/>
+  </g>
+
+  <!-- ─── 3. PANTS DETAILS ───────────────────── -->
+  <g id="layer-pants-detail">
+    <!-- Left leg crease -->
+    <path d="M 117 365 Q 115 480 114 580" stroke="#162030" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <!-- Right leg crease -->
+    <path d="M 183 365 Q 185 480 186 580" stroke="#162030" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <!-- Left pocket outline -->
+    <path d="M 100 360 Q 100 390 108 392 L 120 390 Q 124 380 122 360" stroke="#162030" stroke-width="1" fill="none" opacity="0.5"/>
+    <!-- Right pocket outline -->
+    <path d="M 200 360 Q 200 390 192 392 L 180 390 Q 176 380 178 360" stroke="#162030" stroke-width="1" fill="none" opacity="0.5"/>
+  </g>
+
+  <!-- ─── 4. SHIRT ────────────────────────────── -->
+  <g id="layer-shirt">
+    <!-- Shirt main body -->
+    <path d="M 108 165 L 90 180 Q 75 195 72 220 L 72 340 Q 72 348 80 348 L 220 348 Q 228 348 228 340 L 228 220 Q 225 195 210 180 L 192 165 Q 175 158 150 156 Q 125 158 108 165 Z" fill="#F8F8F6"/>
+
+    <!-- Left arm -->
+    <path d="M 90 180 Q 65 190 52 230 L 44 280 Q 40 300 44 316 Q 48 328 58 330 L 74 328 Q 82 326 84 316 L 88 280 Q 90 260 96 240 L 108 210 Z" fill="#F8F8F6"/>
+
+    <!-- Right arm -->
+    <path d="M 210 180 Q 235 190 248 230 L 256 280 Q 260 300 256 316 Q 252 328 242 330 L 226 328 Q 218 326 216 316 L 212 280 Q 210 260 204 240 L 192 210 Z" fill="#F8F8F6"/>
+
+    <!-- Left cuff -->
+    <path d="M 58 316 Q 48 318 44 316 L 44 330 Q 44 336 52 338 L 68 338 Q 76 336 76 330 L 76 318 Z" fill="#ECECEA"/>
+    <!-- Right cuff -->
+    <path d="M 242 316 Q 252 318 256 316 L 256 330 Q 256 336 248 338 L 232 338 Q 224 336 224 330 L 224 318 Z" fill="#ECECEA"/>
+
+    <!-- Collar V-shape -->
+    <path d="M 120 165 L 150 200 L 180 165 Q 165 158 150 156 Q 135 158 120 165 Z" fill="#ECECEA"/>
+    <!-- Collar fold left -->
+    <path d="M 120 165 L 136 180 L 150 200 L 138 172 Z" fill="#E0E0DE"/>
+    <!-- Collar fold right -->
+    <path d="M 180 165 L 164 180 L 150 200 L 162 172 Z" fill="#E0E0DE"/>
+
+    <!-- Shirt button line -->
+    <path d="M 150 200 L 150 340" stroke="#E0E0DE" stroke-width="1" fill="none" stroke-dasharray="3,4"/>
+    <!-- Buttons -->
+    <circle cx="150" cy="220" r="3" fill="#DDDDD8"/>
+    <circle cx="150" cy="240" r="3" fill="#DDDDD8"/>
+    <circle cx="150" cy="260" r="3" fill="#DDDDD8"/>
+    <circle cx="150" cy="280" r="3" fill="#DDDDD8"/>
+    <circle cx="150" cy="300" r="3" fill="#DDDDD8"/>
+
+    <!-- Shirt fold shadows -->
+    <path d="M 110 180 Q 108 240 108 340" stroke="#E8E8E4" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/>
+    <path d="M 190 180 Q 192 240 192 340" stroke="#E8E8E4" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/>
+    <!-- Armpit shadow left -->
+    <path d="M 90 200 Q 82 220 82 240" stroke="#E0E0DC" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <!-- Armpit shadow right -->
+    <path d="M 210 200 Q 218 220 218 240" stroke="#E0E0DC" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.6"/>
+  </g>
+
+  <!-- ─── 5. SKIN (neck + hands) ─────────────── -->
+  <g id="layer-skin">
+    <!-- Neck -->
+    <path d="M 136 122 L 132 162 Q 140 168 150 168 Q 160 168 168 162 L 164 122 Q 158 118 150 118 Q 142 118 136 122 Z" fill="#C8956A"/>
+    <!-- Neck shadow -->
+    <path d="M 136 130 L 134 158 Q 136 162 140 165" stroke="#B8845A" stroke-width="1.5" fill="none" opacity="0.4"/>
+    <path d="M 164 130 L 166 158 Q 164 162 160 165" stroke="#B8845A" stroke-width="1.5" fill="none" opacity="0.4"/>
+
+    <!-- Left hand -->
+    <ellipse cx="44" cy="334" rx="14" ry="10" fill="#C8956A"/>
+    <!-- Left fingers suggestion -->
+    <path d="M 32 330 Q 28 328 30 334 Q 32 340 38 338" stroke="#B8845A" stroke-width="1" fill="none" opacity="0.5"/>
+    <path d="M 56 330 Q 60 328 58 334 Q 56 340 50 338" stroke="#B8845A" stroke-width="1" fill="none" opacity="0.5"/>
+
+    <!-- Right hand -->
+    <ellipse cx="256" cy="334" rx="14" ry="10" fill="#C8956A"/>
+    <!-- Right fingers suggestion -->
+    <path d="M 244 330 Q 240 328 242 334 Q 244 340 250 338" stroke="#B8845A" stroke-width="1" fill="none" opacity="0.5"/>
+    <path d="M 268 330 Q 272 328 270 334 Q 268 340 262 338" stroke="#B8845A" stroke-width="1" fill="none" opacity="0.5"/>
+  </g>
+
+  <!-- ─── 6. FACE ─────────────────────────────── -->
+  <g id="layer-face">
+    <!-- Head base shape — slightly angular jaw for masculine look -->
+    <path d="M 105 58 Q 102 30 150 25 Q 198 30 195 58 L 196 100 Q 196 130 180 142 Q 165 152 150 154 Q 135 152 120 142 Q 104 130 104 100 Z" fill="#C8956A"/>
+
+    <!-- Jaw shadow -->
+    <path d="M 108 110 Q 106 135 120 145 Q 135 153 150 154" stroke="#B8845A" stroke-width="2" fill="none" opacity="0.3" stroke-linecap="round"/>
+    <path d="M 192 110 Q 194 135 180 145 Q 165 153 150 154" stroke="#B8845A" stroke-width="2" fill="none" opacity="0.3" stroke-linecap="round"/>
+
+    <!-- Ear left -->
+    <path d="M 104 82 Q 96 84 94 92 Q 94 102 98 106 Q 102 110 106 108 L 106 82 Z" fill="#C8956A"/>
+    <path d="M 102 88 Q 97 92 97 98 Q 98 103 102 104" stroke="#B8845A" stroke-width="1" fill="none" opacity="0.4"/>
+    <!-- Ear right -->
+    <path d="M 196 82 Q 204 84 206 92 Q 206 102 202 106 Q 198 110 194 108 L 194 82 Z" fill="#C8956A"/>
+    <path d="M 198 88 Q 203 92 203 98 Q 202 103 198 104" stroke="#B8845A" stroke-width="1" fill="none" opacity="0.4"/>
+
+    <!-- Eyebrow left — strong masculine brow -->
+    <path d="M 116 68 Q 126 62 138 64" stroke="#2C1A10" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M 116 68 Q 126 63 138 65" stroke="#3D2314" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <!-- Eyebrow right -->
+    <path d="M 162 64 Q 174 62 184 68" stroke="#2C1A10" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M 162 65 Q 174 63 184 68" stroke="#3D2314" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.5"/>
+
+    <!-- Eye socket shadow left -->
+    <ellipse cx="127" cy="80" rx="14" ry="10" fill="#B8845A" opacity="0.2"/>
+    <!-- Eye socket shadow right -->
+    <ellipse cx="173" cy="80" rx="14" ry="10" fill="#B8845A" opacity="0.2"/>
+
+    <!-- Eye white left -->
+    <path d="M 115 80 Q 127 72 139 80 Q 127 88 115 80 Z" fill="#F8F8F6"/>
+    <!-- Eye white right -->
+    <path d="M 161 80 Q 173 72 185 80 Q 173 88 161 80 Z" fill="#F8F8F6"/>
+
+    <!-- Iris left -->
+    <circle cx="127" cy="80" r="7" fill="#2C3E50"/>
+    <circle cx="127" cy="80" r="5" fill="#1A2840"/>
+    <!-- Pupil left -->
+    <circle cx="127.5" cy="80" r="3" fill="#0A0A0A"/>
+    <!-- Highlight left -->
+    <circle cx="130" cy="77" r="2" fill="#FFFFFF" opacity="0.9"/>
+    <circle cx="125" cy="82" r="1" fill="#FFFFFF" opacity="0.4"/>
+
+    <!-- Iris right -->
+    <circle cx="173" cy="80" r="7" fill="#2C3E50"/>
+    <circle cx="173" cy="80" r="5" fill="#1A2840"/>
+    <!-- Pupil right -->
+    <circle cx="173.5" cy="80" r="3" fill="#0A0A0A"/>
+    <!-- Highlight right -->
+    <circle cx="176" cy="77" r="2" fill="#FFFFFF" opacity="0.9"/>
+    <circle cx="171" cy="82" r="1" fill="#FFFFFF" opacity="0.4"/>
+
+    <!-- Eyelid line left -->
+    <path d="M 115 80 Q 127 72 139 80" stroke="#0A0A0A" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+    <!-- Eyelid line right -->
+    <path d="M 161 80 Q 173 72 185 80" stroke="#0A0A0A" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+
+    <!-- Lower eyelid left -->
+    <path d="M 115 80 Q 127 87 139 80" stroke="#B8845A" stroke-width="0.8" fill="none" stroke-linecap="round" opacity="0.4"/>
+    <!-- Lower eyelid right -->
+    <path d="M 161 80 Q 173 87 185 80" stroke="#B8845A" stroke-width="0.8" fill="none" stroke-linecap="round" opacity="0.4"/>
+
+    <!-- Nose bridge -->
+    <path d="M 150 70 L 148 96 Q 142 104 140 108 Q 150 114 160 108 Q 158 104 152 96 Z" fill="#B8845A" opacity="0.35"/>
+    <!-- Nose bottom -->
+    <path d="M 140 108 Q 145 112 150 112 Q 155 112 160 108 Q 158 106 154 106 L 146 106 Q 142 106 140 108 Z" fill="#A87848" opacity="0.5"/>
+    <!-- Nostril left -->
+    <ellipse cx="143" cy="110" rx="4" ry="2.5" fill="#A87848" opacity="0.4" transform="rotate(-15 143 110)"/>
+    <!-- Nostril right -->
+    <ellipse cx="157" cy="110" rx="4" ry="2.5" fill="#A87848" opacity="0.4" transform="rotate(15 157 110)"/>
+
+    <!-- Upper lip -->
+    <path d="M 134 126 Q 142 122 150 124 Q 158 122 166 126 Q 160 130 150 129 Q 140 130 134 126 Z" fill="#A87848" opacity="0.6"/>
+    <!-- Lower lip -->
+    <path d="M 134 126 Q 142 136 150 137 Q 158 136 166 126 Q 158 132 150 133 Q 142 132 134 126 Z" fill="#C8956A"/>
+    <!-- Mouth line -->
+    <path d="M 134 126 Q 142 128 150 127 Q 158 128 166 126" stroke="#8C5C38" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <!-- Lower lip highlight -->
+    <path d="M 144 132 Q 150 135 156 132" stroke="#D4A070" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+
+    <!-- Jaw line definition -->
+    <path d="M 108 108 Q 110 138 130 148" stroke="#B8845A" stroke-width="1" fill="none" opacity="0.25"/>
+    <path d="M 192 108 Q 190 138 170 148" stroke="#B8845A" stroke-width="1" fill="none" opacity="0.25"/>
+
+    <!-- Cheekbone highlight left -->
+    <ellipse cx="118" cy="100" rx="12" ry="7" fill="#D4A070" opacity="0.15" transform="rotate(-10 118 100)"/>
+    <!-- Cheekbone highlight right -->
+    <ellipse cx="182" cy="100" rx="12" ry="7" fill="#D4A070" opacity="0.15" transform="rotate(10 182 100)"/>
+
+    <!-- Philtrum -->
+    <path d="M 146 116 Q 150 118 154 116 L 152 124 Q 150 125 148 124 Z" fill="#B8845A" opacity="0.2"/>
+  </g>
+
+  <!-- ─── 7. HAIR ─────────────────────────────── -->
+  <g id="layer-hair">
+    <!-- Back of hair volume -->
+    <path d="M 106 72 Q 100 40 108 24 Q 120 8 150 6 Q 180 8 192 24 Q 200 40 194 72" fill="#1C1008"/>
+
+    <!-- Top hair main -->
+    <path d="M 108 66 Q 110 30 150 22 Q 190 30 192 66 Q 185 48 168 44 Q 155 42 150 44 Q 145 42 132 44 Q 115 48 108 66 Z" fill="#2C1810"/>
+
+    <!-- Hair flow left side -->
+    <path d="M 108 66 Q 103 72 104 82 Q 104 92 106 98" stroke="#2C1810" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <!-- Hair flow right side -->
+    <path d="M 192 66 Q 197 72 196 82 Q 196 92 194 98" stroke="#2C1810" stroke-width="8" fill="none" stroke-linecap="round"/>
+
+    <!-- Hair texture lines left -->
+    <path d="M 112 48 Q 110 56 110 68" stroke="#3D2314" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <path d="M 120 42 Q 118 52 116 64" stroke="#3D2314" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <path d="M 130 36 Q 128 48 126 62" stroke="#3D2314" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.4"/>
+    <!-- Hair texture lines right -->
+    <path d="M 188 48 Q 190 56 190 68" stroke="#3D2314" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <path d="M 180 42 Q 182 52 184 64" stroke="#3D2314" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <path d="M 170 36 Q 172 48 174 62" stroke="#3D2314" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.4"/>
+
+    <!-- Hairline edge -->
+    <path d="M 108 66 Q 116 58 130 54 Q 140 52 150 52 Q 160 52 170 54 Q 184 58 192 66" stroke="#1C1008" stroke-width="2" fill="none" opacity="0.6"/>
+
+    <!-- Hair highlight -->
+    <path d="M 128 30 Q 150 24 172 30" stroke="#4A3020" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <path d="M 132 34 Q 150 28 168 34" stroke="#5A4030" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.3"/>
+
+    <!-- Sideburn left -->
+    <path d="M 106 90 Q 106 106 108 112" stroke="#2C1810" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.7"/>
+    <!-- Sideburn right -->
+    <path d="M 194 90 Q 194 106 192 112" stroke="#2C1810" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.7"/>
+  </g>
+
+  <!-- ─── 8. HAT (hidden by default) ─────────── -->
+  <g id="layer-hat" display="none">
+    <!-- Baseball cap main body -->
+    <path d="M 104 62 Q 106 20 150 14 Q 194 20 196 62 Q 180 54 150 52 Q 120 54 104 62 Z" fill="#0A0A0A"/>
+    <!-- Cap brim -->
+    <path d="M 100 64 Q 150 56 200 64 Q 210 66 208 72 Q 200 78 150 76 Q 100 78 92 72 Q 90 66 100 64 Z" fill="#141414"/>
+    <!-- Brim underside -->
+    <path d="M 100 64 Q 150 60 200 64 Q 200 68 150 70 Q 100 68 100 64 Z" fill="#1A1A1A" opacity="0.5"/>
+    <!-- Cap panel stitching -->
+    <path d="M 150 16 L 150 60" stroke="#1A1A1A" stroke-width="1" fill="none" opacity="0.4"/>
+    <path d="M 150 16 Q 180 20 196 40" stroke="#1A1A1A" stroke-width="1" fill="none" opacity="0.3"/>
+    <path d="M 150 16 Q 120 20 104 40" stroke="#1A1A1A" stroke-width="1" fill="none" opacity="0.3"/>
+    <!-- Cap button top -->
+    <circle cx="150" cy="15" r="5" fill="#1E1E1E"/>
+    <!-- Cap logo — LEVL gold L -->
+    <text x="150" y="42" text-anchor="middle" font-size="14" fill="#B8962E" font-family="Georgia, serif" font-weight="bold" letter-spacing="1">L</text>
+    <!-- Brim edge highlight -->
+    <path d="M 100 64 Q 150 58 200 64" stroke="#2A2A2A" stroke-width="1" fill="none" opacity="0.5"/>
+  </g>
+
+</svg>
