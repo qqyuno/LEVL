@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { products } from "@/lib/products";
 
-type FilterCategory = "all" | "humanoid" | "robot-dog";
+type FilterCategory = "all" | "humanoid" | "robot-dog" | "stem";
 
 function CatalogContent() {
   const searchParams = useSearchParams();
@@ -31,6 +31,7 @@ function CatalogContent() {
     { value: "all", label: "Все модели" },
     { value: "humanoid", label: "Гуманоиды" },
     { value: "robot-dog", label: "Робособаки" },
+    { value: "stem", label: "STEM" },
   ];
 
   return (

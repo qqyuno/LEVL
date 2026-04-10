@@ -7,6 +7,7 @@ import type { Product } from "@/lib/products";
 const categoryLabel: Record<string, string> = {
   humanoid: "Гуманоид",
   "robot-dog": "Робособака",
+  stem: "STEM-робот",
 };
 
 export default function ProductCard({ product }: { product: Product }) {
@@ -17,7 +18,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <div style={{
           aspectRatio: "4/3",
           overflow: "hidden",
-          background: "#F0F0EE",
+          background: "#FFFFFF",
           position: "relative",
         }}>
           <Image
