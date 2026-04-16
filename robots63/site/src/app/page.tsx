@@ -4,7 +4,7 @@ import HomeClient from "@/components/HomeClient";
 
 export const metadata: Metadata = {
   alternates: {
-    canonical: "https://robots63.ru",
+    canonical: "https://robots63.com",
   },
 };
 

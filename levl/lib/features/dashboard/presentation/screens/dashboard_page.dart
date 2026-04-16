@@ -7,8 +7,10 @@ import 'package:lottie/lottie.dart';
 import '../../../../core/audio/audio_service.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/models/avatar_config.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/models/quest_model.dart';
+import '../../../../shared/widgets/avatar_widget.dart';
 import '../providers/quest_provider.dart';
 
 class DashboardPage extends ConsumerWidget {
@@ -295,23 +297,12 @@ class _HeroSegment extends StatelessWidget {
       child: Column(
         children: [
           // Avatar
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.surface,
-              border: Border.all(color: AppColors.gold, width: 2),
-            ),
-            child: Center(
-              child: Text(
-                user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                style: GoogleFonts.dmSerifDisplay(
-                  fontSize: 32,
-                  color: AppColors.gold,
-                ),
-              ),
-            ),
+          AvatarWidget(
+            config: user.characterStateJson.isNotEmpty
+                ? AvatarConfig.fromJsonString(user.characterStateJson)
+                : const AvatarConfig(),
+            size: 80,
+            streak: user.currentStreak,
           ),
           const SizedBox(height: 16),
 
@@ -703,7 +694,7 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                         fontSize: 13,
                         color: AppColors.textSecondary,
                       ),
-                      maxLines: 1,
+                      maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 6),

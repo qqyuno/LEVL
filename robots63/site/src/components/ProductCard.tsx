@@ -7,7 +7,6 @@ import type { Product } from "@/lib/products";
 const categoryLabel: Record<string, string> = {
   humanoid: "Гуманоид",
   "robot-dog": "Робособака",
-  stem: "STEM-робот",
 };
 
 export default function ProductCard({ product }: { product: Product }) {

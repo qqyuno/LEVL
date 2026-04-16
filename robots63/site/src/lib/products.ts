@@ -1,4 +1,4 @@
-export type ProductCategory = "humanoid" | "robot-dog" | "stem";
+export type ProductCategory = "humanoid" | "robot-dog";
 
 export interface ProductSpec {
   label: string;
@@ -44,7 +44,7 @@ export const products: Product[] = [
     tagline: "Компактный гуманоид — складывается, прыгает, учится",
     description:
       "Unitree G1 — компактный гуманоидный робот с 23 степенями свободы и встроенным AI-модулем. Непрерывно совершенствует движения через машинное обучение: имитирует походку человека, складывается для транспортировки и способен прыгать. Оснащён 3D LiDAR Livox Mid360 и камерой глубины Intel RealSense D435 для полноценной навигации в пространстве. Полный SDK на Python, C++ и ROS открывает широкие возможности для разработки собственных алгоритмов.",
-    image: "/robots/unitree-g1.jpg",
+    image: "/robots/unitree-g1.png",
     heroImage: "/robots/unitree-g1-hero.jpg",
     featured: true,
     hasAI: true,
@@ -82,7 +82,7 @@ export const products: Product[] = [
     tagline: "Полноразмерный флагман — мировой рекорд скорости 5 м/с",
     description:
       "Unitree H1 — передовой полноразмерный гуманоид, установивший мировой рекорд скорости ходьбы среди роботов: 5 м/с. Два процессора Intel Core i7-1265U обеспечивают вычислительную мощность для обработки данных в реальном времени. H1 несёт полезную нагрузку до 30 кг, самостоятельно восстанавливается после падений и работает в сложных промышленных условиях. Крутящий момент в коленном суставе — 360 Нм — позволяет преодолевать препятствия и лестницы.",
-    image: "/robots/unitree-h1.jpg",
+    image: "/robots/unitree-h1.png",
     heroImage: "/robots/unitree-h1-hero.jpg",
     featured: true,
     hasAI: true,
@@ -158,7 +158,7 @@ export const products: Product[] = [
     tagline: "Следующее поколение — гуманоид для промышленного масштаба",
     description:
       "AgiBot X2 — новейший гуманоид от AgiBot, разработанный для промышленного развёртывания в масштабе. Построен на базе платформы WorkGPT второго поколения с улучшенными манипуляционными возможностями. X2 обеспечивает повышенную точность выполнения задач и более высокую производительность по сравнению с предыдущим поколением. Предназначен для серийного внедрения на производственных предприятиях и в логистических центрах.",
-    image: "/robots/agibot-x2.jpg",
+    image: "/robots/agibot-x2.png",
     heroImage: "/robots/agibot-x2-hero.png",
     featured: true,
     hasAI: true,
@@ -220,37 +220,6 @@ export const products: Product[] = [
   },
 
   {
-    id: "tesla-optimus-gen2",
-    slug: "tesla-optimus-gen2",
-    name: "Tesla Optimus Gen 2",
-    brand: "Tesla",
-    category: "humanoid",
-    tagline: "Гуманоид от Tesla — 22 DOF в руках, скорость 8 км/ч",
-    description:
-      "Tesla Optimus Gen 2 — второе поколение гуманоидного робота от Tesla. Оснащён 22 степенями свободы в руках с тактильными датчиками на каждом пальце, что позволяет выполнять точные манипуляции. Работает на базе того же FSD-компьютера что и автомобили Tesla, обеспечивая передовое компьютерное зрение и навигацию. На 10 кг легче и на 30% быстрее первого поколения.",
-    image: "https://upload.wikimedia.org/wikipedia/commons/c/c0/Latest_Tesla_Optimus_Humanoid_Robot.jpg",
-    hasAI: true,
-    updatedAt: "2025-04-01",
-    tags: ["Tesla FSD", "Тактильные датчики", "22 DOF руки", "Производство"],
-    highlights: [
-      { icon: "🤖", title: "Tesla FSD AI", desc: "Тот же компьютер что в автомобилях Tesla — мощнейшее компьютерное зрение" },
-      { icon: "✋", title: "22 DOF руки", desc: "Тактильные датчики на каждом пальце — точные манипуляции с хрупкими предметами" },
-      { icon: "⚡", title: "8 км/ч", desc: "На 30% быстрее Gen 1 и на 10 кг легче — 57 кг общего веса" },
-    ],
-    useCases: ["Производственные линии", "Складская логистика", "Опасные производства", "Исследования", "Демонстрации"],
-    specs: [
-      { label: "Высота", value: "173 см" },
-      { label: "Вес", value: "57 кг" },
-      { label: "Скорость", value: "8 км/ч" },
-      { label: "DOF руки", value: "22 (11 на каждую)" },
-      { label: "Тактильные датчики", value: "Да · каждый палец" },
-      { label: "AI-система", value: "Tesla FSD Computer" },
-      { label: "Компьютерное зрение", value: "Многокамерное 360°" },
-      { label: "Производитель", value: "Tesla · Фримонт, США" },
-    ],
-  },
-
-  {
     id: "ubtech-walker-s1",
     slug: "ubtech-walker-s1",
     name: "UBTECH Walker S1",
@@ -259,7 +228,7 @@ export const products: Product[] = [
     tagline: "Промышленный гуманоид — 41 DOF, сертифицирован для заводов",
     description:
       "UBTECH Walker S1 — промышленный гуманоидный робот с 41 степенью свободы, разработанный для автоматизации производства. Сертифицирован для работы на заводах Foxconn и BMW. Оснащён мультимодальной AI-системой: распознаёт объекты, планирует задачи и выполняет многоэтапные операции без участия оператора. Один из первых гуманоидов с коммерческим промышленным применением.",
-    image: "https://owebsite-cdn.ubtrobot.com/en/uploadfiles/zwimg105.jpg",
+    image: "/robots/ubtech-walker-s1.png",
     hasAI: true,
     updatedAt: "2025-04-01",
     tags: ["Промышленность", "41 DOF", "Foxconn", "BMW"],
@@ -290,8 +259,8 @@ export const products: Product[] = [
     tagline: "Самый динамичный гуманоид в мире — акробатика и сила",
     description:
       "Boston Dynamics Atlas — электрический гуманоидный робот нового поколения, пришедший на смену гидравлической версии. Оснащён кастомными актуаторами с высокой мощностью на килограмм веса. Демонстрирует беспрецедентную динамику: сальто, паркур, захваты нестандартных объектов. Разработан для промышленного применения в партнёрстве с Hyundai — автономное выполнение задач на производстве.",
-    image: "https://bostondynamics.com/wp-content/uploads/2024/10/atlas-tri-1024x1024.jpg",
-    heroImage: "https://bostondynamics.com/wp-content/uploads/2024/04/atlas-blue-mobile-copy.jpg",
+    image: "/robots/boston-dynamics-atlas.png",
+    heroImage: "/robots/boston-dynamics-atlas.png",
     hasAI: true,
     updatedAt: "2025-04-01",
     tags: ["Акробатика", "Hyundai", "Электрический", "Промышленность"],
@@ -324,7 +293,7 @@ export const products: Product[] = [
     tagline: "Самая быстрая робособака — 6 м/с",
     description:
       "Unitree A2 — высокопроизводительная четырёхногая платформа для профессионального применения. Скорость 6 м/с и грузоподъёмность 20 кг в сочетании с полным SDK (Python, C++, ROS) делают её идеальной базой для исследований, инспекции и автономных систем. Компактные размеры позволяют работать там, где колёсный транспорт не справляется.",
-    image: "/robots/unitree-a2.jpg",
+    image: "/robots/unitree-a2.png",
     featured: true,
     hasAI: true,
     videoId: "UzIQhbGjxPo",
@@ -361,7 +330,7 @@ export const products: Product[] = [
     tagline: "Промышленный тяжеловес — IP67, нагрузка 120 кг",
     description:
       "Unitree B2 — четырёхногий промышленный робот класса heavy-duty. Несёт полезную нагрузку 40 кг и выдерживает суммарный вес до 120 кг. Полная защита IP67: работает под дождём, в пыли и грязи без ограничений. Предназначен для стройплощадок, нефтехимических предприятий, складов и операций МЧС. Стальные суставы и уровень мощности привода уровня промышленного манипулятора.",
-    image: "/robots/unitree-b2.jpg",
+    image: "/robots/unitree-b2.png",
     heroImage: "/robots/unitree-b2-hero.png",
     hasAI: true,
     videoId: "6I0m1fOB6vE",
@@ -435,7 +404,7 @@ export const products: Product[] = [
     tagline: "Промышленный флагман для экстремальных условий",
     description:
       "Deep Robotics X30 — флагманская четырёхногая платформа тяжёлого класса для работы в самых требовательных промышленных условиях. Максимальная грузоподъёмность и выносливость: нефтегазовые предприятия, горнодобывающие объекты, химические заводы. Высокая степень пылевлагозащиты и мощный привод обеспечивают стабильную работу в агрессивных средах. Полный промышленный SDK для интеграции в существующие системы.",
-    image: "/robots/deep-robotics-x30.jpg",
+    image: "/robots/deep-robotics-x30.png",
     heroImage: "/robots/deep-robotics-x30-hero.jpg",
     hasAI: true,
     videoId: "wHZ5H85k0VQ",
@@ -472,7 +441,7 @@ export const products: Product[] = [
     tagline: "Домашний AI-робот — охрана, съёмка, обучение за $1 000",
     description:
       "Dobot Rover X1 — первый потребительский робот-собака от Dobot с гибридным колёсно-ноговым приводом. Оснащён двойной системой камер для автономного слежения и охраны. Несёт грузы до 7 кг, преодолевает уклоны до 30° и препятствия до 16 см. Встроенная платформа для обучения программированию делает его идеальным для STEM-образования и домашнего использования.",
-    image: "/robots/dobot-rover-x1.webp",
+    image: "/robots/dobot-rover-x1.png",
     hasAI: true,
     updatedAt: "2025-11-04",
     tags: ["Домашний", "AI", "STEM", "Охрана", "$1000"],
@@ -562,40 +531,6 @@ export const products: Product[] = [
       { label: "Программирование", value: "ROS1 · ROS2 · Python · C++" },
       { label: "ОС", value: "Ubuntu 20.04" },
       { label: "Производитель", value: "Deep Robotics · Ханчжоу" },
-    ],
-  },
-
-  {
-    id: "petoi-bittle",
-    slug: "petoi-bittle",
-    name: "Petoi Bittle",
-    brand: "Petoi",
-    category: "stem",
-    tagline: "Робот-собака на ладони — open-source STEM-конструктор",
-    description:
-      "Petoi Bittle — миниатюрный робот-собака размером с ладонь для обучения робототехнике и программированию. 9 степеней свободы, вес всего 290 г, несёт нагрузку в 1.5× своего веса. Программируется на Arduino (C++), Python и Scratch. Полностью open-source: от прошивки до 3D-модели корпуса. Идеален для школ, хобби-проектов и первого знакомства с робототехникой.",
-    image: "/robots/petoi-bittle.jpg",
-    hasAI: false,
-    updatedAt: "2025-04-01",
-    tags: ["STEM", "Open-Source", "Arduino", "Образование", "Мини"],
-    highlights: [
-      { icon: "🤏", title: "Помещается на ладони", desc: "200 × 110 × 110 мм, 290 г — самый компактный робот-собака в каталоге" },
-      { icon: "📖", title: "Open-Source", desc: "Открытый код, схема и 3D-модель — полная свобода модификаций" },
-      { icon: "🎓", title: "Scratch → Arduino → Python", desc: "Три уровня сложности программирования — от ребёнка до инженера" },
-    ],
-    useCases: ["Школьное образование", "Хобби-проекты", "Обучение программированию", "Робототехнические кружки", "Прототипирование"],
-    specs: [
-      { label: "Размеры", value: "200 × 110 × 110 мм" },
-      { label: "Вес", value: "290 г" },
-      { label: "Степени свободы", value: "9" },
-      { label: "Скорость (ходьба)", value: "2.16 км/ч" },
-      { label: "Скорость (бег)", value: "3.6 км/ч" },
-      { label: "Нагрузка", value: "420 г · 1.5× веса" },
-      { label: "Контроллер", value: "NyBoard · Arduino Uno" },
-      { label: "Автономность", value: "~1 час" },
-      { label: "Программирование", value: "Scratch · Arduino · Python" },
-      { label: "Open-Source", value: "Да · полностью" },
-      { label: "Производитель", value: "Petoi · США" },
     ],
   },
 ];

@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `${product.name} — купить в СНГ`,
     description: desc,
-    alternates: { canonical: `https://robots63.ru/catalog/${product.slug}` },
+    alternates: { canonical: `https://robots63.com/catalog/${product.slug}` },
     openGraph: {
       title: `${product.name} | ROBOTS63`,
       description: desc,
@@ -32,12 +32,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 const categoryLabel: Record<string, string> = {
   humanoid: "Гуманоид",
   "robot-dog": "Робособака",
-  stem: "STEM-робот",
 };
 const categoryHref: Record<string, string> = {
   humanoid: "/catalog?category=humanoid",
   "robot-dog": "/catalog?category=robot-dog",
-  stem: "/catalog?category=stem",
 };
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -61,8 +59,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       availability: "https://schema.org/InStock",
       priceRange: "Цена по запросу",
       priceCurrency: "RUB",
-      url: `https://robots63.ru/catalog/${product.slug}`,
-      seller: { "@type": "Organization", name: "ROBOTS63", url: "https://robots63.ru" },
+      url: `https://robots63.com/catalog/${product.slug}`,
+      seller: { "@type": "Organization", name: "ROBOTS63", url: "https://robots63.com" },
     },
   };
 
@@ -70,9 +68,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Каталог", item: "https://robots63.ru/catalog" },
-      { "@type": "ListItem", position: 2, name: categoryLabel[product.category], item: `https://robots63.ru${categoryHref[product.category]}` },
-      { "@type": "ListItem", position: 3, name: product.name, item: `https://robots63.ru/catalog/${product.slug}` },
+      { "@type": "ListItem", position: 1, name: "Каталог", item: "https://robots63.com/catalog" },
+      { "@type": "ListItem", position: 2, name: categoryLabel[product.category], item: `https://robots63.com${categoryHref[product.category]}` },
+      { "@type": "ListItem", position: 3, name: product.name, item: `https://robots63.com/catalog/${product.slug}` },
     ],
   };
 

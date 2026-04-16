@@ -56,6 +56,7 @@ class UserProfile with _$UserProfile {
     @Default('') String mainGoal,
     @Default('') String workStyle,
     @Default(CharacterStats()) CharacterStats stats,
+    @Default('') String characterStateJson,
   }) = _UserProfile;
 
   factory UserProfile.fromJson(Map<String, dynamic> json) =>

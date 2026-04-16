@@ -73,11 +73,22 @@ export default function Footer() {
             }}>
               Контакты
             </div>
-            <Link href="/contact" className="btn-primary" style={{
-              padding: "10px 20px", fontSize: 13, marginBottom: 16,
-            }}>
-              Связаться
-            </Link>
+            {[
+              { label: "Telegram", href: "https://t.me/BalePa_96", color: "#229ED9" },
+              { label: "VKontakte", href: "https://vk.me/valcoin", color: "#0077FF" },
+              { label: "MAX", href: "https://max.ru/u/f9LHodD0cOL_LJX2JIsmykAOYri5XKwJryb1RJfKqJzz0aMXnMt-5S8olcE", color: "#4A67FF" },
+            ].map((s) => (
+              <a
+                key={s.label}
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-link"
+                style={{ display: "block", color: s.color, fontWeight: 500 }}
+              >
+                {s.label}
+              </a>
+            ))}
             <div style={{
               fontFamily: "var(--font-body), sans-serif", fontSize: 13,
               color: "var(--fg-muted)", lineHeight: 1.6, marginTop: 16,
@@ -101,10 +112,13 @@ export default function Footer() {
           }}>
             &copy; {currentYear} ROBOTS63
           </span>
-          <div style={{ display: "flex", gap: 20 }}>
+          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" as const }}>
             {[
               { href: "/catalog", label: "Каталог" },
+              { href: "/about", label: "О компании" },
               { href: "/contact", label: "Контакты" },
+              { href: "/privacy", label: "Конфиденциальность" },
+              { href: "/terms", label: "Соглашение" },
             ].map((item) => (
               <Link key={item.href} href={item.href} className="footer-link" style={{ margin: 0 }}>
                 {item.label}

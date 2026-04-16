@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/achievement_model.dart';
+import '../../../../shared/models/avatar_config.dart';
 import '../../../../shared/models/user_model.dart';
+import '../../../../shared/widgets/avatar_widget.dart';
 import '../../../dashboard/presentation/providers/quest_provider.dart';
 import '../widgets/stats_radar_chart.dart';
+import 'avatar_editor_screen.dart';
 
 class CharacterPage extends ConsumerWidget {
   const CharacterPage({super.key});
@@ -54,22 +57,27 @@ class CharacterPage extends ConsumerWidget {
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                   child: Column(
                     children: [
-                      Container(
-                        width: 88,
-                        height: 88,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.surface,
-                          border: Border.all(color: AppColors.gold, width: 2.5),
-                        ),
-                        child: Center(
-                          child: Text(
-                            user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                            style: GoogleFonts.dmSerifDisplay(
-                              fontSize: 36,
-                              color: AppColors.gold,
+                      GestureDetector(
+                        onTap: () => _openAvatarEditor(context),
+                        child: Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            AvatarWidget(
+                              config: _avatarFromUser(user),
+                              size: 100,
+                              streak: user.currentStreak,
                             ),
-                          ),
+                            Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: AppColors.textPrimary,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppColors.background, width: 2.5),
+                              ),
+                              child: const Icon(Icons.edit, size: 14, color: Colors.white),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -200,6 +208,21 @@ class CharacterPage extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  static AvatarConfig _avatarFromUser(UserProfile user) {
+    if (user.characterStateJson.isEmpty) return const AvatarConfig();
+    try {
+      return AvatarConfig.fromJsonString(user.characterStateJson);
+    } catch (_) {
+      return const AvatarConfig();
+    }
+  }
+
+  void _openAvatarEditor(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const AvatarEditorScreen()),
     );
   }
 

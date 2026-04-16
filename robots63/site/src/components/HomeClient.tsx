@@ -221,6 +221,103 @@ export default function HomeClient({ humanoids, robotDogs }: Props) {
         </div>
       </section>
 
+      {/* ═══════ TELEGRAM КАНАЛ ═══════ */}
+      <section style={{ padding: "0 24px 0", background: "var(--bg-soft)" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <FadeIn>
+            <a
+              href="https://t.me/Robots63"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="tg-banner"
+            >
+              {/* Glow */}
+              <div style={{
+                position: "absolute", right: -60, top: -60,
+                width: 300, height: 300, borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(34,158,217,0.15) 0%, transparent 70%)",
+                pointerEvents: "none",
+              }} />
+
+              {/* TG Icon */}
+              <div className="tg-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.69 7.96c-.12.55-.46.69-.94.43l-2.59-1.91-1.25 1.2c-.14.14-.26.26-.52.26l.18-2.63 4.71-4.25c.2-.18-.04-.28-.32-.1L7.51 14.83l-2.54-.79c-.55-.17-.56-.55.12-.82l9.94-3.83c.46-.17.86.11.71.41z"/>
+                </svg>
+              </div>
+
+              {/* Text */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 600,
+                  letterSpacing: "0.1em", textTransform: "uppercase" as const,
+                  color: "#229ED9", marginBottom: 8,
+                }}>
+                  Telegram-канал
+                </div>
+                <div className="tg-title">
+                  Robots63 — видео, новости, обзоры
+                </div>
+                <div className="tg-desc">
+                  Публикуем свежие видео роботов в деле, новости индустрии и первыми сообщаем о новых моделях
+                </div>
+              </div>
+
+              {/* Arrow */}
+              <div className="tg-arrow">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M4 9h10M10 5l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+
+              <style>{`
+                .tg-banner {
+                  display: flex; align-items: center; gap: 32px;
+                  background: #0A0A0A; border-radius: 24px;
+                  padding: 40px 48px; text-decoration: none;
+                  position: relative; overflow: hidden;
+                  transition: transform 0.3s var(--ease-out);
+                }
+                .tg-banner:hover { transform: translateY(-2px); }
+                .tg-icon {
+                  width: 64px; height: 64px; border-radius: 18px;
+                  background: #229ED9; flex-shrink: 0;
+                  display: flex; align-items: center; justify-content: center;
+                }
+                .tg-title {
+                  font-family: var(--font-heading); font-weight: 700;
+                  font-size: clamp(20px, 3vw, 28px); color: #fff;
+                  letter-spacing: -0.02em; margin-bottom: 8px; line-height: 1.2;
+                }
+                .tg-desc {
+                  font-family: var(--font-body); font-size: 15px;
+                  color: rgba(255,255,255,0.45); line-height: 1.5;
+                }
+                .tg-arrow {
+                  flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%;
+                  border: 1px solid rgba(255,255,255,0.15);
+                  display: flex; align-items: center; justify-content: center;
+                  color: rgba(255,255,255,0.5);
+                }
+                @media (max-width: 600px) {
+                  .tg-banner {
+                    flex-direction: column; align-items: flex-start;
+                    gap: 20px; padding: 28px 24px;
+                  }
+                  .tg-icon { width: 52px; height: 52px; border-radius: 14px; }
+                  .tg-icon svg { width: 24px; height: 24px; }
+                  .tg-title { font-size: 20px; }
+                  .tg-desc { font-size: 14px; }
+                  .tg-arrow { display: none; }
+                }
+              `}</style>
+            </a>
+          </FadeIn>
+        </div>
+      </section>
+
+      <div style={{ height: 100, background: "var(--bg-soft)" }} />
+
       {/* ═══════ РОБОСОБАКИ ═══════ */}
       <section style={{ padding: "100px 24px", background: "var(--bg-soft)", borderTop: "1px solid var(--border)" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
