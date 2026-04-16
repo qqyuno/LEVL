@@ -197,33 +197,37 @@ class _DashboardHeaderState extends State<_DashboardHeader>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'УРОВЕНЬ ${widget.user.level}',
-                style: GoogleFonts.dmSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.gold,
-                  letterSpacing: 2,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'УРОВЕНЬ ${widget.user.level}',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.gold,
+                    letterSpacing: 2,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                widget.user.mainGoal.isNotEmpty
-                    ? widget.user.mainGoal
-                    : 'Путь начинается',
-                style: GoogleFonts.dmSerifDisplay(
-                  fontSize: 16,
-                  color: AppColors.textPrimary,
-                  letterSpacing: 0.5,
+                const SizedBox(height: 2),
+                Text(
+                  widget.user.mainGoal.isNotEmpty
+                      ? widget.user.mainGoal
+                      : 'Путь начинается',
+                  style: GoogleFonts.dmSerifDisplay(
+                    fontSize: 16,
+                    color: AppColors.textPrimary,
+                    letterSpacing: 0.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+              ],
+            ),
           ),
+
+          const SizedBox(width: 12),
 
           Row(
             mainAxisSize: MainAxisSize.min,

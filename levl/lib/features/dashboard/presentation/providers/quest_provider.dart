@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:isar/isar.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -134,9 +133,7 @@ class QuestNotifier extends _$QuestNotifier {
   /// Load today's quests: try Isar cache first, then Edge Function
   Future<void> _loadTodayQuests() async {
     try {
-      debugPrint('[LEVL] _loadTodayQuests started');
       final isar = await ref.read(isarProvider.future);
-      debugPrint('[LEVL] Isar ready');
       final today = DateTime.now();
       final startOfDay = DateTime(today.year, today.month, today.day);
 
@@ -146,18 +143,14 @@ class QuestNotifier extends _$QuestNotifier {
         isar.questLocals.filter().createdAtGreaterThan(startOfDay, include: false),
       );
 
-      debugPrint('[LEVL] cached quests count: ${cached.length}');
-
       if (cached.isNotEmpty) {
         state = AsyncData(_localToQuests(cached));
         return;
       }
 
       // No local cache → call Edge Function
-      debugPrint('[LEVL] calling fetchFromEdgeFunction...');
       await fetchFromEdgeFunction();
     } catch (e, st) {
-      debugPrint('[LEVL] _loadTodayQuests ERROR: $e');
       state = AsyncError(e, st);
     }
   }
@@ -177,10 +170,6 @@ class QuestNotifier extends _$QuestNotifier {
         body: userContext.isNotEmpty ? {'userContext': userContext} : null,
       );
 
-      // Debug: log raw response
-      debugPrint('[LEVL] Edge Function response status: ${response.status}');
-      debugPrint('[LEVL] Edge Function response data: ${response.data}');
-
       final data = response.data as Map<String, dynamic>;
       final questsJson = data['quests'] as List<dynamic>;
       final userId = client.auth.currentUser?.id ?? 'local';
@@ -198,8 +187,6 @@ class QuestNotifier extends _$QuestNotifier {
 
       state = AsyncData(quests);
     } catch (e, st) {
-      debugPrint('[LEVL] fetchFromEdgeFunction ERROR: $e');
-      debugPrint('[LEVL] fetchFromEdgeFunction STACK: $st');
       // If Edge Function fails, try to show any cached quests
       final isar = await ref.read(isarProvider.future);
       final allCached = await _questQuery(
