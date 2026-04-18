@@ -41,7 +41,7 @@ export default function VideoShowcase() {
             muted
             loop
             playsInline
-            style={{ width: "100%", display: "block", maxHeight: 640, objectFit: "cover" }}
+            style={{ width: "100%", display: "block" }}
           />
         </div>
       </div>
