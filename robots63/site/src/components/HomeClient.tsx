@@ -352,11 +352,11 @@ export default function HomeClient({ humanoids, robotDogs }: Props) {
             <div style={{ fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 500, color: "var(--fg-muted)", marginBottom: 32 }}>
               Официальные партнёры
             </div>
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "clamp(32px, 6vw, 80px)", flexWrap: "wrap" as const }}>
-              {["Unitree", "AgiBot", "Deep Robotics"].map((b) => (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "clamp(24px, 4vw, 56px)", flexWrap: "wrap" as const }}>
+              {["Unitree", "AgiBot", "Boston Dynamics", "Deep Robotics", "Xiaomi", "UBTECH", "Dobot", "EngineAI", "Fourier Intelligence"].map((b) => (
                 <Link key={b} href={`/catalog?brand=${encodeURIComponent(b)}`} style={{
                   fontFamily: "var(--font-heading)", fontWeight: 600,
-                  fontSize: "clamp(20px, 3vw, 32px)", color: "#D4D4D4",
+                  fontSize: "clamp(14px, 2vw, 22px)", color: "#D4D4D4",
                   textDecoration: "none", letterSpacing: "-0.02em",
                   transition: "color 0.3s var(--ease-out)",
                 }}
