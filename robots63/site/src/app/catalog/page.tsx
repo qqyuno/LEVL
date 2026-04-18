@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { products } from "@/lib/products";
 
-type FilterCategory = "all" | "humanoid" | "robot-dog";
+type FilterCategory = "all" | "humanoid" | "robot-dog" | "iconic";
 
 function CatalogContent() {
   const searchParams = useSearchParams();
@@ -31,6 +31,7 @@ function CatalogContent() {
     { value: "all", label: "Все модели" },
     { value: "humanoid", label: "Гуманоиды" },
     { value: "robot-dog", label: "Робособаки" },
+    { value: "iconic", label: "Иконические" },
   ];
 
   return (
@@ -125,7 +126,7 @@ function CatalogContent() {
               }}>
                 {filtered.length} {filtered.length === 1 ? "модель" : filtered.length < 5 ? "модели" : "моделей"}
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20 }}>
+              <div className="catalog-grid" style={{ display: "grid", gap: 20 }}>
                 {filtered.map((p) => <ProductCard key={p.id} product={p} />)}
               </div>
             </>

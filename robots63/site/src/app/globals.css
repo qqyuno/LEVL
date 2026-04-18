@@ -246,6 +246,17 @@ img { image-rendering: -webkit-optimize-contrast; }
   background: var(--bg-muted);
 }
 
+/* ─── Catalog grid ─── */
+.catalog-grid {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+@media (max-width: 640px) {
+  .catalog-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+}
+
 /* ─── Video embed ─── */
 .video-wrapper {
   position: relative;

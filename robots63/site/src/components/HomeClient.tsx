@@ -9,6 +9,7 @@ import ShaderLines from "@/components/ShaderLines";
 import { SplineScene } from "@/components/ui/splite";
 import { Spotlight } from "@/components/ui/spotlight";
 import type { Product } from "@/lib/products";
+import VideoShowcase from "@/components/VideoShowcase";
 
 function useInView(threshold = 0.12) {
   const ref = useRef<HTMLDivElement>(null);
@@ -150,6 +151,8 @@ export default function HomeClient({ humanoids, robotDogs }: Props) {
           </div>
         </div>
       </section>
+
+      <VideoShowcase />
 
       {/* ═══════ ГУМАНОИДЫ ═══════ */}
       <section style={{ padding: "100px 24px", background: "var(--bg-soft)", borderTop: "1px solid var(--border)" }}>

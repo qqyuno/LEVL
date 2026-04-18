@@ -32,10 +32,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 const categoryLabel: Record<string, string> = {
   humanoid: "Гуманоид",
   "robot-dog": "Робособака",
+  iconic: "Иконический",
 };
 const categoryHref: Record<string, string> = {
   humanoid: "/catalog?category=humanoid",
   "robot-dog": "/catalog?category=robot-dog",
+  iconic: "/catalog?category=iconic",
 };
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
