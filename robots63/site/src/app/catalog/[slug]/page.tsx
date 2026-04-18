@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     openGraph: {
       title: `${product.name} | ROBOTS63`,
       description: desc,
-      images: [{ url: product.image, alt: product.name }],
+      images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: product.name }],
       type: "website",
       locale: "ru_RU",
     },

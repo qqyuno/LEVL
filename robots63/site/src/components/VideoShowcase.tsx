@@ -40,8 +40,10 @@ export default function VideoShowcase() {
             src="/video/showcase.mp4"
             loop
             playsInline
+            preload="none"
             controls={playing}
-            style={{ width: "100%", display: "block" }}
+            title="Роботы ROBOTS63 в действии"
+            style={{ width: "100%", display: "block", aspectRatio: "16/9" }}
           />
 
           {/* Play button overlay */}
