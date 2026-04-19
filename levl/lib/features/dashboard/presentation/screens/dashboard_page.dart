@@ -401,6 +401,100 @@ class _HeroSegment extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
+// Подтверждение от Системы перед завершением задания
+// ---------------------------------------------------------------------------
+Future<bool> _showSystemConfirmation(BuildContext context, String questTitle) async {
+  final result = await showModalBottomSheet<bool>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withValues(alpha: 0.6),
+    isScrollControlled: true,
+    builder: (ctx) => Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40, height: 4,
+            margin: const EdgeInsets.only(bottom: 28),
+            decoration: BoxDecoration(
+              color: AppColors.divider,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Text(
+            'СИСТЕМА',
+            style: GoogleFonts.dmSans(
+              fontSize: 11, fontWeight: FontWeight.w600,
+              color: AppColors.gold, letterSpacing: 3,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Зафиксировано.\nСистема доверяет тебе.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.dmSerifDisplay(
+              fontSize: 24, color: AppColors.textPrimary,
+              height: 1.3, letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            questTitle,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.dmSans(
+              fontSize: 14, color: AppColors.textSecondary,
+              fontStyle: FontStyle.italic,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            child: GestureDetector(
+              onTap: () => Navigator.of(ctx).pop(true),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.textPrimary,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  'Подтвердить',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 16, fontWeight: FontWeight.w600,
+                    color: AppColors.background,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'Ещё не выполнено',
+              style: GoogleFonts.dmSans(
+                fontSize: 14, color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+  return result ?? false;
+}
+
+// ---------------------------------------------------------------------------
 // Main Quest Card (суперцель) — с Lottie burst при complete
 // ---------------------------------------------------------------------------
 class _MainQuestCard extends ConsumerStatefulWidget {
@@ -415,7 +509,9 @@ class _MainQuestCard extends ConsumerStatefulWidget {
 class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
   bool _showBurst = false;
 
-  void _handleComplete() {
+  Future<void> _handleComplete() async {
+    final confirmed = await _showSystemConfirmation(context, widget.quest.title);
+    if (!confirmed || !mounted) return;
     HapticFeedback.mediumImpact();
     ref.read(audioServiceProvider).playQuestComplete();
     setState(() => _showBurst = true);
@@ -617,7 +713,9 @@ class _QuestCard extends ConsumerStatefulWidget {
 class _QuestCardState extends ConsumerState<_QuestCard> {
   bool _showBurst = false;
 
-  void _handleComplete() {
+  Future<void> _handleComplete() async {
+    final confirmed = await _showSystemConfirmation(context, widget.quest.title);
+    if (!confirmed || !mounted) return;
     HapticFeedback.mediumImpact();
     ref.read(audioServiceProvider).playQuestComplete();
     setState(() => _showBurst = true);
