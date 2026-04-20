@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/achievement_model.dart';
 import '../../../../shared/models/avatar_config.dart';
+import '../../../../shared/models/quest_model.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 import '../../../dashboard/presentation/providers/quest_provider.dart';
@@ -141,12 +142,12 @@ class CharacterPage extends ConsumerWidget {
                   padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
                   child: Column(
                     children: [
-                      _StatBar(label: 'Дисциплина', value: user.stats.discipline, color: AppColors.sphereDiscipline, icon: Icons.bolt),
-                      _StatBar(label: 'Знания',     value: user.stats.knowledge,  color: AppColors.sphereKnowledge,  icon: Icons.menu_book),
-                      _StatBar(label: 'Отношения',  value: user.stats.relations,  color: AppColors.sphereRelations,  icon: Icons.people),
-                      _StatBar(label: 'Энергия',    value: user.stats.energy,     color: AppColors.sphereEnergy,     icon: Icons.local_fire_department),
-                      _StatBar(label: 'Воля',       value: user.stats.will,       color: AppColors.sphereWill,       icon: Icons.my_location),
-                      _StatBar(label: 'Мудрость',   value: user.stats.wisdom,     color: AppColors.sphereWisdom,     icon: Icons.psychology),
+                      _StatBar(label: 'Дисциплина', description: QuestCategory.discipline.description, value: user.stats.discipline, color: AppColors.sphereDiscipline, icon: Icons.bolt),
+                      _StatBar(label: 'Знания',     description: QuestCategory.knowledge.description,  value: user.stats.knowledge,  color: AppColors.sphereKnowledge,  icon: Icons.menu_book),
+                      _StatBar(label: 'Отношения',  description: QuestCategory.relations.description,  value: user.stats.relations,  color: AppColors.sphereRelations,  icon: Icons.people),
+                      _StatBar(label: 'Энергия',    description: QuestCategory.energy.description,     value: user.stats.energy,     color: AppColors.sphereEnergy,     icon: Icons.local_fire_department),
+                      _StatBar(label: 'Воля',       description: QuestCategory.will.description,       value: user.stats.will,       color: AppColors.sphereWill,       icon: Icons.my_location),
+                      _StatBar(label: 'Мудрость',   description: QuestCategory.wisdom.description,     value: user.stats.wisdom,     color: AppColors.sphereWisdom,     icon: Icons.psychology),
                     ],
                   ),
                 ),
@@ -239,17 +240,16 @@ class CharacterPage extends ConsumerWidget {
   };
 }
 
-// --- Stat Bar ---
-// Shows sphere rank name, animated progress bar within current rank,
-// and XP remaining to next rank.
 class _StatBar extends StatelessWidget {
   final String label;
-  final int value; // accumulated sphere XP
+  final String description;
+  final int value;
   final Color color;
   final IconData icon;
 
   const _StatBar({
     required this.label,
+    required this.description,
     required this.value,
     required this.color,
     required this.icon,
@@ -263,70 +263,116 @@ class _StatBar extends StatelessWidget {
     final isMaxRank = toNext == 0;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, size: 15, color: color),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: GoogleFonts.dmSans(
-                  fontSize: 13,
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
+              // Иконка-бейдж с цветом сферы
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
                 ),
+                child: Icon(icon, size: 16, color: color),
               ),
-              const Spacer(),
-              Text(
-                rank,
-                style: GoogleFonts.dmSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: isMaxRank ? AppColors.gold : color,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                isMaxRank ? 'Максимум' : '$toNext до следующего',
-                style: GoogleFonts.dmSans(
-                  fontSize: 11,
-                  color: AppColors.textDisabled,
+              const SizedBox(width: 12),
+              // Название + описание
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          label,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 14,
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isMaxRank
+                                ? AppColors.gold.withValues(alpha: 0.1)
+                                : color.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            rank,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: isMaxRank ? AppColors.gold : color,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      description,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: progress),
-            duration: const Duration(milliseconds: 700),
-            curve: Curves.easeOutCubic,
-            builder: (_, v, __) => Stack(
-              children: [
-                Container(
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: AppColors.divider,
-                    borderRadius: BorderRadius.circular(3),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: progress),
+                  duration: const Duration(milliseconds: 700),
+                  curve: Curves.easeOutCubic,
+                  builder: (_, v, __) => Stack(
+                    children: [
+                      Container(
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: AppColors.divider,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                      FractionallySizedBox(
+                        widthFactor: v.clamp(0.0, 1.0),
+                        child: Container(
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: isMaxRank ? AppColors.gold : color,
+                            borderRadius: BorderRadius.circular(3),
+                            boxShadow: v > 0.02
+                                ? [BoxShadow(color: color.withValues(alpha: 0.35), blurRadius: 6)]
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                FractionallySizedBox(
-                  widthFactor: v.clamp(0.0, 1.0),
-                  child: Container(
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: isMaxRank ? AppColors.gold : color,
-                      borderRadius: BorderRadius.circular(3),
-                      boxShadow: v > 0.02
-                          ? [BoxShadow(color: color.withValues(alpha: 0.35), blurRadius: 6)]
-                          : null,
-                    ),
-                  ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                isMaxRank ? '✦ Максимум' : '$toNext XP',
+                style: GoogleFonts.dmSans(
+                  fontSize: 11,
+                  color: isMaxRank ? AppColors.gold : AppColors.textDisabled,
+                  fontWeight: isMaxRank ? FontWeight.w600 : FontWeight.w400,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),

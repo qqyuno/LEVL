@@ -145,4 +145,13 @@ extension QuestCategoryVisual on QuestCategory {
     QuestCategory.will       => 'Воля',
     QuestCategory.wisdom     => 'Мудрость',
   };
+
+  String get description => switch (this) {
+    QuestCategory.discipline => 'Привычки, режим, обязательства',
+    QuestCategory.knowledge  => 'Обучение, навыки, рост',
+    QuestCategory.relations  => 'Семья, друзья, нетворкинг',
+    QuestCategory.energy     => 'Здоровье, спорт, сон',
+    QuestCategory.will       => 'Фокус, упорство, преодоление',
+    QuestCategory.wisdom     => 'Рефлексия, решения, интуиция',
+  };
 }

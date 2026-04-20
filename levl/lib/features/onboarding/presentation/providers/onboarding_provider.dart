@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/supabase/isar_service.dart';
 import '../../../../shared/models/user_model.dart';
@@ -12,16 +13,30 @@ class Sphere {
   final String key;
   final String label;
   final String icon;
+  final String description;
+  final Color color;
 
-  const Sphere(this.key, this.label, this.icon);
+  const Sphere(this.key, this.label, this.icon, this.description, this.color);
 
-  static const all = [
-    Sphere('discipline', 'Дисциплина', '⚡'),
-    Sphere('knowledge', 'Знания', '📚'),
-    Sphere('relations', 'Отношения', '🤝'),
-    Sphere('energy', 'Энергия', '🔥'),
-    Sphere('will', 'Воля', '🎯'),
-    Sphere('wisdom', 'Мудрость', '🧠'),
+  static final all = [
+    const Sphere('discipline', 'Дисциплина', '⚡',
+        'Привычки, режим, выполнение обязательств',
+        Color(0xFF4A6FA5)),
+    const Sphere('knowledge', 'Знания', '📚',
+        'Обучение, навыки, профессиональный рост',
+        Color(0xFF4A8C6F)),
+    const Sphere('relations', 'Отношения', '🤝',
+        'Семья, друзья, нетворкинг',
+        Color(0xFFC47E6B)),
+    const Sphere('energy', 'Энергия', '🔥',
+        'Здоровье, спорт, сон, питание',
+        Color(0xFFC47E2E)),
+    const Sphere('will', 'Воля', '🎯',
+        'Фокус, упорство, преодоление трудностей',
+        Color(0xFF7B6FA5)),
+    const Sphere('wisdom', 'Мудрость', '🧠',
+        'Рефлексия, решения, эмоциональный интеллект',
+        Color(0xFF4A8C8C)),
   ];
 }
 
