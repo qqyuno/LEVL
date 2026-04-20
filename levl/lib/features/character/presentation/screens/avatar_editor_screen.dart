@@ -51,7 +51,16 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
       final isar = await ref.read(isarProvider.future);
       final local = await isar.userProfileLocals.where().findFirst();
       if (local != null) {
-        local.characterStateJson = jsonEncode(_config.toJson());
+        // Preserve pain points stored by onboarding in the same JSON field
+        Map<String, dynamic> existing = {};
+        try {
+          existing = jsonDecode(local.characterStateJson) as Map<String, dynamic>;
+        } catch (_) {}
+        final merged = _config.toJson();
+        if (existing.containsKey('painPoints')) {
+          merged['painPoints'] = existing['painPoints'];
+        }
+        local.characterStateJson = jsonEncode(merged);
         await isar.writeTxn(() async {
           await isar.userProfileLocals.put(local);
         });

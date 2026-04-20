@@ -140,7 +140,7 @@ class QuestNotifier extends _$QuestNotifier {
       // Check local cache (Isar) for today's quests
       final cached = await _questQuery(
         isar,
-        isar.questLocals.filter().createdAtGreaterThan(startOfDay, include: false),
+        isar.questLocals.filter().createdAtGreaterThan(startOfDay, include: true),
       );
 
       if (cached.isNotEmpty) {
@@ -299,10 +299,13 @@ class QuestNotifier extends _$QuestNotifier {
         'completed_at': DateTime.now().toIso8601String(),
       }).eq('id', questId);
 
-      await client.rpc('add_xp', params: {
-        'user_id': client.auth.currentUser!.id,
-        'xp_amount': xp,
-      });
+      final uid = client.auth.currentUser?.id;
+      if (uid != null) {
+        await client.rpc('add_xp', params: {
+          'user_id': uid,
+          'xp_amount': xp,
+        });
+      }
     } catch (_) {
       // Offline — will sync later
     }

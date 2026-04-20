@@ -31,7 +31,7 @@ GoRouter appRouter(AppRouterRef ref) {
 
   return GoRouter(
     initialLocation: AppRoutes.dashboard,
-    debugLogDiagnostics: true,
+    debugLogDiagnostics: false,
     redirect: (context, state) {
       final loc = state.matchedLocation;
 

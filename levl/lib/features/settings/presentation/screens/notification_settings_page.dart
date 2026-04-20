@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/notifications/notification_provider.dart';
 import '../../../../core/notifications/notification_service.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../dashboard/presentation/providers/quest_provider.dart';
 
 class NotificationSettingsPage extends ConsumerWidget {
@@ -73,6 +74,43 @@ class _SettingsBody extends ConsumerWidget {
               await _reschedule(ref);
             },
           ),
+        ),
+
+        const SizedBox(height: 32),
+        const Divider(color: AppColors.divider),
+        const SizedBox(height: 16),
+
+        // Sign out
+        _SettingsTile(
+          title: 'Выйти из аккаунта',
+          subtitle: 'Вернуться к экрану входа',
+          trailing: const Icon(Icons.logout, color: AppColors.textSecondary, size: 20),
+          onTap: () async {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: AppColors.surface,
+                title: const Text('Выйти?', style: TextStyle(color: AppColors.textPrimary)),
+                content: const Text(
+                  'Данные сохранены локально и восстановятся при входе.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Отмена', style: TextStyle(color: AppColors.textSecondary)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Выйти', style: TextStyle(color: AppColors.textPrimary)),
+                  ),
+                ],
+              ),
+            );
+            if (confirm == true) {
+              await ref.read(authNotifierProvider.notifier).signOut();
+            }
+          },
         ),
 
         if (settings.enabled) ...[

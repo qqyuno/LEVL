@@ -88,18 +88,40 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
             // --- Messages ---
             Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: chatState.messages.length + (chatState.isLoading ? 1 : 0),
-                itemBuilder: (context, index) {
-                  // Loading indicator
-                  if (index == chatState.messages.length) {
-                    return const _TypingIndicator();
-                  }
-                  return _MessageBubble(message: chatState.messages[index]);
-                },
-              ),
+              child: chatState.messages.isEmpty && !chatState.isLoading
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 40),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.auto_awesome, size: 28, color: AppColors.textDisabled),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Система слушает.\nО чём думаешь сегодня?',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.dmSans(
+                                fontSize: 15,
+                                color: AppColors.textSecondary,
+                                fontStyle: FontStyle.italic,
+                                height: 1.6,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: chatState.messages.length + (chatState.isLoading ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == chatState.messages.length) {
+                          return const _TypingIndicator();
+                        }
+                        return _MessageBubble(message: chatState.messages[index]);
+                      },
+                    ),
             ),
 
             // --- Error ---

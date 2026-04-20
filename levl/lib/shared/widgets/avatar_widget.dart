@@ -35,7 +35,7 @@ class AvatarWidget extends StatelessWidget {
               boxShadow: streak >= 7
                   ? [
                       BoxShadow(
-                        color: auraColor.withAlpha(60),
+                        color: auraColor.withValues(alpha: 0.24),
                         blurRadius: 16,
                         spreadRadius: 2,
                       ),
