@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/onboarding_provider.dart';
+import 'step_shell.dart';
 
 /// Step 4: Цели в выбранных сферах
 class StepSphereGoals extends ConsumerStatefulWidget {
@@ -14,6 +15,7 @@ class StepSphereGoals extends ConsumerStatefulWidget {
 
 class _StepSphereGoalsState extends ConsumerState<StepSphereGoals> {
   final _controllers = <String, TextEditingController>{};
+  final _focusNodes = <String, FocusNode>{};
 
   TextEditingController _controllerFor(String key, String initialText) {
     return _controllers.putIfAbsent(key, () {
@@ -25,10 +27,21 @@ class _StepSphereGoalsState extends ConsumerState<StepSphereGoals> {
     });
   }
 
+  FocusNode _focusFor(String key) {
+    return _focusNodes.putIfAbsent(key, () {
+      final node = FocusNode();
+      node.addListener(() => setState(() {}));
+      return node;
+    });
+  }
+
   @override
   void dispose() {
     for (final c in _controllers.values) {
       c.dispose();
+    }
+    for (final n in _focusNodes.values) {
+      n.dispose();
     }
     super.dispose();
   }
@@ -37,7 +50,7 @@ class _StepSphereGoalsState extends ConsumerState<StepSphereGoals> {
   Widget build(BuildContext context) {
     final data = ref.watch(onboardingNotifierProvider);
     final selectedSpheres = data.spheres;
-    const allSpheres = Sphere.all;
+    final allSpheres = Sphere.all;
 
     // Remove controllers for deselected spheres
     _controllers.keys
@@ -46,111 +59,168 @@ class _StepSphereGoalsState extends ConsumerState<StepSphereGoals> {
         .forEach((k) {
       _controllers[k]!.dispose();
       _controllers.remove(k);
+      _focusNodes[k]?.dispose();
+      _focusNodes.remove(k);
     });
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 48, 24, 16),
+    return StepShell(
+      chapter: '04',
+      title: 'Что именно?',
+      subtitle:
+          'Для каждой сферы — конкретная цель. Коротко. Одно предложение. Оно станет направлением.',
+      footer: const StepQuote('Конкретная цель — половина пути.'),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Цели в сферах',
-            style: GoogleFonts.dmSerifDisplay(
-              fontSize: 28,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Чего хочешь достичь в каждой сфере? Коротко и честно.',
-            style: GoogleFonts.dmSans(
-              fontSize: 15,
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 32),
-          ...selectedSpheres.map((key) {
-            final sphere = allSpheres.firstWhere((s) => s.key == key);
-            final controller = _controllerFor(key, data.sphereGoals[key] ?? '');
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(sphere.icon, style: const TextStyle(fontSize: 18)),
-                      const SizedBox(width: 8),
-                      Text(
-                        sphere.label,
-                        style: GoogleFonts.dmSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    maxLines: 2,
-                    maxLength: 150,
-                    textInputAction: TextInputAction.next,
-                    controller: controller,
-                    style: GoogleFonts.dmSans(
-                        fontSize: 14, color: AppColors.textPrimary),
-                    decoration: InputDecoration(
-                      hintText: _hintFor(key),
-                      hintStyle: GoogleFonts.dmSans(
-                          fontSize: 14, color: AppColors.textDisabled),
-                      counterStyle: GoogleFonts.dmSans(
-                          fontSize: 11, color: AppColors.textDisabled),
-                      filled: true,
-                      fillColor: AppColors.surface,
-                      contentPadding: const EdgeInsets.all(14),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.divider),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.divider),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppColors.textPrimary),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-          const SizedBox(height: 8),
-          Center(
-            child: Text(
-              '«Конкретная цель — половина пути.»',
-              style: GoogleFonts.dmSans(
-                fontSize: 13,
-                color: AppColors.textDisabled,
-                fontStyle: FontStyle.italic,
+          for (final key in selectedSpheres)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: _SphereGoalCard(
+                sphere: allSpheres.firstWhere((s) => s.key == key),
+                controller: _controllerFor(key, data.sphereGoals[key] ?? ''),
+                focusNode: _focusFor(key),
+                hint: _hintFor(key),
               ),
             ),
-          ),
         ],
       ),
     );
   }
 
   static String _hintFor(String key) => switch (key) {
-        'discipline' => 'Выстроить утренний ритуал',
-        'knowledge' => 'Прочитать 12 книг за год',
-        'relations' => 'Проводить больше времени с семьёй',
-        'energy' => 'Бегать 3 раза в неделю',
-        'will' => 'Довести проект до конца',
-        'wisdom' => 'Медитировать каждый день',
+        'discipline' => 'Например: выстроить утренний ритуал',
+        'knowledge' => 'Например: прочитать 12 книг за год',
+        'relations' => 'Например: ужинать с семьёй без телефона',
+        'energy' => 'Например: бегать 3 раза в неделю',
+        'will' => 'Например: довести проект до запуска',
+        'wisdom' => 'Например: медитировать по 10 минут в день',
         _ => 'Опиши цель',
       };
+}
+
+class _SphereGoalCard extends StatelessWidget {
+  final Sphere sphere;
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String hint;
+
+  const _SphereGoalCard({
+    required this.sphere,
+    required this.controller,
+    required this.focusNode,
+    required this.hint,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final focused = focusNode.hasFocus;
+    final hasValue = controller.text.trim().length >= 3;
+    final color = sphere.color;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: focused
+              ? color.withValues(alpha: 0.6)
+              : hasValue
+                  ? color.withValues(alpha: 0.3)
+                  : AppColors.divider,
+          width: focused ? 1.4 : 1,
+        ),
+        boxShadow: focused
+            ? [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.12),
+                  blurRadius: 18,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : null,
+      ),
+      child: Stack(
+        children: [
+          // Left color bar
+          Positioned(
+            left: 0,
+            top: 14,
+            bottom: 14,
+            child: Container(
+              width: 3,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 14, 16, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          sphere.icon,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      sphere.label,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: color,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (hasValue)
+                      Icon(Icons.check_circle_rounded,
+                          size: 16,
+                          color: color.withValues(alpha: 0.8)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  maxLines: 2,
+                  maxLength: 150,
+                  textInputAction: TextInputAction.next,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 15,
+                    color: AppColors.textPrimary,
+                    height: 1.4,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: hint,
+                    hintStyle: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      color: AppColors.textDisabled,
+                      height: 1.4,
+                    ),
+                    isCollapsed: true,
+                    counterText: '',
+                    border: InputBorder.none,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

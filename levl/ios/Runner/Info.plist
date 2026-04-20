@@ -66,5 +66,20 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>io.supabase.levl</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>io.supabase.levl</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Используется только для твоей собственной аналитики прогресса.</string>
 </dict>
 </plist>

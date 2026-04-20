@@ -3,69 +3,167 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/onboarding_provider.dart';
+import 'step_shell.dart';
 
-/// Step 4: Куда через год?
-class StepMainGoal extends ConsumerWidget {
+/// Step 6: Куда через год?
+class StepMainGoal extends ConsumerStatefulWidget {
   const StepMainGoal({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 48, 24, 16),
+  ConsumerState<StepMainGoal> createState() => _StepMainGoalState();
+}
+
+class _StepMainGoalState extends ConsumerState<StepMainGoal> {
+  static const _maxLength = 300;
+  final _focus = FocusNode();
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = ref.read(onboardingNotifierProvider).mainGoal;
+    _ctrl = TextEditingController(text: initial);
+    _focus.addListener(() => setState(() {}));
+    _ctrl.addListener(() {
+      ref
+          .read(onboardingNotifierProvider.notifier)
+          .setMainGoal(_ctrl.text);
+      setState(() {}); // refresh counter + status
+    });
+  }
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final length = _ctrl.text.length;
+    final focused = _focus.hasFocus;
+    final hasEnough = length >= 3;
+
+    return StepShell(
+      chapter: '06',
+      title: 'Куда через год?',
+      subtitle:
+          'Одна главная цель. Не три. Не пять. Самая важная — та, что изменит всё остальное.',
+      footer: const StepQuote('Путь в тысячу ли начинается с первого шага.'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Куда через год?',
-            style: GoogleFonts.dmSerifDisplay(
-              fontSize: 28,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Опиши главную цель. Одну. Самую важную.',
-            style: GoogleFonts.dmSans(
-              fontSize: 15,
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 32),
-          TextField(
-            maxLines: 4,
-            maxLength: 300,
-            textInputAction: TextInputAction.done,
-            onChanged: (v) => ref.read(onboardingNotifierProvider.notifier).setMainGoal(v),
-            style: GoogleFonts.dmSans(fontSize: 15, color: AppColors.textPrimary),
-            decoration: InputDecoration(
-              hintText: 'Запустить свой продукт и уволиться с работы',
-              hintStyle: GoogleFonts.dmSans(fontSize: 15, color: AppColors.textDisabled),
-              counterStyle: GoogleFonts.dmSans(fontSize: 11, color: AppColors.textDisabled),
-              filled: true,
-              fillColor: AppColors.surface,
-              contentPadding: const EdgeInsets.all(16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.divider),
+          // Horizon marker
+          Row(
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: AppColors.gold,
+                  shape: BoxShape.circle,
+                ),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.divider),
+              const SizedBox(width: 8),
+              Text(
+                'ГОРИЗОНТ — 12 МЕСЯЦЕВ',
+                style: GoogleFonts.dmSans(
+                  fontSize: 11,
+                  letterSpacing: 2.2,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.gold,
+                ),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.textPrimary),
-              ),
-            ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            '«Путь в тысячу ли начинается с первого шага.»',
-            style: GoogleFonts.dmSans(
-              fontSize: 13,
-              color: AppColors.textDisabled,
-              fontStyle: FontStyle.italic,
+          const SizedBox(height: 14),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: focused
+                    ? AppColors.gold
+                    : hasEnough
+                        ? AppColors.gold.withValues(alpha: 0.35)
+                        : AppColors.divider,
+                width: focused ? 1.4 : 1,
+              ),
+              boxShadow: focused
+                  ? [
+                      BoxShadow(
+                        color: AppColors.gold.withValues(alpha: 0.12),
+                        blurRadius: 22,
+                        offset: const Offset(0, 6),
+                      ),
+                    ]
+                  : null,
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: _ctrl,
+                  focusNode: _focus,
+                  maxLines: 5,
+                  minLines: 3,
+                  maxLength: _maxLength,
+                  textInputAction: TextInputAction.done,
+                  style: GoogleFonts.dmSerifDisplay(
+                    fontSize: 20,
+                    color: AppColors.textPrimary,
+                    height: 1.4,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Запустить свой продукт и уволиться с работы.',
+                    hintStyle: GoogleFonts.dmSerifDisplay(
+                      fontSize: 20,
+                      color: AppColors.textDisabled,
+                      height: 1.4,
+                    ),
+                    counterText: '',
+                    isCollapsed: true,
+                    border: InputBorder.none,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Icon(
+                      hasEnough
+                          ? Icons.auto_awesome_rounded
+                          : Icons.circle_outlined,
+                      size: 14,
+                      color: hasEnough
+                          ? AppColors.gold
+                          : AppColors.textDisabled,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      hasEnough ? 'Зафиксировано' : 'Минимум 3 символа',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        color: hasEnough
+                            ? AppColors.gold
+                            : AppColors.textDisabled,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '$length/$_maxLength',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 11,
+                        color: AppColors.textDisabled,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/onboarding_provider.dart';
+import 'step_shell.dart';
 
 class StepSpheres extends ConsumerWidget {
   const StepSpheres({super.key});
@@ -11,60 +13,47 @@ class StepSpheres extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(onboardingNotifierProvider).spheres;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 48, 24, 16),
+    return StepShell(
+      chapter: '03',
+      title: 'Что будешь развивать?',
+      subtitle:
+          'От 2 до 4 сфер. Система сфокусирует задачи вокруг них — и не распылит.',
+      footer: Text(
+        selected.isEmpty
+            ? 'Минимум 2'
+            : selected.length < 2
+                ? 'Ещё одна'
+                : '${selected.length}/4 выбрано',
+        style: GoogleFonts.dmSans(
+          fontSize: 12,
+          color: selected.length >= 2
+              ? AppColors.textSecondary
+              : AppColors.textDisabled,
+          letterSpacing: 0.3,
+        ),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Что хочешь развить?',
-            style: GoogleFonts.dmSerifDisplay(
-              fontSize: 28,
-              color: AppColors.textPrimary,
+        children: List.generate(Sphere.all.length, (i) {
+          final sphere = Sphere.all[i];
+          final isActive = selected.contains(sphere.key);
+          final isDisabled = !isActive && selected.length >= 4;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _SphereCard(
+              sphere: sphere,
+              isActive: isActive,
+              isDisabled: isDisabled,
+              onTap: isDisabled
+                  ? null
+                  : () {
+                      HapticFeedback.selectionClick();
+                      ref
+                          .read(onboardingNotifierProvider.notifier)
+                          .toggleSphere(sphere.key);
+                    },
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Выбери от 2 до 4 сфер. Система сфокусирует задачи на них.',
-            style: GoogleFonts.dmSans(
-              fontSize: 15,
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 28),
-          ...Sphere.all.map((sphere) {
-            final isActive = selected.contains(sphere.key);
-            final isDisabled = !isActive && selected.length >= 4;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _SphereCard(
-                sphere: sphere,
-                isActive: isActive,
-                isDisabled: isDisabled,
-                onTap: isDisabled
-                    ? null
-                    : () => ref
-                        .read(onboardingNotifierProvider.notifier)
-                        .toggleSphere(sphere.key),
-              ),
-            );
-          }),
-          const SizedBox(height: 12),
-          Center(
-            child: Text(
-              selected.isEmpty
-                  ? 'Выбери минимум 2'
-                  : '${selected.length}/4 выбрано',
-              style: GoogleFonts.dmSans(
-                fontSize: 13,
-                color: selected.isEmpty
-                    ? AppColors.textDisabled
-                    : AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ],
+          );
+        }),
       ),
     );
   }
@@ -90,7 +79,7 @@ class _SphereCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: isActive
@@ -107,14 +96,22 @@ class _SphereCard extends StatelessWidget {
                     : AppColors.divider,
             width: isActive ? 1.5 : 1,
           ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.12),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           children: [
-            // Цветной иконка-бейдж
             AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              width: 42,
-              height: 42,
+              duration: const Duration(milliseconds: 200),
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: isActive
                     ? color.withValues(alpha: 0.15)
@@ -126,16 +123,11 @@ class _SphereCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   sphere.icon,
-                  style: TextStyle(
-                    fontSize: 20,
-                    color: isDisabled ? null : null,
-                  ),
+                  style: const TextStyle(fontSize: 20),
                 ),
               ),
             ),
             const SizedBox(width: 14),
-
-            // Название + описание
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,12 +158,9 @@ class _SphereCard extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(width: 8),
-
-            // Чекбокс
             AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
+              duration: const Duration(milliseconds: 200),
               width: 24,
               height: 24,
               decoration: BoxDecoration(
@@ -187,7 +176,8 @@ class _SphereCard extends StatelessWidget {
                 ),
               ),
               child: isActive
-                  ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                  ? const Icon(Icons.check_rounded,
+                      size: 14, color: Colors.white)
                   : null,
             ),
           ],
