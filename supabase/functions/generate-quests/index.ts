@@ -202,50 +202,82 @@ function buildPrompt(
   sphereGoals: { sphere: string; goal: string }[],
   todaySpheres: string[]
 ): string {
+  const name = (profile.name as string) || "Путник";
+  const lifeContext = profile.life_context ?? "—";
+  const mainGoal = profile.main_goal ?? "—";
+  const workStyle = profile.work_style ?? "—";
+  const dailyMinutes = profile.daily_minutes ?? 30;
+  const level = profile.level ?? 1;
+  const streak = profile.current_streak ?? 0;
+  const painPoints = profile.pain_points ?? "";
+
   const sphereLines = todaySpheres
     .map((s) => {
       const label = SPHERE_LABELS[s] ?? s;
       const goal = sphereGoals.find((g) => g.sphere === s)?.goal ?? "—";
-      return `- ${label}: «${goal}»`;
+      return `  ${label}: хочет "${goal}"`;
     })
     .join("\n");
 
-  return `Ты — Система в приложении LEVL. Генерируешь 3 задания на день для пользователя.
+  const streakLine = streak >= 3
+    ? `  Стрик ${streak} дней — держит ритм.`
+    : streak === 0
+    ? `  Стрик прерван. Нужен лёгкий старт.`
+    : `  Стрик ${streak} день — только начинает.`;
 
-ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ:
-- Контекст жизни: ${profile.life_context ?? "—"}
-- Суперцель (через год): ${profile.main_goal ?? "—"}
-- Стиль работы: ${profile.work_style ?? "—"}
-- Время в день: ${profile.daily_minutes ?? 30} минут
-- Уровень: ${profile.level ?? 1}
-- Стрик: ${profile.current_streak ?? 0} дней подряд
+  const difficultyHint = (level as number) <= 3
+    ? "trivial или easy — человек только входит в ритм, не перегружай"
+    : (level as number) <= 7
+    ? "easy или medium — уже есть привычка, можно чуть поднять планку"
+    : "medium или hard — уже стабилен, давай реальный вызов";
 
-СФЕРЫ НА СЕГОДНЯ И ЦЕЛИ В НИХ:
+  return `Ты — Система в приложении LEVL. Твоя задача: создать 3 задания на день для конкретного живого человека.
+
+Перед тем как писать задания — ВНИКНИ в этого человека:
+
+КТО ОН:
+  Имя: ${name}
+  Где сейчас: ${lifeContext}
+  Куда идёт (через год): ${mainGoal}
+  Как работает: ${workStyle}
+  Что его тормозит: ${painPoints || "не указано"}
+${streakLine}
+  Уровень: ${level}
+  Времени в день: ${dailyMinutes} мин
+
+ЧТО РАЗВИВАЕТ СЕГОДНЯ:
 ${sphereLines}
+
+ПРИНЦИПЫ ПЕРСОНАЛИЗАЦИИ:
+- Задания должны звучать как будто написаны лично для ${name}, а не для "среднего пользователя"
+- Если человек говорит "хочу запустить стартап" — задание не "поработай над проектом", а "опиши одну функцию MVP и оцени её за 15 минут"
+- Если тормозит прокрастинация — задание начинается с самого маленького шага, не с большого
+- Если стрик только начался — задание лёгкое, чтобы не сломать momentum
+- Учитывай что у него ВСЕГО ${dailyMinutes} минут — задания реалистичные, не амбициозные планы на день
 
 ПРАВИЛА:
 1. Верни РОВНО 3 задания в JSON-массиве
-2. Задание 1 — прямой шаг к суперцели, оформленный через одну из сфер (isMainGoalTask: true)
-3. Задания 2 и 3 — развитие оставшихся сфер (isMainGoalTask: false)
-4. Все три задания написаны с учётом суперцели как фонового контекста
-5. Суммарное estimatedMinutes ≤ ${profile.daily_minutes ?? 30}
-6. difficulty зависит от уровня: lvl 1-3 → trivial/easy, lvl 4-7 → easy/medium, lvl 8+ → medium/hard
-7. xpReward: trivial=10, easy=25, medium=50, hard=100, epic=200
-8. sphere — одно из: ${todaySpheres.join(", ")}
-9. tip — голос Системы: 1 предложение, курсив, короткий, без воды
+2. Задание 1 — прямой конкретный шаг к суперцели "${mainGoal}" (isMainGoalTask: true)
+3. Задания 2 и 3 — развитие оставшихся сфер, тоже конкретные (isMainGoalTask: false)
+4. Сумма estimatedMinutes ≤ ${dailyMinutes}
+5. Сложность: ${difficultyHint}
+6. xpReward: trivial=10, easy=25, medium=50, hard=100, epic=200
+7. sphere — строго одно из: ${todaySpheres.join(", ")}
+8. tip — голос Системы: 1 предложение, без восклицаний, холодно и точно
+9. description — конкретное действие, не абстракция. Что именно делать, как именно, сколько
 10. Язык: русский
 
-ФОРМАТ ОТВЕТА (только JSON, без markdown):
+ФОРМАТ ОТВЕТА (только JSON, без markdown, без пояснений):
 [
   {
-    "title": "короткое название",
-    "description": "что конкретно делать",
+    "title": "короткое название действия",
+    "description": "конкретно что делать — шаг за шагом если нужно",
     "sphere": "ключ_сферы",
     "isMainGoalTask": true,
     "xpReward": 25,
     "estimatedMinutes": 10,
     "difficulty": "easy",
-    "tip": "Голос Системы."
+    "tip": "Одно предложение от Системы."
   }
 ]`;
 }
