@@ -35,41 +35,50 @@ class _WelcomePageState extends ConsumerState<WelcomePage>
     super.initState();
 
     // Scan line — 400ms
-    _scanCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _scanCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 400));
     _scanAnim = Tween(begin: -0.05, end: 1.05).animate(
       CurvedAnimation(parent: _scanCtrl, curve: Curves.easeInOut),
     );
 
     // Logo — 700ms
-    _logoCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+    _logoCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 700));
     _logoFade = Tween(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _logoCtrl, curve: const Interval(0.0, 0.7, curve: Curves.easeOut)),
+      CurvedAnimation(
+          parent: _logoCtrl,
+          curve: const Interval(0.0, 0.7, curve: Curves.easeOut)),
     );
     _logoScale = Tween(begin: 0.88, end: 1.0).animate(
       CurvedAnimation(parent: _logoCtrl, curve: Curves.easeOutCubic),
     );
 
     // Gold underline — 450ms
-    _lineCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 450));
+    _lineCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 450));
     _lineWidth = Tween(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _lineCtrl, curve: Curves.easeOutCubic),
     );
 
     // Tagline — 600ms
-    _taglineCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _taglineCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 600));
     _taglineFade = Tween(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _taglineCtrl, curve: Curves.easeOut),
     );
-    _taglineSlide = Tween(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+    _taglineSlide =
+        Tween(begin: const Offset(0, 0.3), end: Offset.zero).animate(
       CurvedAnimation(parent: _taglineCtrl, curve: Curves.easeOutCubic),
     );
 
     // Buttons — 700ms
-    _buttonsCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+    _buttonsCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 700));
     _buttonsFade = Tween(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _buttonsCtrl, curve: Curves.easeOut),
     );
-    _buttonsSlide = Tween(begin: const Offset(0, 0.15), end: Offset.zero).animate(
+    _buttonsSlide =
+        Tween(begin: const Offset(0, 0.15), end: Offset.zero).animate(
       CurvedAnimation(parent: _buttonsCtrl, curve: Curves.easeOutCubic),
     );
 
@@ -249,6 +258,16 @@ class _WelcomePageState extends ConsumerState<WelcomePage>
                     ),
                   ),
 
+                  const SizedBox(height: 28),
+
+                  FadeTransition(
+                    opacity: _taglineFade,
+                    child: SlideTransition(
+                      position: _taglineSlide,
+                      child: const _ValueStack(),
+                    ),
+                  ),
+
                   const Spacer(flex: 4),
 
                   // Auth buttons
@@ -277,7 +296,9 @@ class _WelcomePageState extends ConsumerState<WelcomePage>
                             icon: Icons.g_mobiledata,
                             onTap: isLoading
                                 ? null
-                                : () => ref.read(authNotifierProvider.notifier).signInWithGoogle(),
+                                : () => ref
+                                    .read(authNotifierProvider.notifier)
+                                    .signInWithGoogle(),
                           ),
                           const SizedBox(height: 12),
 
@@ -287,7 +308,9 @@ class _WelcomePageState extends ConsumerState<WelcomePage>
                             filled: true,
                             onTap: isLoading
                                 ? null
-                                : () => ref.read(authNotifierProvider.notifier).signInWithApple(),
+                                : () => ref
+                                    .read(authNotifierProvider.notifier)
+                                    .signInWithApple(),
                           ),
 
                           const SizedBox(height: 28),
@@ -295,14 +318,17 @@ class _WelcomePageState extends ConsumerState<WelcomePage>
                           GestureDetector(
                             onTap: isLoading
                                 ? null
-                                : () => ref.read(authNotifierProvider.notifier).signInAnonymously(),
+                                : () => ref
+                                    .read(authNotifierProvider.notifier)
+                                    .signInAnonymously(),
                             child: Text(
                               'Войти как гость',
                               style: GoogleFonts.dmSans(
                                 fontSize: 14,
                                 color: Colors.white.withValues(alpha: 0.3),
                                 decoration: TextDecoration.underline,
-                                decorationColor: Colors.white.withValues(alpha: 0.2),
+                                decorationColor:
+                                    Colors.white.withValues(alpha: 0.2),
                               ),
                             ),
                           ),
@@ -350,6 +376,58 @@ class _WelcomePageState extends ConsumerState<WelcomePage>
   }
 }
 
+class _ValueStack extends StatelessWidget {
+  const _ValueStack();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      children: [
+        _ValueLine(text: '3 точных действия в день'),
+        SizedBox(height: 8),
+        _ValueLine(text: 'Под твою цель и текущий ресурс'),
+        SizedBox(height: 8),
+        _ValueLine(text: 'Прогресс, который видно'),
+      ],
+    );
+  }
+}
+
+class _ValueLine extends StatelessWidget {
+  final String text;
+  const _ValueLine({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.035),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.check_rounded, size: 16, color: AppColors.gold),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Colors.white.withValues(alpha: 0.72),
+                height: 1.2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _AuthButton extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -373,7 +451,8 @@ class _AuthButton extends StatelessWidget {
         icon: Icon(icon, size: 22),
         label: Text(label),
         style: OutlinedButton.styleFrom(
-          backgroundColor: filled ? Colors.white : Colors.white.withValues(alpha: 0.04),
+          backgroundColor:
+              filled ? Colors.white : Colors.white.withValues(alpha: 0.04),
           foregroundColor: filled ? const Color(0xFF0A0A0A) : Colors.white,
           side: BorderSide(
             color: filled ? Colors.white : Colors.white.withValues(alpha: 0.15),

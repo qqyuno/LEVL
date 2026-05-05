@@ -109,7 +109,19 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     }
 
     ref.read(onboardingCompleteProvider.notifier).markComplete();
+    await _showActivationSheet(ref.read(onboardingNotifierProvider));
+    if (!mounted) return;
     context.go(AppRoutes.dashboard);
+  }
+
+  Future<void> _showActivationSheet(OnboardingData data) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.55),
+      builder: (ctx) => _ActivationSheet(data: data),
+    );
   }
 
   @override
@@ -139,7 +151,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                     onTap: _back,
                   ),
                   const SizedBox(width: 14),
-                  Expanded(child: _SegmentedProgress(
+                  Expanded(
+                      child: _SegmentedProgress(
                     total: _totalSteps,
                     current: _currentStep,
                   )),
@@ -177,6 +190,208 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ActivationSheet extends StatelessWidget {
+  final OnboardingData data;
+  const _ActivationSheet({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final sphereLabels = data.spheres
+        .map(_sphereLabel)
+        .where((label) => label.isNotEmpty)
+        .join(' / ');
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(22, 10, 22, 22),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.divider),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 30,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 22),
+                  decoration: BoxDecoration(
+                    color: AppColors.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text(
+                'СИСТЕМА СОБРАНА',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.dmSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.gold,
+                  letterSpacing: 2.6,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Твой первый день уже можно открыть.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.dmSerifDisplay(
+                  fontSize: 25,
+                  color: AppColors.textPrimary,
+                  height: 1.18,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Система будет давать три действия в день: коротко, по делу, с учетом цели и ресурса.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.dmSans(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _ReadoutRow(
+                icon: Icons.stars_rounded,
+                label: 'Цель',
+                value: data.mainGoal,
+                highlight: true,
+              ),
+              const SizedBox(height: 10),
+              _ReadoutRow(
+                icon: Icons.track_changes_rounded,
+                label: 'Фокус',
+                value: sphereLabels.isEmpty
+                    ? 'Путь будет уточняться'
+                    : sphereLabels,
+              ),
+              const SizedBox(height: 10),
+              _ReadoutRow(
+                icon: Icons.timer_outlined,
+                label: 'Ресурс',
+                value: '${data.dailyMinutes} минут в день',
+              ),
+              const SizedBox(height: 22),
+              SizedBox(
+                height: 52,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.textPrimary,
+                    foregroundColor: AppColors.surface,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Text(
+                    'Открыть первый день',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _sphereLabel(String key) {
+    for (final sphere in Sphere.all) {
+      if (sphere.key == key) return sphere.label;
+    }
+    return '';
+  }
+}
+
+class _ReadoutRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool highlight;
+
+  const _ReadoutRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.highlight = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: highlight
+            ? AppColors.gold.withValues(alpha: 0.08)
+            : AppColors.background,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: highlight
+              ? AppColors.gold.withValues(alpha: 0.22)
+              : AppColors.divider,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: 19,
+            color: highlight ? AppColors.gold : AppColors.textSecondary,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label.toUpperCase(),
+                  style: GoogleFonts.dmSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textDisabled,
+                    letterSpacing: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  value,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 14,
+                    fontWeight: highlight ? FontWeight.w600 : FontWeight.w500,
+                    color: AppColors.textPrimary,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

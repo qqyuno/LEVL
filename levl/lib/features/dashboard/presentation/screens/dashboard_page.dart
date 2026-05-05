@@ -34,6 +34,7 @@ class DashboardPage extends ConsumerWidget {
             slivers: [
               SliverToBoxAdapter(child: _DashboardHeader(user: user)),
               SliverToBoxAdapter(child: _HeroSegment(user: user)),
+              SliverToBoxAdapter(child: _TodaySystemBrief(user: user)),
 
               // Main Quest
               SliverToBoxAdapter(
@@ -88,11 +89,12 @@ class DashboardPage extends ConsumerWidget {
 
               // Daily Quests
               questsAsync.when(
-                loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
-                error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                loading: () =>
+                    const SliverToBoxAdapter(child: SizedBox.shrink()),
+                error: (_, __) =>
+                    const SliverToBoxAdapter(child: SizedBox.shrink()),
                 data: (quests) {
-                  final daily =
-                      quests.where((q) => !q.isMainGoalTask).toList();
+                  final daily = quests.where((q) => !q.isMainGoalTask).toList();
                   return SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     sliver: SliverList(
@@ -118,7 +120,6 @@ class DashboardPage extends ConsumerWidget {
           ),
         ),
       ),
-
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.go(AppRoutes.aiMentor),
         backgroundColor: AppColors.surface,
@@ -226,15 +227,14 @@ class _DashboardHeaderState extends State<_DashboardHeader>
               ],
             ),
           ),
-
           const SizedBox(width: 12),
-
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Streak badge с пульсом
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(20),
@@ -379,7 +379,8 @@ class _HeroSegment extends StatelessWidget {
                             boxShadow: value > 0.02
                                 ? [
                                     BoxShadow(
-                                      color: AppColors.gold.withValues(alpha: 0.45),
+                                      color: AppColors.gold
+                                          .withValues(alpha: 0.45),
                                       blurRadius: 8,
                                       spreadRadius: 0,
                                     ),
@@ -403,7 +404,81 @@ class _HeroSegment extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Подтверждение от Системы перед завершением задания
 // ---------------------------------------------------------------------------
-Future<bool> _showSystemConfirmation(BuildContext context, String questTitle) async {
+class _TodaySystemBrief extends StatelessWidget {
+  final UserProfile user;
+  const _TodaySystemBrief({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: AppColors.textPrimary.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome,
+                    size: 15,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'СЕГОДНЯ',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textDisabled,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Три действия. Этого достаточно.',
+              style: GoogleFonts.dmSerifDisplay(
+                fontSize: 21,
+                color: AppColors.textPrimary,
+                height: 1.15,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              user.dailyMinutes <= 30
+                  ? 'Система держит день легким: короткие шаги, без перегруза.'
+                  : 'Система распределит фокус так, чтобы движение было заметным.',
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+                height: 1.45,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Future<bool> _showSystemConfirmation(
+    BuildContext context, String questTitle) async {
   final result = await showModalBottomSheet<bool>(
     context: context,
     backgroundColor: Colors.transparent,
@@ -421,7 +496,8 @@ Future<bool> _showSystemConfirmation(BuildContext context, String questTitle) as
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 40, height: 4,
+            width: 40,
+            height: 4,
             margin: const EdgeInsets.only(bottom: 28),
             decoration: BoxDecoration(
               color: AppColors.divider,
@@ -431,8 +507,10 @@ Future<bool> _showSystemConfirmation(BuildContext context, String questTitle) as
           Text(
             'СИСТЕМА',
             style: GoogleFonts.dmSans(
-              fontSize: 11, fontWeight: FontWeight.w600,
-              color: AppColors.gold, letterSpacing: 3,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.gold,
+              letterSpacing: 3,
             ),
           ),
           const SizedBox(height: 20),
@@ -440,8 +518,10 @@ Future<bool> _showSystemConfirmation(BuildContext context, String questTitle) as
             'Зафиксировано.\nСистема доверяет тебе.',
             textAlign: TextAlign.center,
             style: GoogleFonts.dmSerifDisplay(
-              fontSize: 24, color: AppColors.textPrimary,
-              height: 1.3, letterSpacing: 0.3,
+              fontSize: 24,
+              color: AppColors.textPrimary,
+              height: 1.3,
+              letterSpacing: 0.3,
             ),
           ),
           const SizedBox(height: 8),
@@ -449,7 +529,8 @@ Future<bool> _showSystemConfirmation(BuildContext context, String questTitle) as
             questTitle,
             textAlign: TextAlign.center,
             style: GoogleFonts.dmSans(
-              fontSize: 14, color: AppColors.textSecondary,
+              fontSize: 14,
+              color: AppColors.textSecondary,
               fontStyle: FontStyle.italic,
             ),
             maxLines: 2,
@@ -470,7 +551,8 @@ Future<bool> _showSystemConfirmation(BuildContext context, String questTitle) as
                   'Подтвердить',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.dmSans(
-                    fontSize: 16, fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.background,
                   ),
                 ),
@@ -483,7 +565,8 @@ Future<bool> _showSystemConfirmation(BuildContext context, String questTitle) as
             child: Text(
               'Ещё не выполнено',
               style: GoogleFonts.dmSans(
-                fontSize: 14, color: AppColors.textSecondary,
+                fontSize: 14,
+                color: AppColors.textSecondary,
               ),
             ),
           ),
@@ -510,7 +593,8 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
   bool _showBurst = false;
 
   Future<void> _handleComplete() async {
-    final confirmed = await _showSystemConfirmation(context, widget.quest.title);
+    final confirmed =
+        await _showSystemConfirmation(context, widget.quest.title);
     if (!confirmed || !mounted) return;
     HapticFeedback.mediumImpact();
     ref.read(audioServiceProvider).playQuestComplete();
@@ -605,7 +689,8 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
                   widget.quest.difficulty.skulls,
                   (_) => const Padding(
                     padding: EdgeInsets.only(left: 2),
-                    child: Icon(Icons.whatshot, size: 12, color: AppColors.gold),
+                    child:
+                        Icon(Icons.whatshot, size: 12, color: AppColors.gold),
                   ),
                 ),
               ),
@@ -616,12 +701,10 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
             widget.quest.title,
             style: GoogleFonts.dmSerifDisplay(
               fontSize: 18,
-              color: isCompleted
-                  ? AppColors.textDisabled
-                  : AppColors.textPrimary,
+              color:
+                  isCompleted ? AppColors.textDisabled : AppColors.textPrimary,
               letterSpacing: 0.5,
-              decoration:
-                  isCompleted ? TextDecoration.lineThrough : null,
+              decoration: isCompleted ? TextDecoration.lineThrough : null,
             ),
           ),
           const SizedBox(height: 6),
@@ -647,7 +730,8 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.schedule, size: 14, color: AppColors.textDisabled),
+              const Icon(Icons.schedule,
+                  size: 14, color: AppColors.textDisabled),
               const SizedBox(width: 4),
               Text(
                 '${widget.quest.estimatedMinutes} мин',
@@ -714,7 +798,8 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
   bool _showBurst = false;
 
   Future<void> _handleComplete() async {
-    final confirmed = await _showSystemConfirmation(context, widget.quest.title);
+    final confirmed =
+        await _showSystemConfirmation(context, widget.quest.title);
     if (!confirmed || !mounted) return;
     HapticFeedback.mediumImpact();
     ref.read(audioServiceProvider).playQuestComplete();
@@ -739,9 +824,7 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isCompleted
-                ? AppColors.surfaceElevated
-                : AppColors.surface,
+            color: isCompleted ? AppColors.surfaceElevated : AppColors.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isCompleted
@@ -784,9 +867,8 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                         color: isCompleted
                             ? AppColors.textDisabled
                             : AppColors.textPrimary,
-                        decoration: isCompleted
-                            ? TextDecoration.lineThrough
-                            : null,
+                        decoration:
+                            isCompleted ? TextDecoration.lineThrough : null,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -843,9 +925,8 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                     style: GoogleFonts.dmSans(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: isCompleted
-                          ? AppColors.textDisabled
-                          : AppColors.gold,
+                      color:
+                          isCompleted ? AppColors.textDisabled : AppColors.gold,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -857,13 +938,9 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                       height: 28,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isCompleted
-                            ? sphereColor
-                            : Colors.transparent,
+                        color: isCompleted ? sphereColor : Colors.transparent,
                         border: Border.all(
-                          color: isCompleted
-                              ? sphereColor
-                              : AppColors.divider,
+                          color: isCompleted ? sphereColor : AppColors.divider,
                           width: 1.5,
                         ),
                       ),
