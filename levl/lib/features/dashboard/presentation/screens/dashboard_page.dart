@@ -34,7 +34,24 @@ class DashboardPage extends ConsumerWidget {
             slivers: [
               SliverToBoxAdapter(child: _DashboardHeader(user: user)),
               SliverToBoxAdapter(child: _HeroSegment(user: user)),
-              SliverToBoxAdapter(child: _TodaySystemBrief(user: user)),
+              SliverToBoxAdapter(
+                child: questsAsync.when(
+                  loading: () => _SystemCommandCenter(
+                    user: user,
+                    quests: const [],
+                    isLoading: true,
+                  ),
+                  error: (_, __) => _SystemCommandCenter(
+                    user: user,
+                    quests: const [],
+                    hasQuestError: true,
+                  ),
+                  data: (quests) => _SystemCommandCenter(
+                    user: user,
+                    quests: quests,
+                  ),
+                ),
+              ),
 
               // Main Quest
               SliverToBoxAdapter(
@@ -404,20 +421,47 @@ class _HeroSegment extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Подтверждение от Системы перед завершением задания
 // ---------------------------------------------------------------------------
-class _TodaySystemBrief extends StatelessWidget {
+class _SystemCommandCenter extends StatelessWidget {
   final UserProfile user;
-  const _TodaySystemBrief({required this.user});
+  final List<Quest> quests;
+  final bool isLoading;
+  final bool hasQuestError;
+
+  const _SystemCommandCenter({
+    required this.user,
+    required this.quests,
+    this.isLoading = false,
+    this.hasQuestError = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final completed =
+        quests.where((quest) => quest.status == QuestStatus.completed).length;
+    final total = quests.isEmpty ? 3 : quests.length;
+    final completion = total == 0 ? 0.0 : completed / total;
+    final streakProgress = (user.currentStreak % 7) / 7;
+    final daysToAnchor = user.currentStreak == 0
+        ? 7
+        : 7 - (user.currentStreak % 7 == 0 ? 7 : user.currentStreak % 7);
+    final headline = _headline(completed, total);
+    final note = _note(completed, total);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: AppColors.divider),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.textPrimary.withValues(alpha: 0.04),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -425,21 +469,21 @@ class _TodaySystemBrief extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 28,
-                  height: 28,
+                  width: 30,
+                  height: 30,
                   decoration: BoxDecoration(
-                    color: AppColors.textPrimary.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.gold.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.auto_awesome,
-                    size: 15,
-                    color: AppColors.textPrimary,
+                    size: 16,
+                    color: AppColors.gold,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'СЕГОДНЯ',
+                  'ЛИЧНАЯ СИСТЕМА',
                   style: GoogleFonts.dmSans(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -447,31 +491,382 @@ class _TodaySystemBrief extends StatelessWidget {
                     letterSpacing: 2,
                   ),
                 ),
+                const Spacer(),
+                _PulseBadge(
+                  label: isLoading
+                      ? 'СБОР'
+                      : hasQuestError
+                          ? 'ОФЛАЙН'
+                          : '$completed/$total',
+                ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
-              'Три действия. Этого достаточно.',
+              headline,
               style: GoogleFonts.dmSerifDisplay(
-                fontSize: 21,
+                fontSize: 24,
                 color: AppColors.textPrimary,
-                height: 1.15,
+                height: 1.12,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
-              user.dailyMinutes <= 30
-                  ? 'Система держит день легким: короткие шаги, без перегруза.'
-                  : 'Система распределит фокус так, чтобы движение было заметным.',
+              note,
               style: GoogleFonts.dmSans(
-                fontSize: 13,
+                fontSize: 13.5,
                 color: AppColors.textSecondary,
-                height: 1.45,
+                height: 1.5,
                 fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: _SystemMetric(
+                    label: 'ФОКУС',
+                    value: user.mainGoal.isEmpty ? 'Путь' : user.mainGoal,
+                    icon: Icons.stars_rounded,
+                    color: AppColors.gold,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _SystemMetric(
+                    label: 'РЕСУРС',
+                    value: '${user.dailyMinutes} мин',
+                    icon: Icons.timer_outlined,
+                    color: AppColors.sphereKnowledge,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            _DailyProgressBar(
+              completed: completed,
+              total: total,
+              completion: completion,
+            ),
+            const SizedBox(height: 16),
+            _StreakRail(
+              streak: user.currentStreak,
+              progress: streakProgress,
+              daysToAnchor: daysToAnchor,
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () => context.go(AppRoutes.aiMentor),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: AppColors.textPrimary,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.auto_awesome,
+                      size: 17,
+                      color: AppColors.surface,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Открыть Систему',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.surface,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  String _headline(int completed, int total) {
+    if (hasQuestError) return 'Путь сохранён локально.';
+    if (isLoading) return 'Система собирает день.';
+    if (completed == 0) return 'Сегодня достаточно начать.';
+    if (completed < total) return 'Система видит движение.';
+    return 'День зафиксирован.';
+  }
+
+  String _note(int completed, int total) {
+    if (hasQuestError) {
+      return 'Даже без сети твой прогресс остаётся здесь. Продолжай короткими шагами.';
+    }
+    if (isLoading) {
+      return 'Сейчас появятся три действия под твою цель и текущий ресурс.';
+    }
+    if (completed == 0) {
+      return user.dailyMinutes <= 30
+          ? 'Короткий день. Три действия без перегруза — этого достаточно.'
+          : 'Фокус уже выбран. Осталось сделать первый шаг и включить движение.';
+    }
+    if (completed < total) {
+      return 'Не разгоняй хаос. Просто закрой следующий шаг и верни контроль дню.';
+    }
+    return 'Все действия закрыты. Сегодня ты не просто планировал — ты двигался.';
+  }
+}
+
+class _PulseBadge extends StatelessWidget {
+  final String label;
+  const _PulseBadge({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.dmSans(
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          color: AppColors.textPrimary,
+          letterSpacing: 1,
+        ),
+      ),
+    );
+  }
+}
+
+class _SystemMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _SystemMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 86,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 15, color: color),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.dmSans(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDisabled,
+                  letterSpacing: 1.3,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.dmSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              height: 1.15,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DailyProgressBar extends StatelessWidget {
+  final int completed;
+  final int total;
+  final double completion;
+
+  const _DailyProgressBar({
+    required this.completed,
+    required this.total,
+    required this.completion,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'ПРОГРЕСС ДНЯ',
+                style: GoogleFonts.dmSans(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDisabled,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '$completed из $total',
+                style: GoogleFonts.dmSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.gold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: Stack(
+              children: [
+                Container(height: 7, color: AppColors.divider),
+                FractionallySizedBox(
+                  widthFactor: completion.clamp(0.0, 1.0),
+                  child: Container(
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: AppColors.gold,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.gold.withValues(alpha: 0.4),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StreakRail extends StatelessWidget {
+  final int streak;
+  final double progress;
+  final int daysToAnchor;
+
+  const _StreakRail({
+    required this.streak,
+    required this.progress,
+    required this.daysToAnchor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final filled = streak == 0
+        ? 0
+        : streak % 7 == 0
+            ? 7
+            : streak % 7;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.textPrimary,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.local_fire_department,
+                size: 17,
+                color: AppColors.goldLight,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'РИТМ',
+                style: GoogleFonts.dmSans(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white.withValues(alpha: 0.5),
+                  letterSpacing: 1.8,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '$streak дн.',
+                style: GoogleFonts.dmSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.goldLight,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: List.generate(7, (index) {
+              final active = index < filled;
+              return Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  height: 6,
+                  margin: EdgeInsets.only(right: index == 6 ? 0 : 5),
+                  decoration: BoxDecoration(
+                    color: active
+                        ? AppColors.goldLight
+                        : Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            streak == 0
+                ? 'Начни серию сегодня. Первый день всегда считается.'
+                : progress == 0
+                    ? 'Семидневный цикл закрыт. Следующий уже начался.'
+                    : 'До недельной фиксации: $daysToAnchor дн.',
+            style: GoogleFonts.dmSans(
+              fontSize: 12,
+              color: Colors.white.withValues(alpha: 0.58),
+              height: 1.35,
+            ),
+          ),
+        ],
       ),
     );
   }
