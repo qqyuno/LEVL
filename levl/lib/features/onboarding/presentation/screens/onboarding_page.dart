@@ -90,6 +90,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   Future<void> _finish() async {
     HapticFeedback.mediumImpact();
+    final acceptedPrivacy = await _showPrivacyConsent();
+    if (!acceptedPrivacy || !mounted) return;
+
     setState(() => _saving = true);
     final notifier = ref.read(onboardingNotifierProvider.notifier);
     final error = await notifier.saveProfile();
@@ -112,6 +115,44 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     await _showActivationSheet(ref.read(onboardingNotifierProvider));
     if (!mounted) return;
     context.go(AppRoutes.dashboard);
+  }
+
+  Future<bool> _showPrivacyConsent() async {
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text(
+          'Данные для персонализации',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: const Text(
+          'LEVL сохранит твои ответы, цели и прогресс, чтобы собрать персональные задачи и работу AI-наставника. Не вводи медицинские, финансовые, паспортные данные, пароли или seed-фразы.',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            height: 1.45,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text(
+              'Назад',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Понятно',
+              style: TextStyle(color: AppColors.textPrimary),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return accepted ?? false;
   }
 
   Future<void> _showActivationSheet(OnboardingData data) async {

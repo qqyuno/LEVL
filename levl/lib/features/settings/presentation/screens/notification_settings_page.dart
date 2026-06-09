@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_router.dart';
+import '../../../../core/supabase/isar_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/notifications/notification_provider.dart';
 import '../../../../core/notifications/notification_service.dart';
+import '../../../../shared/models/quest_model.dart';
+import '../../../../shared/models/user_model.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../dashboard/presentation/providers/quest_provider.dart';
+import '../../../onboarding/presentation/providers/onboarding_provider.dart';
 
 class NotificationSettingsPage extends ConsumerWidget {
   const NotificationSettingsPage({super.key});
@@ -16,7 +22,7 @@ class NotificationSettingsPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Уведомления'),
+        title: const Text('Настройки'),
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -80,17 +86,58 @@ class _SettingsBody extends ConsumerWidget {
         const Divider(color: AppColors.divider),
         const SizedBox(height: 16),
 
+        _SettingsTile(
+          title: 'Политика конфиденциальности',
+          subtitle: 'Какие данные собирает LEVL и зачем',
+          trailing: const Icon(
+            Icons.privacy_tip_outlined,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
+          onTap: () => context.push(AppRoutes.privacyPolicy),
+        ),
+
+        const SizedBox(height: 12),
+
+        _SettingsTile(
+          title: 'Условия и ограничения',
+          subtitle: 'AI-подсказки не заменяют специалиста',
+          trailing: const Icon(
+            Icons.description_outlined,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
+          onTap: () => context.push(AppRoutes.terms),
+        ),
+
+        const SizedBox(height: 12),
+
+        _SettingsTile(
+          title: 'Удалить аккаунт и данные',
+          subtitle: 'Профиль, задачи, кеш и прогресс будут удалены',
+          trailing: const Icon(
+            Icons.delete_outline,
+            color: AppColors.error,
+            size: 20,
+          ),
+          onTap: () => _confirmDeleteAccount(context, ref),
+        ),
+
+        const SizedBox(height: 12),
+
         // Sign out
         _SettingsTile(
           title: 'Выйти из аккаунта',
           subtitle: 'Вернуться к экрану входа',
-          trailing: const Icon(Icons.logout, color: AppColors.textSecondary, size: 20),
+          trailing: const Icon(Icons.logout,
+              color: AppColors.textSecondary, size: 20),
           onTap: () async {
             final confirm = await showDialog<bool>(
               context: context,
               builder: (ctx) => AlertDialog(
                 backgroundColor: AppColors.surface,
-                title: const Text('Выйти?', style: TextStyle(color: AppColors.textPrimary)),
+                title: const Text('Выйти?',
+                    style: TextStyle(color: AppColors.textPrimary)),
                 content: const Text(
                   'Данные сохранены локально и восстановятся при входе.',
                   style: TextStyle(color: AppColors.textSecondary),
@@ -98,11 +145,13 @@ class _SettingsBody extends ConsumerWidget {
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Отмена', style: TextStyle(color: AppColors.textSecondary)),
+                    child: const Text('Отмена',
+                        style: TextStyle(color: AppColors.textSecondary)),
                   ),
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Выйти', style: TextStyle(color: AppColors.textPrimary)),
+                    child: const Text('Выйти',
+                        style: TextStyle(color: AppColors.textPrimary)),
                   ),
                 ],
               ),
@@ -190,6 +239,89 @@ class _SettingsBody extends ConsumerWidget {
       dailyMinutes: profile?.dailyMinutes ?? 30,
       currentStreak: profile?.currentStreak ?? 0,
     );
+  }
+
+  Future<void> _confirmDeleteAccount(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text(
+          'Удалить аккаунт?',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: const Text(
+          'LEVL удалит профиль, задачи, кеш задач, ежедневные отметки и аккаунт авторизации. Это действие нельзя отменить.',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text(
+              'Отмена',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Удалить',
+              style: TextStyle(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !context.mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: AppColors.gold),
+      ),
+    );
+
+    try {
+      await ref.read(authNotifierProvider.notifier).deleteAccount();
+      final authState = ref.read(authNotifierProvider);
+      if (authState.hasError) {
+        throw authState.error!;
+      }
+
+      await _clearLocalAccountData(ref);
+      ref.invalidate(onboardingCompleteProvider);
+      ref.invalidate(userProfileNotifierProvider);
+      ref.invalidate(questNotifierProvider);
+
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        context.go(AppRoutes.welcome);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Не удалось удалить аккаунт: $e'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _clearLocalAccountData(WidgetRef ref) async {
+    final isar = await ref.read(isarProvider.future);
+    await isar.writeTxn(() async {
+      await isar.questLocals.clear();
+      await isar.userProfileLocals.clear();
+    });
   }
 
   String _formatTime(TimeOfDay time) {

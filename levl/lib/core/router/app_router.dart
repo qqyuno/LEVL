@@ -11,16 +11,19 @@ import '../../features/onboarding/presentation/screens/onboarding_page.dart';
 import '../../features/onboarding/presentation/providers/onboarding_provider.dart';
 import '../../shared/widgets/level_up_overlay.dart';
 import '../../features/settings/presentation/screens/notification_settings_page.dart';
+import '../../features/settings/presentation/screens/legal_page.dart';
 
 part 'app_router.g.dart';
 
 abstract class AppRoutes {
-  static const welcome    = '/welcome';
+  static const welcome = '/welcome';
   static const onboarding = '/onboarding';
-  static const dashboard  = '/dashboard';
-  static const character  = '/character';
-  static const aiMentor   = '/mentor';
+  static const dashboard = '/dashboard';
+  static const character = '/character';
+  static const aiMentor = '/mentor';
   static const notificationSettings = '/settings/notifications';
+  static const privacyPolicy = '/settings/privacy';
+  static const terms = '/settings/terms';
 }
 
 @Riverpod(keepAlive: true)
@@ -68,6 +71,16 @@ GoRouter appRouter(AppRouterRef ref) {
         path: AppRoutes.notificationSettings,
         name: 'notificationSettings',
         builder: (_, __) => const NotificationSettingsPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.privacyPolicy,
+        name: 'privacyPolicy',
+        builder: (_, __) => const LegalPage(document: LegalDocument.privacy),
+      ),
+      GoRoute(
+        path: AppRoutes.terms,
+        name: 'terms',
+        builder: (_, __) => const LegalPage(document: LegalDocument.terms),
       ),
 
       // --- Main app with bottom navigation ---
@@ -143,7 +156,8 @@ class _MainShell extends StatelessWidget {
               label: 'Персонаж',
             ),
             NavigationDestination(
-              icon: Icon(Icons.auto_awesome_outlined, color: AppColors.textSecondary),
+              icon: Icon(Icons.auto_awesome_outlined,
+                  color: AppColors.textSecondary),
               selectedIcon: Icon(Icons.auto_awesome, color: AppColors.gold),
               label: 'Система',
             ),

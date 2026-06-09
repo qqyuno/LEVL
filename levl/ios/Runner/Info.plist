@@ -79,7 +79,5 @@
 			</array>
 		</dict>
 	</array>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>Используется только для твоей собственной аналитики прогресса.</string>
 </dict>
 </plist>

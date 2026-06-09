@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" fill="none">
+  <defs>
+    <linearGradient id="shirtGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1A1A1A"/>
+      <stop offset="100%" stop-color="#0A0A0A"/>
+    </linearGradient>
+    <linearGradient id="goldLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#B8962E" stop-opacity="0"/>
+      <stop offset="30%" stop-color="#B8962E"/>
+      <stop offset="70%" stop-color="#D4AF4A"/>
+      <stop offset="100%" stop-color="#B8962E" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="softShadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Shirt body -->
+  <path d="
+    M 60 30
+    L 20 60
+    L 35 75
+    L 35 200
+    L 165 200
+    L 165 75
+    L 180 60
+    L 140 30
+    C 130 38 120 44 100 44
+    C 80 44 70 38 60 30
+    Z
+  " fill="url(#shirtGrad)" filter="url(#softShadow)"/>
+
+  <!-- Collar shadow -->
+  <path d="
+    M 60 30
+    C 70 38 80 44 100 44
+    C 120 44 130 38 140 30
+    L 130 26
+    C 122 36 112 40 100 40
+    C 88 40 78 36 70 26
+    Z
+  " fill="#141414"/>
+
+  <!-- Collar inner -->
+  <path d="
+    M 70 26
+    C 78 36 88 40 100 40
+    C 112 40 122 36 130 26
+  " stroke="#2A2A2A" stroke-width="1.5" fill="none"/>
+
+  <!-- Sleeve seam lines -->
+  <line x1="35" y1="75" x2="35" y2="140" stroke="#222222" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="165" y1="75" x2="165" y2="140" stroke="#222222" stroke-width="1" stroke-dasharray="3,3"/>
+
+  <!-- Gold accent line top -->
+  <rect x="55" y="85" width="90" height="0.8" fill="url(#goldLine)" rx="0.4"/>
+
+  <!-- LEVL text -->
+  <text x="100" y="118"
+    font-family="serif"
+    font-size="26"
+    font-weight="400"
+    letter-spacing="8"
+    text-anchor="middle"
+    fill="white"
+    opacity="0.95">LEVL</text>
+
+  <!-- Divider line -->
+  <rect x="70" y="126" width="60" height="0.8" fill="url(#goldLine)" rx="0.4"/>
+
+  <!-- PRO badge -->
+  <rect x="82" y="133" width="36" height="14" rx="3" fill="#B8962E" opacity="0.15"/>
+  <rect x="82" y="133" width="36" height="14" rx="3" stroke="#B8962E" stroke-width="0.8" fill="none"/>
+  <text x="100" y="143.5"
+    font-family="sans-serif"
+    font-size="8"
+    font-weight="700"
+    letter-spacing="3"
+    text-anchor="middle"
+    fill="#B8962E">PRO</text>
+
+  <!-- Gold accent line bottom -->
+  <rect x="55" y="158" width="90" height="0.8" fill="url(#goldLine)" rx="0.4"/>
+
+  <!-- Bottom hem detail -->
+  <rect x="35" y="196" width="130" height="1.5" fill="#222222" rx="0.75"/>
+
+  <!-- Subtle chest texture dots -->
+  <circle cx="72" cy="100" r="0.7" fill="white" opacity="0.06"/>
+  <circle cx="80" cy="106" r="0.7" fill="white" opacity="0.06"/>
+  <circle cx="88" cy="100" r="0.7" fill="white" opacity="0.06"/>
+  <circle cx="112" cy="100" r="0.7" fill="white" opacity="0.06"/>
+  <circle cx="120" cy="106" r="0.7" fill="white" opacity="0.06"/>
+  <circle cx="128" cy="100" r="0.7" fill="white" opacity="0.06"/>
+</svg>

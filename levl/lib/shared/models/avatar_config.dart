@@ -38,6 +38,18 @@ class AvatarConfig {
   final String auraId;
   final String badgeId;
 
+  // LEVL Avatar v2: full-body 2.5D character engine.
+  final int faceShape; // 0-4
+  final int skinTone; // 0-5
+  final int bodyType; // 0-3
+  final int top; // 0-5
+  final int pants; // 0-4
+  final int shoes; // 0-4
+  final int accessory; // -1 = none, 0-5
+  final int expression; // 0-4
+  final int viewAngle; // 0 front, 1 3/4, 2 side, 3 3/4, 4 back
+  final int hairColor; // 0 dark, 1 brown, 2 chestnut
+
   const AvatarConfig({
     this.hair = 0,
     this.eyes = 0,
@@ -53,6 +65,16 @@ class AvatarConfig {
     this.frameId = 'system',
     this.auraId = 'none',
     this.badgeId = 'none',
+    this.faceShape = 0,
+    this.skinTone = 1,
+    this.bodyType = 1,
+    this.top = 0,
+    this.pants = 0,
+    this.shoes = 0,
+    this.accessory = -1,
+    this.expression = 0,
+    this.viewAngle = 0,
+    this.hairColor = 0,
   });
 
   /// Curated hair presets - keeps the editor useful instead of overwhelming.
@@ -61,6 +83,17 @@ class AvatarConfig {
   static const nosePresets = [0, 3, 7, 11, 15, 19];
   static const bodyPresets = [0, 3, 6, 9, 12, 15, 18, 21];
   static const browsPresets = [0, 2, 5, 7, 9, 12];
+  static const faceShapeCount = 5;
+  static const skinToneCount = 6;
+  static const bodyTypeCount = 4;
+  static const topCount = 6;
+  static const pantsCount = 5;
+  static const shoesCount = 5;
+  static const accessoryCount = 6;
+  static const expressionCount = 5;
+  static const viewAngleCount = 5;
+  static const premiumHairStyleCount = 4;
+  static const hairColorCount = 3;
 
   static const backgroundOptions = [
     AvatarStyleOption(
@@ -199,6 +232,10 @@ class AvatarConfig {
         hair: 18,
         brows: 5,
         body: 6,
+        top: 1,
+        pants: 1,
+        shoes: 1,
+        accessory: 2,
         backgroundId: 'paper',
         frameId: 'black',
         auraId: 'focus',
@@ -215,6 +252,11 @@ class AvatarConfig {
         brows: 7,
         lips: 8,
         body: 12,
+        faceShape: 1,
+        skinTone: 2,
+        bodyType: 2,
+        accessory: 0,
+        expression: 2,
         backgroundId: 'gold',
         frameId: 'gold',
         auraId: 'gold',
@@ -230,6 +272,12 @@ class AvatarConfig {
         eyes: 1,
         brows: 9,
         body: 18,
+        faceShape: 2,
+        top: 3,
+        pants: 2,
+        shoes: 1,
+        accessory: 3,
+        expression: 4,
         backgroundId: 'signal',
         frameId: 'flame',
         auraId: 'flame',
@@ -316,6 +364,16 @@ class AvatarConfig {
     String? frameId,
     String? auraId,
     String? badgeId,
+    int? faceShape,
+    int? skinTone,
+    int? bodyType,
+    int? top,
+    int? pants,
+    int? shoes,
+    int? accessory,
+    int? expression,
+    int? viewAngle,
+    int? hairColor,
   }) {
     return AvatarConfig(
       hair: hair ?? this.hair,
@@ -332,6 +390,16 @@ class AvatarConfig {
       frameId: frameId ?? this.frameId,
       auraId: auraId ?? this.auraId,
       badgeId: badgeId ?? this.badgeId,
+      faceShape: faceShape ?? this.faceShape,
+      skinTone: skinTone ?? this.skinTone,
+      bodyType: bodyType ?? this.bodyType,
+      top: top ?? this.top,
+      pants: pants ?? this.pants,
+      shoes: shoes ?? this.shoes,
+      accessory: accessory ?? this.accessory,
+      expression: expression ?? this.expression,
+      viewAngle: viewAngle ?? this.viewAngle,
+      hairColor: hairColor ?? this.hairColor,
     );
   }
 
@@ -350,6 +418,16 @@ class AvatarConfig {
         'frameId': frameId,
         'auraId': auraId,
         'badgeId': badgeId,
+        'faceShape': faceShape,
+        'skinTone': skinTone,
+        'bodyType': bodyType,
+        'top': top,
+        'pants': pants,
+        'shoes': shoes,
+        'accessory': accessory,
+        'expression': expression,
+        'viewAngle': viewAngle,
+        'hairColor': hairColor,
       };
 
   factory AvatarConfig.fromJson(Map<String, dynamic> json) {
@@ -368,6 +446,16 @@ class AvatarConfig {
       frameId: json['frameId'] as String? ?? 'system',
       auraId: json['auraId'] as String? ?? 'none',
       badgeId: json['badgeId'] as String? ?? 'none',
+      faceShape: json['faceShape'] as int? ?? 0,
+      skinTone: json['skinTone'] as int? ?? 1,
+      bodyType: json['bodyType'] as int? ?? 1,
+      top: json['top'] as int? ?? 0,
+      pants: json['pants'] as int? ?? 0,
+      shoes: json['shoes'] as int? ?? 0,
+      accessory: json['accessory'] as int? ?? -1,
+      expression: json['expression'] as int? ?? 0,
+      viewAngle: json['viewAngle'] as int? ?? 0,
+      hairColor: json['hairColor'] as int? ?? 0,
     );
   }
 

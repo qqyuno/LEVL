@@ -6,7 +6,7 @@ import '../../../../shared/models/achievement_model.dart';
 import '../../../../shared/models/avatar_config.dart';
 import '../../../../shared/models/quest_model.dart';
 import '../../../../shared/models/user_model.dart';
-import '../../../../shared/widgets/avatar_widget.dart';
+import '../../../../shared/widgets/premium_face_avatar_widget.dart';
 import '../../../dashboard/presentation/providers/quest_provider.dart';
 import '../widgets/stats_radar_chart.dart';
 import 'avatar_editor_screen.dart';
@@ -63,9 +63,10 @@ class CharacterPage extends ConsumerWidget {
                         child: Stack(
                           alignment: Alignment.bottomRight,
                           children: [
-                            AvatarWidget(
+                            PremiumFaceAvatarWidget(
                               config: _avatarFromUser(user),
-                              size: 100,
+                              size: 190,
+                              level: user.level,
                               streak: user.currentStreak,
                             ),
                             Container(
@@ -74,9 +75,11 @@ class CharacterPage extends ConsumerWidget {
                               decoration: BoxDecoration(
                                 color: AppColors.textPrimary,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: AppColors.background, width: 2.5),
+                                border: Border.all(
+                                    color: AppColors.background, width: 2.5),
                               ),
-                              child: const Icon(Icons.edit, size: 14, color: Colors.white),
+                              child: const Icon(Icons.edit,
+                                  size: 14, color: Colors.white),
                             ),
                           ],
                         ),
@@ -122,12 +125,43 @@ class CharacterPage extends ConsumerWidget {
                       Center(
                         child: StatsRadarChart(
                           stats: [
-                            StatAxis(label: 'Дисциплина', icon: Icons.bolt,                   color: AppColors.sphereDiscipline, value: user.stats.discipline, rankName: sphereRankName(user.stats.discipline)),
-                            StatAxis(label: 'Знания',     icon: Icons.menu_book,              color: AppColors.sphereKnowledge,  value: user.stats.knowledge,  rankName: sphereRankName(user.stats.knowledge)),
-                            StatAxis(label: 'Отношения',  icon: Icons.people,                 color: AppColors.sphereRelations,  value: user.stats.relations,  rankName: sphereRankName(user.stats.relations)),
-                            StatAxis(label: 'Энергия',    icon: Icons.local_fire_department,  color: AppColors.sphereEnergy,     value: user.stats.energy,     rankName: sphereRankName(user.stats.energy)),
-                            StatAxis(label: 'Воля',       icon: Icons.my_location,            color: AppColors.sphereWill,       value: user.stats.will,       rankName: sphereRankName(user.stats.will)),
-                            StatAxis(label: 'Мудрость',   icon: Icons.psychology,             color: AppColors.sphereWisdom,     value: user.stats.wisdom,     rankName: sphereRankName(user.stats.wisdom)),
+                            StatAxis(
+                                label: 'Дисциплина',
+                                icon: Icons.bolt,
+                                color: AppColors.sphereDiscipline,
+                                value: user.stats.discipline,
+                                rankName:
+                                    sphereRankName(user.stats.discipline)),
+                            StatAxis(
+                                label: 'Знания',
+                                icon: Icons.menu_book,
+                                color: AppColors.sphereKnowledge,
+                                value: user.stats.knowledge,
+                                rankName: sphereRankName(user.stats.knowledge)),
+                            StatAxis(
+                                label: 'Отношения',
+                                icon: Icons.people,
+                                color: AppColors.sphereRelations,
+                                value: user.stats.relations,
+                                rankName: sphereRankName(user.stats.relations)),
+                            StatAxis(
+                                label: 'Энергия',
+                                icon: Icons.local_fire_department,
+                                color: AppColors.sphereEnergy,
+                                value: user.stats.energy,
+                                rankName: sphereRankName(user.stats.energy)),
+                            StatAxis(
+                                label: 'Воля',
+                                icon: Icons.my_location,
+                                color: AppColors.sphereWill,
+                                value: user.stats.will,
+                                rankName: sphereRankName(user.stats.will)),
+                            StatAxis(
+                                label: 'Мудрость',
+                                icon: Icons.psychology,
+                                color: AppColors.sphereWisdom,
+                                value: user.stats.wisdom,
+                                rankName: sphereRankName(user.stats.wisdom)),
                           ],
                         ),
                       ),
@@ -142,12 +176,42 @@ class CharacterPage extends ConsumerWidget {
                   padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
                   child: Column(
                     children: [
-                      _StatBar(label: 'Дисциплина', description: QuestCategory.discipline.description, value: user.stats.discipline, color: AppColors.sphereDiscipline, icon: Icons.bolt),
-                      _StatBar(label: 'Знания',     description: QuestCategory.knowledge.description,  value: user.stats.knowledge,  color: AppColors.sphereKnowledge,  icon: Icons.menu_book),
-                      _StatBar(label: 'Отношения',  description: QuestCategory.relations.description,  value: user.stats.relations,  color: AppColors.sphereRelations,  icon: Icons.people),
-                      _StatBar(label: 'Энергия',    description: QuestCategory.energy.description,     value: user.stats.energy,     color: AppColors.sphereEnergy,     icon: Icons.local_fire_department),
-                      _StatBar(label: 'Воля',       description: QuestCategory.will.description,       value: user.stats.will,       color: AppColors.sphereWill,       icon: Icons.my_location),
-                      _StatBar(label: 'Мудрость',   description: QuestCategory.wisdom.description,     value: user.stats.wisdom,     color: AppColors.sphereWisdom,     icon: Icons.psychology),
+                      _StatBar(
+                          label: 'Дисциплина',
+                          description: QuestCategory.discipline.description,
+                          value: user.stats.discipline,
+                          color: AppColors.sphereDiscipline,
+                          icon: Icons.bolt),
+                      _StatBar(
+                          label: 'Знания',
+                          description: QuestCategory.knowledge.description,
+                          value: user.stats.knowledge,
+                          color: AppColors.sphereKnowledge,
+                          icon: Icons.menu_book),
+                      _StatBar(
+                          label: 'Отношения',
+                          description: QuestCategory.relations.description,
+                          value: user.stats.relations,
+                          color: AppColors.sphereRelations,
+                          icon: Icons.people),
+                      _StatBar(
+                          label: 'Энергия',
+                          description: QuestCategory.energy.description,
+                          value: user.stats.energy,
+                          color: AppColors.sphereEnergy,
+                          icon: Icons.local_fire_department),
+                      _StatBar(
+                          label: 'Воля',
+                          description: QuestCategory.will.description,
+                          value: user.stats.will,
+                          color: AppColors.sphereWill,
+                          icon: Icons.my_location),
+                      _StatBar(
+                          label: 'Мудрость',
+                          description: QuestCategory.wisdom.description,
+                          value: user.stats.wisdom,
+                          color: AppColors.sphereWisdom,
+                          icon: Icons.psychology),
                     ],
                   ),
                 ),
@@ -212,32 +276,28 @@ class CharacterPage extends ConsumerWidget {
     );
   }
 
-  static AvatarConfig _avatarFromUser(UserProfile user) {
-    if (user.characterStateJson.isEmpty) return const AvatarConfig();
-    try {
-      return AvatarConfig.fromJsonString(user.characterStateJson);
-    } catch (_) {
-      return const AvatarConfig();
-    }
-  }
-
   void _openAvatarEditor(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const AvatarEditorScreen()),
     );
   }
 
+  static AvatarConfig _avatarFromUser(UserProfile user) {
+    if (user.characterStateJson.isEmpty) return const AvatarConfig();
+    return AvatarConfig.fromJsonString(user.characterStateJson);
+  }
+
   static String _titleForLevel(int level) => switch (level) {
-    1 => 'Новичок',
-    2 => 'Ученик',
-    3 => 'Практик',
-    4 => 'Адепт',
-    5 => 'Мастер пути',
-    >= 6 && < 10 => 'Воин Системы',
-    >= 10 && < 20 => 'Хранитель',
-    >= 20 => 'Легенда',
-    _ => 'Путник',
-  };
+        1 => 'Новичок',
+        2 => 'Ученик',
+        3 => 'Практик',
+        4 => 'Адепт',
+        5 => 'Мастер пути',
+        >= 6 && < 10 => 'Воин Системы',
+        >= 10 && < 20 => 'Хранитель',
+        >= 20 => 'Легенда',
+        _ => 'Путник',
+      };
 }
 
 class _StatBar extends StatelessWidget {
@@ -257,9 +317,9 @@ class _StatBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rank      = sphereRankName(value);
-    final progress  = sphereRankProgress(value);
-    final toNext    = sphereXpToNextRank(value);
+    final rank = sphereRankName(value);
+    final progress = sphereRankProgress(value);
+    final toNext = sphereXpToNextRank(value);
     final isMaxRank = toNext == 0;
 
     return Padding(
@@ -298,7 +358,8 @@ class _StatBar extends StatelessWidget {
                         ),
                         const Spacer(),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: isMaxRank
                                 ? AppColors.gold.withValues(alpha: 0.1)
@@ -354,7 +415,11 @@ class _StatBar extends StatelessWidget {
                             color: isMaxRank ? AppColors.gold : color,
                             borderRadius: BorderRadius.circular(3),
                             boxShadow: v > 0.02
-                                ? [BoxShadow(color: color.withValues(alpha: 0.35), blurRadius: 6)]
+                                ? [
+                                    BoxShadow(
+                                        color: color.withValues(alpha: 0.35),
+                                        blurRadius: 6)
+                                  ]
                                 : null,
                           ),
                         ),
@@ -397,7 +462,9 @@ class _AchievementCard extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: unlocked ? AppColors.gold.withValues(alpha: 0.4) : AppColors.divider,
+          color: unlocked
+              ? AppColors.gold.withValues(alpha: 0.4)
+              : AppColors.divider,
         ),
       ),
       padding: const EdgeInsets.all(10),
@@ -426,7 +493,8 @@ class _AchievementCard extends StatelessWidget {
             achievement.description,
             style: GoogleFonts.dmSans(
               fontSize: 9,
-              color: unlocked ? AppColors.textSecondary : AppColors.textDisabled,
+              color:
+                  unlocked ? AppColors.textSecondary : AppColors.textDisabled,
             ),
             textAlign: TextAlign.center,
             maxLines: 1,

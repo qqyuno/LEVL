@@ -10,7 +10,7 @@ import '../../../../core/supabase/isar_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/avatar_config.dart';
 import '../../../../shared/models/user_model.dart';
-import '../../../../shared/widgets/avatar_widget.dart';
+import '../../../../shared/widgets/premium_face_avatar_widget.dart';
 import '../../../dashboard/presentation/providers/quest_provider.dart';
 
 class AvatarEditorScreen extends ConsumerStatefulWidget {
@@ -25,20 +25,8 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
   int _currentSection = 0;
 
   static const _sections = [
-    ('Пресеты', Icons.auto_awesome_rounded),
-    ('Фон', Icons.wallpaper_rounded),
-    ('Рамка', Icons.radio_button_unchecked_rounded),
-    ('Аура', Icons.blur_on_rounded),
-    ('Знак', Icons.workspace_premium_rounded),
-    ('Волосы', Icons.face_rounded),
-    ('Брови', Icons.visibility_rounded),
-    ('Губы', Icons.mood_rounded),
-    ('Нос', Icons.air_rounded),
-    ('Одежда', Icons.checkroom_rounded),
-    ('Глаза', Icons.remove_red_eye_rounded),
-    ('Очки', Icons.visibility_outlined),
-    ('Борода', Icons.face_retouching_natural_rounded),
-    ('Жест', Icons.pan_tool_rounded),
+    ('Прическа', Icons.face_rounded),
+    ('Цвет волос', Icons.palette_rounded),
   ];
 
   @override
@@ -88,7 +76,10 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
           children: [
             _TopBar(onClose: () => Navigator.of(context).pop(), onSave: _save),
             const SizedBox(height: 10),
-            _ReflectionStage(config: _config, user: user),
+            _ReflectionStage(
+              config: _config,
+              user: user,
+            ),
             const SizedBox(height: 14),
             SizedBox(
               height: 44,
@@ -162,91 +153,19 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
 
   Widget _buildSection(int index, UserProfile? user) {
     return switch (index) {
-      0 => _buildPresetGrid(user),
-      1 => _buildStyleGrid(
-          key: 'background',
-          options: AvatarConfig.backgroundOptions,
-          selected: _config.backgroundId,
-          user: user,
-          onSelect: (id) =>
-              setState(() => _config = _config.copyWith(backgroundId: id)),
-        ),
-      2 => _buildStyleGrid(
-          key: 'frame',
-          options: AvatarConfig.frameOptions,
-          selected: _config.frameId,
-          user: user,
-          onSelect: (id) =>
-              setState(() => _config = _config.copyWith(frameId: id)),
-        ),
-      3 => _buildStyleGrid(
-          key: 'aura',
-          options: AvatarConfig.auraOptions,
-          selected: _config.auraId,
-          user: user,
-          onSelect: (id) =>
-              setState(() => _config = _config.copyWith(auraId: id)),
-        ),
-      4 => _buildStyleGrid(
-          key: 'badge',
-          options: AvatarConfig.badgeOptions,
-          selected: _config.badgeId,
-          user: user,
-          onSelect: (id) =>
-              setState(() => _config = _config.copyWith(badgeId: id)),
-        ),
-      5 => _buildPresetGridForField(
+      0 => _buildSequentialGrid(
           key: 'hair',
-          presets: AvatarConfig.hairPresets,
-          selected: _config.hair,
+          count: AvatarConfig.premiumHairStyleCount,
+          selected: _config.hair % AvatarConfig.premiumHairStyleCount,
           onSelect: (v) => setState(() => _config = _config.copyWith(hair: v)),
         ),
-      6 => _buildPresetGridForField(
-          key: 'brows',
-          presets: AvatarConfig.browsPresets,
-          selected: _config.brows,
-          onSelect: (v) => setState(() => _config = _config.copyWith(brows: v)),
-        ),
-      7 => _buildPresetGridForField(
-          key: 'lips',
-          presets: AvatarConfig.lipsPresets,
-          selected: _config.lips,
-          onSelect: (v) => setState(() => _config = _config.copyWith(lips: v)),
-        ),
-      8 => _buildPresetGridForField(
-          key: 'nose',
-          presets: AvatarConfig.nosePresets,
-          selected: _config.nose,
-          onSelect: (v) => setState(() => _config = _config.copyWith(nose: v)),
-        ),
-      9 => _buildPresetGridForField(
-          key: 'body',
-          presets: AvatarConfig.bodyPresets,
-          selected: _config.body,
-          onSelect: (v) => setState(() => _config = _config.copyWith(body: v)),
-        ),
-      10 => _buildSequentialGrid(
-          key: 'eyes',
-          count: 5,
-          selected: _config.eyes,
-          onSelect: (v) => setState(() => _config = _config.copyWith(eyes: v)),
-        ),
-      11 => _buildOptionalGrid(
-          key: 'glasses',
-          count: AvatarConfig.glassesCount,
-          selected: _config.glasses,
+      1 => _buildSequentialGrid(
+          key: 'hairColor',
+          count: AvatarConfig.hairColorCount,
+          selected: _config.hairColor,
           onSelect: (v) =>
-              setState(() => _config = _config.copyWith(glasses: v)),
-          noneLabel: 'Без очков',
+              setState(() => _config = _config.copyWith(hairColor: v)),
         ),
-      12 => _buildOptionalGrid(
-          key: 'beard',
-          count: AvatarConfig.beardCount,
-          selected: _config.beard,
-          onSelect: (v) => setState(() => _config = _config.copyWith(beard: v)),
-          noneLabel: 'Без бороды',
-        ),
-      13 => _buildGestureGrid(),
       _ => const SizedBox.shrink(),
     };
   }
@@ -283,10 +202,13 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
             HapticFeedback.selectionClick();
             setState(() => _config = preset.config);
           },
-          child: AvatarWidget(
+          child: PremiumFaceAvatarWidget(
             config: preset.config,
-            size: 88,
+            size: 90,
+            level: user?.level ?? 1,
             streak: user?.currentStreak ?? 0,
+            showFrame: false,
+            compact: true,
           ),
         );
       },
@@ -332,10 +254,13 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
             HapticFeedback.selectionClick();
             onSelect(option.id);
           },
-          child: AvatarWidget(
+          child: PremiumFaceAvatarWidget(
             config: preview,
-            size: 86,
+            size: 90,
+            level: user?.level ?? 1,
             streak: user?.currentStreak ?? 0,
+            showFrame: false,
+            compact: true,
           ),
         );
       },
@@ -380,10 +305,11 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
     return GridView.builder(
       key: ValueKey(key),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: count <= 3 ? count : 2,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
+        childAspectRatio: count <= 3 ? 0.74 : 0.82,
       ),
       itemCount: count,
       itemBuilder: (context, i) {
@@ -393,7 +319,10 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
             HapticFeedback.selectionClick();
             onSelect(i);
           },
-          child: _MiniAvatar(config: _applyField(key, i), size: 54),
+          child: _MiniAvatar(
+            config: _applyField(key, i),
+            size: count <= 3 ? 104 : 118,
+          ),
         );
       },
     );
@@ -451,43 +380,6 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
     );
   }
 
-  Widget _buildGestureGrid() {
-    return GridView.builder(
-      key: const ValueKey('gesture'),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 1.55,
-      ),
-      itemCount: AvatarConfig.gestureNames.length,
-      itemBuilder: (context, i) {
-        final value = i == 0 ? -1 : i - 1;
-        return _OptionTile(
-          isActive: value == _config.gesture,
-          onTap: () {
-            HapticFeedback.selectionClick();
-            setState(() => _config = _config.copyWith(gesture: value));
-          },
-          child: Center(
-            child: Text(
-              AvatarConfig.gestureNames[i],
-              textAlign: TextAlign.center,
-              style: GoogleFonts.dmSans(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: value == _config.gesture
-                    ? Colors.white
-                    : AppColors.textSecondary,
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   AvatarConfig _applyStyle(String field, String id) {
     return switch (field) {
       'background' => _config.copyWith(backgroundId: id),
@@ -508,15 +400,22 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
       'eyes' => _config.copyWith(eyes: value),
       'glasses' => _config.copyWith(glasses: value),
       'beard' => _config.copyWith(beard: value),
+      'faceShape' => _config.copyWith(faceShape: value),
+      'skinTone' => _config.copyWith(skinTone: value),
+      'bodyType' => _config.copyWith(bodyType: value),
+      'top' => _config.copyWith(top: value),
+      'pants' => _config.copyWith(pants: value),
+      'shoes' => _config.copyWith(shoes: value),
+      'accessory' => _config.copyWith(accessory: value),
+      'expression' => _config.copyWith(expression: value),
+      'viewAngle' => _config.copyWith(viewAngle: value),
+      'hairColor' => _config.copyWith(hairColor: value),
       _ => _config,
     };
   }
 
   bool _sameStyle(AvatarConfig a, AvatarConfig b) {
-    return a.backgroundId == b.backgroundId &&
-        a.frameId == b.frameId &&
-        a.auraId == b.auraId &&
-        a.badgeId == b.badgeId;
+    return a.toJsonString() == b.toJsonString();
   }
 
   bool _isUnlocked(
@@ -612,7 +511,10 @@ class _ReflectionStage extends StatelessWidget {
   final AvatarConfig config;
   final UserProfile? user;
 
-  const _ReflectionStage({required this.config, required this.user});
+  const _ReflectionStage({
+    required this.config,
+    required this.user,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -635,11 +537,12 @@ class _ReflectionStage extends StatelessWidget {
         ),
         child: Row(
           children: [
-            AvatarWidget(
+            PremiumFaceAvatarWidget(
               config: config,
-              size: 132,
+              size: 150,
+              level: user?.level ?? 1,
               streak: user?.currentStreak ?? 0,
-              showBorder: true,
+              compact: true,
             ),
             const SizedBox(width: 18),
             Expanded(
@@ -818,10 +721,11 @@ class _MiniAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: AvatarWidget(
+      child: PremiumFaceAvatarWidget(
         config: config,
         size: size,
-        showBorder: false,
+        showFrame: false,
+        compact: true,
       ),
     );
   }

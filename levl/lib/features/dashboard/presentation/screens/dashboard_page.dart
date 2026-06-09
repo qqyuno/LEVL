@@ -10,7 +10,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/avatar_config.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/models/quest_model.dart';
-import '../../../../shared/widgets/avatar_widget.dart';
+import '../../../../shared/widgets/premium_face_avatar_widget.dart';
 import '../providers/quest_provider.dart';
 
 class DashboardPage extends ConsumerWidget {
@@ -318,11 +318,12 @@ class _HeroSegment extends StatelessWidget {
       child: Column(
         children: [
           // Avatar
-          AvatarWidget(
+          PremiumFaceAvatarWidget(
             config: user.characterStateJson.isNotEmpty
                 ? AvatarConfig.fromJsonString(user.characterStateJson)
                 : const AvatarConfig(),
-            size: 80,
+            size: 174,
+            level: user.level,
             streak: user.currentStreak,
           ),
           const SizedBox(height: 16),
