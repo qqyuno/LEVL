@@ -27,6 +27,9 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
   static const _sections = [
     ('Прическа', Icons.face_rounded),
     ('Цвет волос', Icons.palette_rounded),
+    ('Тон кожи', Icons.tonality_rounded),
+    ('Брови', Icons.face_retouching_natural_rounded),
+    ('Цвет глаз', Icons.visibility_rounded),
   ];
 
   @override
@@ -79,6 +82,7 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
             _ReflectionStage(
               config: _config,
               user: user,
+              sectionIndex: _currentSection,
             ),
             const SizedBox(height: 14),
             SizedBox(
@@ -166,134 +170,28 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
           onSelect: (v) =>
               setState(() => _config = _config.copyWith(hairColor: v)),
         ),
+      2 => _buildSequentialGrid(
+          key: 'skinTone',
+          count: AvatarConfig.premiumSkinToneCount,
+          selected: _config.skinTone % AvatarConfig.premiumSkinToneCount,
+          onSelect: (v) =>
+              setState(() => _config = _config.copyWith(skinTone: v)),
+        ),
+      3 => _buildSequentialGrid(
+          key: 'brows',
+          count: AvatarConfig.premiumBrowStyleCount,
+          selected: _config.brows % AvatarConfig.premiumBrowStyleCount,
+          onSelect: (v) => setState(() => _config = _config.copyWith(brows: v)),
+        ),
+      4 => _buildSequentialGrid(
+          key: 'eyeColor',
+          count: AvatarConfig.eyeColorCount,
+          selected: _config.eyeColor,
+          onSelect: (v) =>
+              setState(() => _config = _config.copyWith(eyeColor: v)),
+        ),
       _ => const SizedBox.shrink(),
     };
-  }
-
-  Widget _buildPresetGrid(UserProfile? user) {
-    return GridView.builder(
-      key: const ValueKey('presets'),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 0.78,
-      ),
-      itemCount: AvatarConfig.presets.length,
-      itemBuilder: (context, i) {
-        final preset = AvatarConfig.presets[i];
-        final unlocked = _isUnlocked(
-          user,
-          requiredLevel: preset.requiredLevel,
-          requiredStreak: preset.requiredStreak,
-        );
-        return _ReflectionTile(
-          title: preset.title,
-          subtitle: preset.subtitle,
-          selected: _sameStyle(_config, preset.config),
-          locked: !unlocked,
-          requirement: _requirement(
-            requiredLevel: preset.requiredLevel,
-            requiredStreak: preset.requiredStreak,
-          ),
-          onTap: () {
-            if (!unlocked) return _lockedTap();
-            HapticFeedback.selectionClick();
-            setState(() => _config = preset.config);
-          },
-          child: PremiumFaceAvatarWidget(
-            config: preset.config,
-            size: 90,
-            level: user?.level ?? 1,
-            streak: user?.currentStreak ?? 0,
-            showFrame: false,
-            compact: true,
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildStyleGrid({
-    required String key,
-    required List<AvatarStyleOption> options,
-    required String selected,
-    required UserProfile? user,
-    required void Function(String) onSelect,
-  }) {
-    return GridView.builder(
-      key: ValueKey(key),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 0.82,
-      ),
-      itemCount: options.length,
-      itemBuilder: (context, i) {
-        final option = options[i];
-        final unlocked = _isUnlocked(
-          user,
-          requiredLevel: option.requiredLevel,
-          requiredStreak: option.requiredStreak,
-        );
-        final preview = _applyStyle(key, option.id);
-        return _ReflectionTile(
-          title: option.title,
-          subtitle: option.subtitle,
-          selected: option.id == selected,
-          locked: !unlocked,
-          requirement: _requirement(
-            requiredLevel: option.requiredLevel,
-            requiredStreak: option.requiredStreak,
-          ),
-          onTap: () {
-            if (!unlocked) return _lockedTap();
-            HapticFeedback.selectionClick();
-            onSelect(option.id);
-          },
-          child: PremiumFaceAvatarWidget(
-            config: preview,
-            size: 90,
-            level: user?.level ?? 1,
-            streak: user?.currentStreak ?? 0,
-            showFrame: false,
-            compact: true,
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildPresetGridForField({
-    required String key,
-    required List<int> presets,
-    required int selected,
-    required void Function(int) onSelect,
-  }) {
-    return GridView.builder(
-      key: ValueKey(key),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-      ),
-      itemCount: presets.length,
-      itemBuilder: (context, i) {
-        final value = presets[i];
-        return _OptionTile(
-          isActive: value == selected,
-          onTap: () {
-            HapticFeedback.selectionClick();
-            onSelect(value);
-          },
-          child: _MiniAvatar(config: _applyField(key, value), size: 54),
-        );
-      },
-    );
   }
 
   Widget _buildSequentialGrid({
@@ -302,14 +200,15 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
     required int selected,
     required void Function(int) onSelect,
   }) {
+    final columns = count <= 3 ? count : 2;
     return GridView.builder(
       key: ValueKey(key),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: count <= 3 ? count : 2,
+        crossAxisCount: columns,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
-        childAspectRatio: count <= 3 ? 0.74 : 0.82,
+        childAspectRatio: count <= 3 ? 0.68 : 0.78,
       ),
       itemCount: count,
       itemBuilder: (context, i) {
@@ -319,75 +218,16 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
             HapticFeedback.selectionClick();
             onSelect(i);
           },
-          child: _MiniAvatar(
+          child: _FaceOptionPreview(
             config: _applyField(key, i),
-            size: count <= 3 ? 104 : 118,
+            size: count <= 3 ? 94 : 112,
+            label: _optionLabel(key, i),
+            swatch: _optionSwatch(key, i),
+            isActive: i == selected,
           ),
         );
       },
     );
-  }
-
-  Widget _buildOptionalGrid({
-    required String key,
-    required int count,
-    required int selected,
-    required void Function(int) onSelect,
-    required String noneLabel,
-  }) {
-    return GridView.builder(
-      key: ValueKey(key),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-      ),
-      itemCount: count + 1,
-      itemBuilder: (context, i) {
-        final value = i == 0 ? -1 : i - 1;
-        if (i == 0) {
-          return _OptionTile(
-            isActive: value == selected,
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onSelect(-1);
-            },
-            child: Center(
-              child: Text(
-                noneLabel,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.dmSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: value == selected
-                      ? Colors.white
-                      : AppColors.textSecondary,
-                ),
-              ),
-            ),
-          );
-        }
-        return _OptionTile(
-          isActive: value == selected,
-          onTap: () {
-            HapticFeedback.selectionClick();
-            onSelect(value);
-          },
-          child: _MiniAvatar(config: _applyField(key, value), size: 54),
-        );
-      },
-    );
-  }
-
-  AvatarConfig _applyStyle(String field, String id) {
-    return switch (field) {
-      'background' => _config.copyWith(backgroundId: id),
-      'frame' => _config.copyWith(frameId: id),
-      'aura' => _config.copyWith(auraId: id),
-      'badge' => _config.copyWith(badgeId: id),
-      _ => _config,
-    };
   }
 
   AvatarConfig _applyField(String field, int value) {
@@ -410,7 +250,53 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
       'expression' => _config.copyWith(expression: value),
       'viewAngle' => _config.copyWith(viewAngle: value),
       'hairColor' => _config.copyWith(hairColor: value),
+      'eyeColor' => _config.copyWith(eyeColor: value),
       _ => _config,
+    };
+  }
+
+  String _optionLabel(String key, int value) {
+    return switch (key) {
+      'hair' => const [
+          'Объем',
+          'Кроп',
+          'Пробор',
+          'Buzz',
+          'Slick',
+          'Кудри',
+        ][value],
+      'hairColor' => const ['Графит', 'Брюнет', 'Каштан'][value],
+      'skinTone' => const [
+          'Светлый',
+          'Натуральный',
+          'Теплый',
+          'Глубокий',
+        ][value],
+      'brows' => const ['Естественные', 'Прямые', 'Густые', 'Собранные'][value],
+      'eyeColor' => const ['Карие', 'Серо-синие', 'Зеленые'][value],
+      _ => '${value + 1}',
+    };
+  }
+
+  Color? _optionSwatch(String key, int value) {
+    return switch (key) {
+      'hairColor' => const [
+          Color(0xFF141211),
+          Color(0xFF3B261A),
+          Color(0xFF6B3F22),
+        ][value],
+      'skinTone' => const [
+          Color(0xFFE2B28F),
+          Color(0xFFC58E68),
+          Color(0xFFA96F4E),
+          Color(0xFF754A36),
+        ][value],
+      'eyeColor' => const [
+          Color(0xFF6A4A32),
+          Color(0xFF4F8098),
+          Color(0xFF527956),
+        ][value],
+      _ => null,
     };
   }
 
@@ -428,8 +314,10 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
     return level >= requiredLevel && streak >= requiredStreak;
   }
 
-  String _requirement(
-      {required int requiredLevel, required int requiredStreak}) {
+  String _requirement({
+    required int requiredLevel,
+    required int requiredStreak,
+  }) {
     if (requiredStreak > 0) return '$requiredStreak дней подряд';
     if (requiredLevel > 1) return 'Уровень $requiredLevel';
     return 'Открыто';
@@ -466,8 +354,11 @@ class _TopBar extends StatelessWidget {
         children: [
           IconButton(
             onPressed: onClose,
-            icon: const Icon(Icons.close,
-                size: 22, color: AppColors.textSecondary),
+            icon: const Icon(
+              Icons.close,
+              size: 22,
+              color: AppColors.textSecondary,
+            ),
           ),
           const Spacer(),
           Column(
@@ -510,19 +401,31 @@ class _TopBar extends StatelessWidget {
 class _ReflectionStage extends StatelessWidget {
   final AvatarConfig config;
   final UserProfile? user;
+  final int sectionIndex;
 
   const _ReflectionStage({
     required this.config,
     required this.user,
+    required this.sectionIndex,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isFaceDetail = sectionIndex >= 2;
+    final hint = switch (sectionIndex) {
+      0 => 'Силуэт должен читаться сразу, без лишнего шума.',
+      1 => 'Натуральный тон волос без грязи на коже.',
+      2 => 'Тон меняет кожу, сохраняя естественный свет и текстуру.',
+      3 => 'Форма бровей меняет характер, но остается естественной.',
+      4 => 'Цвет глаз показан крупнее, чтобы выбор был заметен.',
+      _ => 'Облик фиксирует путь.',
+    };
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+        padding: EdgeInsets.fromLTRB(20, isFaceDetail ? 16 : 18, 20, 18),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(26),
@@ -535,53 +438,100 @@ class _ReflectionStage extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
-          children: [
-            PremiumFaceAvatarWidget(
-              config: config,
-              size: 150,
-              level: user?.level ?? 1,
-              streak: user?.currentStreak ?? 0,
-              compact: true,
-            ),
-            const SizedBox(width: 18),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user?.name.isNotEmpty == true ? user!.name : 'Путник',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.dmSerifDisplay(
-                      fontSize: 23,
-                      color: AppColors.textPrimary,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          child: isFaceDetail
+              ? Column(
+                  key: ValueKey('face-detail-stage-$sectionIndex'),
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PremiumFaceAvatarWidget(
+                      config: config,
+                      size: 188,
+                      level: user?.level ?? 1,
+                      streak: user?.currentStreak ?? 0,
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Уровень ${user?.level ?? 1} · ${user?.currentStreak ?? 0} дн. ритма',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.gold,
+                    const SizedBox(height: 12),
+                    _StageText(user: user, hint: hint, centered: true),
+                  ],
+                )
+              : Row(
+                  key: const ValueKey('default-stage'),
+                  children: [
+                    PremiumFaceAvatarWidget(
+                      config: config,
+                      size: 154,
+                      level: user?.level ?? 1,
+                      streak: user?.currentStreak ?? 0,
+                      compact: true,
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Награды не покупаются. Они появляются, когда путь зафиксирован.',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 12.5,
-                      color: AppColors.textSecondary,
-                      height: 1.35,
+                    const SizedBox(width: 18),
+                    Expanded(
+                      child: _StageText(
+                        user: user,
+                        hint: hint,
+                        centered: false,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+                  ],
+                ),
         ),
       ),
+    );
+  }
+}
+
+class _StageText extends StatelessWidget {
+  final UserProfile? user;
+  final String hint;
+  final bool centered;
+
+  const _StageText({
+    required this.user,
+    required this.hint,
+    required this.centered,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final align = centered ? TextAlign.center : TextAlign.start;
+    return Column(
+      crossAxisAlignment:
+          centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      children: [
+        Text(
+          user?.name.isNotEmpty == true ? user!.name : 'Путник',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: align,
+          style: GoogleFonts.dmSerifDisplay(
+            fontSize: 23,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Уровень ${user?.level ?? 1} · ${user?.currentStreak ?? 0} дн. ритма',
+          textAlign: align,
+          style: GoogleFonts.dmSans(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: AppColors.gold,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          hint,
+          textAlign: align,
+          style: GoogleFonts.dmSans(
+            fontSize: 12.5,
+            color: AppColors.textSecondary,
+            height: 1.35,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -634,10 +584,7 @@ class _ReflectionTile extends StatelessWidget {
           children: [
             Expanded(
               child: Center(
-                child: Opacity(
-                  opacity: locked ? 0.42 : 1,
-                  child: child,
-                ),
+                child: Opacity(opacity: locked ? 0.42 : 1, child: child),
               ),
             ),
             const SizedBox(height: 8),
@@ -656,11 +603,17 @@ class _ReflectionTile extends StatelessWidget {
                   ),
                 ),
                 if (locked)
-                  const Icon(Icons.lock_rounded,
-                      size: 14, color: AppColors.textDisabled)
+                  const Icon(
+                    Icons.lock_rounded,
+                    size: 14,
+                    color: AppColors.textDisabled,
+                  )
                 else if (selected)
-                  const Icon(Icons.check_circle_rounded,
-                      size: 15, color: AppColors.gold),
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    size: 15,
+                    color: AppColors.gold,
+                  ),
               ],
             ),
             const SizedBox(height: 2),
@@ -712,6 +665,83 @@ class _OptionTile extends StatelessWidget {
   }
 }
 
+class _FaceOptionPreview extends StatelessWidget {
+  final AvatarConfig config;
+  final double size;
+  final String label;
+  final Color? swatch;
+  final bool isActive;
+
+  const _FaceOptionPreview({
+    required this.config,
+    required this.size,
+    required this.label,
+    required this.swatch,
+    required this.isActive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = isActive ? Colors.white : AppColors.textSecondary;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 7),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Center(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  _MiniAvatar(config: config, size: size),
+                  if (swatch != null)
+                    Positioned(
+                      right: 3,
+                      top: 4,
+                      child: Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: swatch,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isActive
+                                ? AppColors.gold
+                                : AppColors.background,
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.12),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.dmSans(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+              color: foreground,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MiniAvatar extends StatelessWidget {
   final AvatarConfig config;
   final double size;
@@ -726,6 +756,7 @@ class _MiniAvatar extends StatelessWidget {
         size: size,
         showFrame: false,
         compact: true,
+        animate: false,
       ),
     );
   }

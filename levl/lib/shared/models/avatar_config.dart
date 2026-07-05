@@ -49,6 +49,7 @@ class AvatarConfig {
   final int expression; // 0-4
   final int viewAngle; // 0 front, 1 3/4, 2 side, 3 3/4, 4 back
   final int hairColor; // 0 dark, 1 brown, 2 chestnut
+  final int eyeColor; // 0 brown, 1 blue, 2 green
 
   const AvatarConfig({
     this.hair = 0,
@@ -75,6 +76,7 @@ class AvatarConfig {
     this.expression = 0,
     this.viewAngle = 0,
     this.hairColor = 0,
+    this.eyeColor = 0,
   });
 
   /// Curated hair presets - keeps the editor useful instead of overwhelming.
@@ -92,20 +94,15 @@ class AvatarConfig {
   static const accessoryCount = 6;
   static const expressionCount = 5;
   static const viewAngleCount = 5;
-  static const premiumHairStyleCount = 4;
+  static const premiumHairStyleCount = 6;
   static const hairColorCount = 3;
+  static const eyeColorCount = 3;
+  static const premiumSkinToneCount = 4;
+  static const premiumBrowStyleCount = 4;
 
   static const backgroundOptions = [
-    AvatarStyleOption(
-      id: 'clean',
-      title: 'Чистый',
-      subtitle: 'База Системы',
-    ),
-    AvatarStyleOption(
-      id: 'paper',
-      title: 'Бумага',
-      subtitle: 'Мягкий фокус',
-    ),
+    AvatarStyleOption(id: 'clean', title: 'Чистый', subtitle: 'База Системы'),
+    AvatarStyleOption(id: 'paper', title: 'Бумага', subtitle: 'Мягкий фокус'),
     AvatarStyleOption(
       id: 'gold',
       title: 'Золото',
@@ -127,11 +124,7 @@ class AvatarConfig {
   ];
 
   static const frameOptions = [
-    AvatarStyleOption(
-      id: 'none',
-      title: 'Без рамки',
-      subtitle: 'Тишина',
-    ),
+    AvatarStyleOption(id: 'none', title: 'Без рамки', subtitle: 'Тишина'),
     AvatarStyleOption(
       id: 'system',
       title: 'Система',
@@ -163,11 +156,7 @@ class AvatarConfig {
       title: 'Без ауры',
       subtitle: 'Спокойный режим',
     ),
-    AvatarStyleOption(
-      id: 'focus',
-      title: 'Фокус',
-      subtitle: 'Мягкое свечение',
-    ),
+    AvatarStyleOption(id: 'focus', title: 'Фокус', subtitle: 'Мягкое свечение'),
     AvatarStyleOption(
       id: 'gold',
       title: 'Импульс',
@@ -189,16 +178,8 @@ class AvatarConfig {
   ];
 
   static const badgeOptions = [
-    AvatarStyleOption(
-      id: 'none',
-      title: 'Без знака',
-      subtitle: 'Чистый облик',
-    ),
-    AvatarStyleOption(
-      id: 'first',
-      title: 'Первый шаг',
-      subtitle: 'Старт пути',
-    ),
+    AvatarStyleOption(id: 'none', title: 'Без знака', subtitle: 'Чистый облик'),
+    AvatarStyleOption(id: 'first', title: 'Первый шаг', subtitle: 'Старт пути'),
     AvatarStyleOption(
       id: 'level',
       title: 'Уровень',
@@ -374,6 +355,7 @@ class AvatarConfig {
     int? expression,
     int? viewAngle,
     int? hairColor,
+    int? eyeColor,
   }) {
     return AvatarConfig(
       hair: hair ?? this.hair,
@@ -400,6 +382,7 @@ class AvatarConfig {
       expression: expression ?? this.expression,
       viewAngle: viewAngle ?? this.viewAngle,
       hairColor: hairColor ?? this.hairColor,
+      eyeColor: eyeColor ?? this.eyeColor,
     );
   }
 
@@ -428,6 +411,7 @@ class AvatarConfig {
         'expression': expression,
         'viewAngle': viewAngle,
         'hairColor': hairColor,
+        'eyeColor': eyeColor,
       };
 
   factory AvatarConfig.fromJson(Map<String, dynamic> json) {
@@ -456,6 +440,7 @@ class AvatarConfig {
       expression: json['expression'] as int? ?? 0,
       viewAngle: json['viewAngle'] as int? ?? 0,
       hairColor: json['hairColor'] as int? ?? 0,
+      eyeColor: json['eyeColor'] as int? ?? 0,
     );
   }
 
