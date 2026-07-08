@@ -9,59 +9,82 @@ void main() {
 class AvatarPreviewApp extends StatelessWidget {
   const AvatarPreviewApp({super.key});
 
+  static const _hairLabels = [
+    'Volume',
+    'Crop',
+    'Side part',
+    'Buzz',
+    'Slick back',
+    'Curly',
+  ];
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         backgroundColor: const Color(0xFFF4F4F1),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const _Heading('Skin tones across all hairstyles'),
-              const SizedBox(height: 16),
-              for (var hair = 0;
-                  hair < AvatarConfig.premiumHairStyleCount;
-                  hair++) ...[
-                _VariantRow(
-                  label: 'Hair ${hair + 1}',
-                  configs: [
-                    for (var tone = 0;
-                        tone < AvatarConfig.premiumSkinToneCount;
-                        tone++)
-                      AvatarConfig(hair: hair, skinTone: tone),
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final groupWidth = (constraints.maxWidth - 56) / 2;
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _Heading('Skin tones across all hairstyles'),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 10,
+                      children: [
+                        for (var hair = 0;
+                            hair < AvatarConfig.premiumHairStyleCount;
+                            hair++)
+                          SizedBox(
+                            width: groupWidth,
+                            child: _HairToneGroup(
+                              label: _hairLabels[hair],
+                              hair: hair,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _DetailGroup(
+                            title: 'Eye colors',
+                            configs: [
+                              AvatarConfig(eyeColor: 0),
+                              AvatarConfig(eyeColor: 1),
+                              AvatarConfig(eyeColor: 2),
+                            ],
+                            labels: ['Brown', 'Blue-grey', 'Green'],
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: _DetailGroup(
+                            title: 'Eyebrow shapes',
+                            configs: [
+                              AvatarConfig(brows: 0),
+                              AvatarConfig(brows: 1),
+                              AvatarConfig(brows: 2),
+                              AvatarConfig(brows: 3),
+                            ],
+                            labels: ['Natural', 'Straight', 'Full', 'Focused'],
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-                const SizedBox(height: 18),
-              ],
-              const SizedBox(height: 24),
-              const _Heading('Eye colors'),
-              const SizedBox(height: 16),
-              const _VariantRow(
-                label: 'Brown / blue-grey / green',
-                avatarSize: 220,
-                configs: [
-                  AvatarConfig(eyeColor: 0),
-                  AvatarConfig(eyeColor: 1),
-                  AvatarConfig(eyeColor: 2),
-                ],
-              ),
-              const SizedBox(height: 34),
-              const _Heading('Eyebrow shapes'),
-              const SizedBox(height: 16),
-              const _VariantRow(
-                label: 'Natural / straight / full / focused',
-                avatarSize: 210,
-                configs: [
-                  AvatarConfig(brows: 0),
-                  AvatarConfig(brows: 1),
-                  AvatarConfig(brows: 2),
-                  AvatarConfig(brows: 3),
-                ],
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -79,7 +102,7 @@ class _Heading extends StatelessWidget {
     return Text(
       text,
       style: const TextStyle(
-        fontSize: 26,
+        fontSize: 22,
         fontWeight: FontWeight.w800,
         color: Color(0xFF171A1A),
       ),
@@ -87,45 +110,109 @@ class _Heading extends StatelessWidget {
   }
 }
 
-class _VariantRow extends StatelessWidget {
+class _HairToneGroup extends StatelessWidget {
   final String label;
-  final List<AvatarConfig> configs;
-  final double avatarSize;
+  final int hair;
 
-  const _VariantRow({
-    required this.label,
-    required this.configs,
-    this.avatarSize = 170,
-  });
+  const _HairToneGroup({required this.label, required this.hair});
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         SizedBox(
-          width: 180,
+          width: 78,
           child: Text(
             label,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
               color: Color(0xFF454B4B),
             ),
           ),
         ),
-        for (final config in configs)
+        for (var tone = 0; tone < AvatarConfig.premiumSkinToneCount; tone++)
           Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.only(right: 6),
             child: PremiumFaceAvatarWidget(
-              config: config,
-              size: avatarSize,
+              config: AvatarConfig(hair: hair, skinTone: tone),
+              size: 108,
               showFrame: false,
               compact: true,
               animate: false,
             ),
           ),
       ],
+    );
+  }
+}
+
+class _DetailGroup extends StatelessWidget {
+  final String title;
+  final List<AvatarConfig> configs;
+  final List<String> labels;
+
+  const _DetailGroup({
+    required this.title,
+    required this.configs,
+    required this.labels,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF171A1A),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            for (var i = 0; i < configs.length; i++)
+              _DetailOption(config: configs[i], label: labels[i]),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _DetailOption extends StatelessWidget {
+  final AvatarConfig config;
+  final String label;
+
+  const _DetailOption({required this.config, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 122,
+      child: Column(
+        children: [
+          PremiumFaceAvatarWidget(
+            config: config,
+            size: 108,
+            showFrame: false,
+            compact: true,
+            animate: false,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF454B4B),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

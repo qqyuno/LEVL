@@ -93,7 +93,6 @@ class _PremiumFaceAvatarWidgetState extends State<PremiumFaceAvatarWidget>
           final assetPath = _assetPath();
           final skinTone =
               widget.config.skinTone % AvatarConfig.premiumSkinToneCount;
-          final skinMaskPath = _skinMaskAssetPath();
 
           return SizedBox(
             width: widget.size,
@@ -152,12 +151,9 @@ class _PremiumFaceAvatarWidgetState extends State<PremiumFaceAvatarWidget>
                                 duration: const Duration(milliseconds: 220),
                                 switchInCurve: Curves.easeOutCubic,
                                 switchOutCurve: Curves.easeInCubic,
-                                child: Image.asset(
+                                child: _PremiumFaceImage(
                                   assetPath,
                                   key: ValueKey(assetPath),
-                                  fit: BoxFit.cover,
-                                  filterQuality: FilterQuality.high,
-                                  gaplessPlayback: true,
                                 ),
                               ),
                               AnimatedSwitcher(
@@ -168,11 +164,11 @@ class _PremiumFaceAvatarWidgetState extends State<PremiumFaceAvatarWidget>
                                     ? const SizedBox.expand(
                                         key: ValueKey('skin-tone-natural'),
                                       )
-                                    : _SkinToneOverlay(
+                                    : _MaskedSkinToneLayer(
                                         key: ValueKey(
-                                          '$skinMaskPath-$skinTone',
+                                          '$assetPath-$skinTone',
                                         ),
-                                        maskPath: skinMaskPath,
+                                        assetPath: assetPath,
                                         skinTone: skinTone,
                                       ),
                               ),
@@ -239,72 +235,107 @@ class _PremiumFaceAvatarWidgetState extends State<PremiumFaceAvatarWidget>
     return 'assets/character_v2/faces/levl_face_male_${style}_$color.png';
   }
 
-  String _skinMaskAssetPath() {
-    return 'assets/character_v2/faces/levl_face_skin_mask_${_hairStyleName()}.png';
-  }
-
   String _hairStyleName() {
     const styles = ['volume', 'crop', 'sidepart', 'buzz', 'slickback', 'curly'];
     return styles[widget.config.hair % styles.length];
   }
 }
 
-class _SkinToneOverlay extends StatelessWidget {
-  static const _solidMask = ColorFilter.matrix([
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    10,
-    0,
-  ]);
+class _PremiumFaceImage extends StatelessWidget {
+  final String assetPath;
 
-  final String maskPath;
+  const _PremiumFaceImage(
+    this.assetPath, {
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      assetPath,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.high,
+      gaplessPlayback: true,
+    );
+  }
+}
+
+class _MaskedSkinToneLayer extends StatelessWidget {
+  final String assetPath;
   final int skinTone;
 
-  const _SkinToneOverlay({
+  const _MaskedSkinToneLayer({
     super.key,
-    required this.maskPath,
+    required this.assetPath,
     required this.skinTone,
   });
 
   @override
   Widget build(BuildContext context) {
-    final spec = switch (skinTone % AvatarConfig.premiumSkinToneCount) {
-      0 => const (color: Color(0xFFFFEBE0), opacity: 0.24),
-      2 => const (color: Color(0xFFAE6445), opacity: 0.20),
-      _ => const (color: Color(0xFF4D2D24), opacity: 0.30),
-    };
+    final filter = _skinToneFilter(skinTone);
+    if (filter == null) return const SizedBox.expand();
 
-    return Opacity(
-      opacity: spec.opacity,
+    return ClipPath(
+      clipper: _SkinToneClipper(),
       child: ColorFiltered(
-        colorFilter: _solidMask,
-        child: Image.asset(
-          maskPath,
-          fit: BoxFit.cover,
-          filterQuality: FilterQuality.high,
-          gaplessPlayback: true,
-          color: spec.color,
-          colorBlendMode: BlendMode.srcIn,
-        ),
+        colorFilter: filter,
+        child: _PremiumFaceImage(assetPath),
       ),
     );
   }
+
+  ColorFilter? _skinToneFilter(int tone) {
+    return switch (tone % AvatarConfig.premiumSkinToneCount) {
+      0 => const ColorFilter.matrix([
+          1.08,
+          0.00,
+          0.00,
+          0.00,
+          4.0,
+          0.00,
+          1.04,
+          0.00,
+          0.00,
+          2.0,
+          0.00,
+          0.00,
+          1.01,
+          0.00,
+          0.0,
+          0.00,
+          0.00,
+          0.00,
+          1.00,
+          0.0,
+        ]),
+      _ => null,
+    };
+  }
+}
+
+class _SkinToneClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final w = size.width;
+    final h = size.height;
+    return Path()
+      ..addOval(
+        Rect.fromCenter(
+          center: Offset(w * 0.505, h * 0.425),
+          width: w * 0.36,
+          height: h * 0.39,
+        ),
+      )
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(w * 0.38, h * 0.54, w * 0.25, h * 0.18),
+          Radius.circular(w * 0.045),
+        ),
+      );
+  }
+
+  @override
+  bool shouldReclip(covariant _SkinToneClipper oldClipper) => false;
 }
 
 class _EyeTintPainter extends CustomPainter {

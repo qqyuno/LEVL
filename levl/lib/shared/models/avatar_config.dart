@@ -97,7 +97,7 @@ class AvatarConfig {
   static const premiumHairStyleCount = 6;
   static const hairColorCount = 3;
   static const eyeColorCount = 3;
-  static const premiumSkinToneCount = 4;
+  static const premiumSkinToneCount = 2;
   static const premiumBrowStyleCount = 4;
 
   static const backgroundOptions = [
