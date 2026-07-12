@@ -53,8 +53,19 @@ class NotificationSettingsNotifier extends _$NotificationSettingsNotifier {
   }
 
   Future<void> setEnabled(bool value) async {
-    await _service.setEnabled(value);
-    state = AsyncData(state.requireValue.copyWith(enabled: value));
+    var nextValue = value;
+
+    if (value) {
+      try {
+        await _service.init();
+        nextValue = await _service.requestPermission();
+      } catch (_) {
+        nextValue = false;
+      }
+    }
+
+    await _service.setEnabled(nextValue);
+    state = AsyncData(state.requireValue.copyWith(enabled: nextValue));
   }
 
   Future<void> setMorningTime(TimeOfDay time) async {

@@ -41,11 +41,12 @@ class NotificationService {
       tz.setLocalLocation(tz.getLocation('Europe/Moscow'));
     }
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
 
     await _plugin.initialize(
@@ -71,10 +72,11 @@ class NotificationService {
         IOSFlutterLocalNotificationsPlugin>();
     if (ios != null) {
       return await ios.requestPermissions(
-        alert: true,
-        badge: true,
-        sound: true,
-      ) ?? false;
+            alert: true,
+            badge: true,
+            sound: true,
+          ) ??
+          false;
     }
     return false;
   }
@@ -88,7 +90,7 @@ class NotificationService {
     if (!_initialized) return;
 
     final prefs = await SharedPreferences.getInstance();
-    final enabled = prefs.getBool(_keyEnabled) ?? true;
+    final enabled = prefs.getBool(_keyEnabled) ?? false;
 
     // Cancel everything first
     await _plugin.cancelAll();
@@ -117,7 +119,8 @@ class NotificationService {
   // ── Morning ───────────────────────────────────────────────────────
   Future<void> _scheduleMorning(int hour, int minute, int dailyMinutes) async {
     final now = tz.TZDateTime.now(tz.local);
-    var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    var scheduled =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
@@ -131,7 +134,8 @@ class NotificationService {
       scheduled,
       _notificationDetails(),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time, // repeats daily
     );
   }
@@ -139,12 +143,14 @@ class NotificationService {
   // ── Streak alert ──────────────────────────────────────────────────
   Future<void> _scheduleStreakAlert(int dailyMinutes, int currentStreak) async {
     final now = tz.TZDateTime.now(tz.local);
-    var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, 21, 0);
+    var scheduled =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, 21, 0);
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
 
-    final message = NotificationMessages.streak(currentStreak, dailyMinutes, date: scheduled);
+    final message = NotificationMessages.streak(currentStreak, dailyMinutes,
+        date: scheduled);
 
     await _plugin.zonedSchedule(
       _streakId,
@@ -153,7 +159,8 @@ class NotificationService {
       scheduled,
       _notificationDetails(),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
@@ -171,7 +178,8 @@ class NotificationService {
       scheduled,
       _notificationDetails(),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
@@ -208,7 +216,7 @@ class NotificationService {
   // ── Settings helpers ──────────────────────────────────────────────
   Future<bool> isEnabled() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_keyEnabled) ?? true;
+    return prefs.getBool(_keyEnabled) ?? false;
   }
 
   Future<void> setEnabled(bool value) async {

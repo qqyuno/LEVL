@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -10,14 +12,22 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
   await initSupabase();
-  await NotificationService.instance.init();
-  await NotificationService.instance.requestPermission();
 
   runApp(
     const ProviderScope(
       child: LevlApp(),
     ),
   );
+
+  unawaited(_initializeNotifications());
+}
+
+Future<void> _initializeNotifications() async {
+  try {
+    await NotificationService.instance.init();
+  } catch (error) {
+    debugPrint('Notification initialization failed: $error');
+  }
 }
 
 class LevlApp extends ConsumerWidget {
