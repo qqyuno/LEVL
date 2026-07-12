@@ -40,15 +40,20 @@ class DashboardPage extends ConsumerWidget {
                     user: user,
                     quests: const [],
                     isLoading: true,
+                    onComplete: (_) {},
                   ),
                   error: (_, __) => _SystemCommandCenter(
                     user: user,
                     quests: const [],
                     hasQuestError: true,
+                    onComplete: (_) {},
                   ),
                   data: (quests) => _SystemCommandCenter(
                     user: user,
                     quests: quests,
+                    onComplete: (quest) => ref
+                        .read(questNotifierProvider.notifier)
+                        .completeQuest(quest.id),
                   ),
                 ),
               ),
@@ -111,7 +116,13 @@ class DashboardPage extends ConsumerWidget {
                 error: (_, __) =>
                     const SliverToBoxAdapter(child: SizedBox.shrink()),
                 data: (quests) {
-                  final daily = quests.where((q) => !q.isMainGoalTask).toList();
+                  final nextQuest = quests
+                      .where((q) =>
+                          !q.isMainGoalTask && q.status == QuestStatus.pending)
+                      .firstOrNull;
+                  final daily = quests
+                      .where((q) => !q.isMainGoalTask && q.id != nextQuest?.id)
+                      .toList();
                   return SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     sliver: SliverList(
@@ -136,26 +147,6 @@ class DashboardPage extends ConsumerWidget {
             ],
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.go(AppRoutes.aiMentor),
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.gold,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.gold, width: 1),
-        ),
-        label: Text(
-          'Система',
-          style: GoogleFonts.dmSans(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.gold,
-            letterSpacing: 0.5,
-          ),
-        ),
-        icon: const Icon(Icons.auto_awesome, size: 18),
       ),
     );
   }
@@ -314,106 +305,98 @@ class _HeroSegment extends StatelessWidget {
     final xpToNext = xpToNextLevel(user.level) - xpInLevel;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-      child: Column(
-        children: [
-          // Avatar
-          PremiumFaceAvatarWidget(
-            config: user.characterStateJson.isNotEmpty
-                ? AvatarConfig.fromJsonString(user.characterStateJson)
-                : const AvatarConfig(),
-            size: 174,
-            level: user.level,
-            streak: user.currentStreak,
-          ),
-          const SizedBox(height: 16),
-
-          Text(
-            user.name,
-            style: GoogleFonts.dmSerifDisplay(
-              fontSize: 20,
-              color: AppColors.textPrimary,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // XP bar section
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 620),
+          child: Row(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Анимированный XP счётчик
-                  TweenAnimationBuilder<int>(
-                    tween: IntTween(begin: 0, end: user.xp),
-                    duration: const Duration(milliseconds: 800),
-                    curve: Curves.easeOutCubic,
-                    builder: (_, value, __) => Text(
-                      '$value XP',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.gold,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    '$xpToNext XP до уровня ${user.level + 1}',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
+              PremiumFaceAvatarWidget(
+                config: user.characterStateJson.isNotEmpty
+                    ? AvatarConfig.fromJsonString(user.characterStateJson)
+                    : const AvatarConfig(),
+                size: 146,
+                level: user.level,
+                streak: user.currentStreak,
               ),
-              const SizedBox(height: 8),
-
-              // Анимированный XP bar
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: progress),
-                duration: const Duration(milliseconds: 900),
-                curve: Curves.easeOutCubic,
-                builder: (_, value, __) {
-                  return Stack(
-                    children: [
-                      // Фон
-                      Container(
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: AppColors.divider,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
+              const SizedBox(width: 22),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'СЕГОДНЯ',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.gold,
+                        letterSpacing: 2,
                       ),
-                      // Заполненная часть
-                      FractionallySizedBox(
-                        widthFactor: value.clamp(0.0, 1.0),
-                        child: Container(
-                          height: 6,
-                          decoration: BoxDecoration(
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      user.name.isEmpty ? 'Твой день' : user.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.dmSerifDisplay(
+                        fontSize: 25,
+                        color: AppColors.textPrimary,
+                        height: 1.05,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Text(
+                      user.mainGoal.isEmpty
+                          ? 'Система собирает твой первый ориентир.'
+                          : user.mainGoal,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Text(
+                          '${user.xp} XP',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.gold,
-                            borderRadius: BorderRadius.circular(3),
-                            boxShadow: value > 0.02
-                                ? [
-                                    BoxShadow(
-                                      color: AppColors.gold
-                                          .withValues(alpha: 0.45),
-                                      blurRadius: 8,
-                                      spreadRadius: 0,
-                                    ),
-                                  ]
-                                : null,
                           ),
                         ),
+                        const Spacer(),
+                        Text(
+                          '$xpToNext до уровня ${user.level + 1}',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 11,
+                            color: AppColors.textDisabled,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 7),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: Stack(
+                        children: [
+                          Container(height: 5, color: AppColors.divider),
+                          FractionallySizedBox(
+                            widthFactor: progress.clamp(0.0, 1.0),
+                            child: Container(height: 5, color: AppColors.gold),
+                          ),
+                        ],
                       ),
-                    ],
-                  );
-                },
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -427,26 +410,31 @@ class _SystemCommandCenter extends StatelessWidget {
   final List<Quest> quests;
   final bool isLoading;
   final bool hasQuestError;
+  final ValueChanged<Quest> onComplete;
 
   const _SystemCommandCenter({
     required this.user,
     required this.quests,
+    required this.onComplete,
     this.isLoading = false,
     this.hasQuestError = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final completed =
-        quests.where((quest) => quest.status == QuestStatus.completed).length;
-    final total = quests.isEmpty ? 3 : quests.length;
+    final dailyQuests = quests.where((quest) => !quest.isMainGoalTask).toList();
+    final nextQuest = dailyQuests
+        .where((quest) => quest.status == QuestStatus.pending)
+        .firstOrNull;
+    final completed = dailyQuests
+        .where((quest) => quest.status == QuestStatus.completed)
+        .length;
+    final total = dailyQuests.isEmpty ? 3 : dailyQuests.length;
     final completion = total == 0 ? 0.0 : completed / total;
-    final streakProgress = (user.currentStreak % 7) / 7;
-    final daysToAnchor = user.currentStreak == 0
-        ? 7
-        : 7 - (user.currentStreak % 7 == 0 ? 7 : user.currentStreak % 7);
-    final headline = _headline(completed, total);
-    final note = _note(completed, total);
+    final headline = nextQuest?.title ?? _headline(completed, total);
+    final note = nextQuest?.description.isNotEmpty == true
+        ? nextQuest!.description
+        : _note(completed, total);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
@@ -456,13 +444,6 @@ class _SystemCommandCenter extends StatelessWidget {
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: AppColors.divider),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.textPrimary.withValues(alpha: 0.04),
-              blurRadius: 24,
-              offset: const Offset(0, 10),
-            ),
-          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -484,7 +465,7 @@ class _SystemCommandCenter extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'ЛИЧНАЯ СИСТЕМА',
+                  'СЛЕДУЮЩИЙ ШАГ',
                   style: GoogleFonts.dmSans(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -498,7 +479,7 @@ class _SystemCommandCenter extends StatelessWidget {
                       ? 'СБОР'
                       : hasQuestError
                           ? 'ОФЛАЙН'
-                          : '$completed/$total',
+                          : '$completed/$total · ${user.currentStreak} ДН.',
                 ),
               ],
             ),
@@ -526,18 +507,22 @@ class _SystemCommandCenter extends StatelessWidget {
               children: [
                 Expanded(
                   child: _SystemMetric(
-                    label: 'ФОКУС',
-                    value: user.mainGoal.isEmpty ? 'Путь' : user.mainGoal,
-                    icon: Icons.stars_rounded,
+                    label: 'ВРЕМЯ',
+                    value: nextQuest == null
+                        ? '${user.dailyMinutes} мин'
+                        : '${nextQuest.estimatedMinutes} мин',
+                    icon: Icons.timer_outlined,
                     color: AppColors.gold,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: _SystemMetric(
-                    label: 'РЕСУРС',
-                    value: '${user.dailyMinutes} мин',
-                    icon: Icons.timer_outlined,
+                    label: 'НАГРАДА',
+                    value: nextQuest == null
+                        ? 'Ритм дня'
+                        : '+${nextQuest.xpReward} XP',
+                    icon: Icons.bolt_rounded,
                     color: AppColors.sphereKnowledge,
                   ),
                 ),
@@ -550,14 +535,16 @@ class _SystemCommandCenter extends StatelessWidget {
               completion: completion,
             ),
             const SizedBox(height: 16),
-            _StreakRail(
-              streak: user.currentStreak,
-              progress: streakProgress,
-              daysToAnchor: daysToAnchor,
-            ),
-            const SizedBox(height: 16),
             GestureDetector(
-              onTap: () => context.go(AppRoutes.aiMentor),
+              onTap: nextQuest == null
+                  ? () => context.go(AppRoutes.aiMentor)
+                  : () async {
+                      final confirmed = await _showSystemConfirmation(
+                        context,
+                        nextQuest.title,
+                      );
+                      if (confirmed) onComplete(nextQuest);
+                    },
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -568,14 +555,18 @@ class _SystemCommandCenter extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.auto_awesome,
+                    Icon(
+                      nextQuest == null
+                          ? Icons.auto_awesome
+                          : Icons.check_rounded,
                       size: 17,
                       color: AppColors.surface,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Открыть Систему',
+                      nextQuest == null
+                          ? 'Открыть Систему'
+                          : 'Зафиксировать выполнение',
                       style: GoogleFonts.dmSans(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -660,16 +651,11 @@ class _SystemMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 86,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.divider),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
@@ -686,7 +672,7 @@ class _SystemMetric extends StatelessWidget {
               ),
             ],
           ),
-          const Spacer(),
+          const SizedBox(height: 7),
           Text(
             value,
             maxLines: 2,
@@ -717,158 +703,45 @@ class _DailyProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                'ПРОГРЕСС ДНЯ',
-                style: GoogleFonts.dmSans(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textDisabled,
-                  letterSpacing: 1.5,
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'ПРОГРЕСС ДНЯ',
+              style: GoogleFonts.dmSans(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDisabled,
+                letterSpacing: 1.5,
               ),
-              const Spacer(),
-              Text(
-                '$completed из $total',
-                style: GoogleFonts.dmSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.gold,
-                ),
+            ),
+            const Spacer(),
+            Text(
+              '$completed из $total',
+              style: GoogleFonts.dmSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: AppColors.gold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 9),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: Stack(
+            children: [
+              Container(height: 6, color: AppColors.divider),
+              FractionallySizedBox(
+                widthFactor: completion.clamp(0.0, 1.0),
+                child: Container(height: 6, color: AppColors.gold),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: Stack(
-              children: [
-                Container(height: 7, color: AppColors.divider),
-                FractionallySizedBox(
-                  widthFactor: completion.clamp(0.0, 1.0),
-                  child: Container(
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: AppColors.gold,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.gold.withValues(alpha: 0.4),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StreakRail extends StatelessWidget {
-  final int streak;
-  final double progress;
-  final int daysToAnchor;
-
-  const _StreakRail({
-    required this.streak,
-    required this.progress,
-    required this.daysToAnchor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final filled = streak == 0
-        ? 0
-        : streak % 7 == 0
-            ? 7
-            : streak % 7;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.textPrimary,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.local_fire_department,
-                size: 17,
-                color: AppColors.goldLight,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'РИТМ',
-                style: GoogleFonts.dmSans(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white.withValues(alpha: 0.5),
-                  letterSpacing: 1.8,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '$streak дн.',
-                style: GoogleFonts.dmSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.goldLight,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: List.generate(7, (index) {
-              final active = index < filled;
-              return Expanded(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  height: 6,
-                  margin: EdgeInsets.only(right: index == 6 ? 0 : 5),
-                  decoration: BoxDecoration(
-                    color: active
-                        ? AppColors.goldLight
-                        : Colors.white.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              );
-            }),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            streak == 0
-                ? 'Начни серию сегодня. Первый день всегда считается.'
-                : progress == 0
-                    ? 'Семидневный цикл закрыт. Следующий уже начался.'
-                    : 'До недельной фиксации: $daysToAnchor дн.',
-            style: GoogleFonts.dmSans(
-              fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.58),
-              height: 1.35,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
