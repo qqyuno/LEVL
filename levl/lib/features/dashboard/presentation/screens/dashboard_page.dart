@@ -1091,15 +1091,14 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
         // Карточка
         AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
           decoration: BoxDecoration(
-            color: isCompleted ? AppColors.surfaceElevated : AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isCompleted
-                  ? AppColors.divider.withValues(alpha: 0.5)
-                  : AppColors.divider,
-              width: 1,
+            border: Border(
+              bottom: BorderSide(
+                color: AppColors.divider.withValues(
+                  alpha: isCompleted ? 0.45 : 1,
+                ),
+              ),
             ),
           ),
           child: Row(
@@ -1107,17 +1106,17 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
               // Sphere icon badge
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: isCompleted
                       ? AppColors.divider.withValues(alpha: 0.4)
                       : sphereColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(9),
                 ),
                 child: Icon(
                   sphereIcon,
-                  size: 20,
+                  size: 18,
                   color: isCompleted ? AppColors.textDisabled : sphereColor,
                 ),
               ),
@@ -1147,7 +1146,7 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                         fontSize: 13,
                         color: AppColors.textSecondary,
                       ),
-                      maxLines: 3,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 6),
@@ -1190,7 +1189,7 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '+${widget.quest.xpReward}',
+                    '+${widget.quest.xpReward} XP',
                     style: GoogleFonts.dmSans(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -1199,27 +1198,25 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  GestureDetector(
-                    onTap: isCompleted ? null : _handleComplete,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isCompleted ? sphereColor : Colors.transparent,
-                        border: Border.all(
-                          color: isCompleted ? sphereColor : AppColors.divider,
-                          width: 1.5,
-                        ),
+                  IconButton(
+                    tooltip: isCompleted ? 'Выполнено' : 'Завершить задание',
+                    onPressed: isCompleted ? null : _handleComplete,
+                    style: IconButton.styleFrom(
+                      fixedSize: const Size(34, 34),
+                      minimumSize: const Size(34, 34),
+                      padding: EdgeInsets.zero,
+                      backgroundColor:
+                          isCompleted ? sphereColor : Colors.transparent,
+                      side: BorderSide(
+                        color: isCompleted ? sphereColor : AppColors.divider,
+                        width: 1.5,
                       ),
-                      child: isCompleted
-                          ? const Icon(
-                              Icons.check,
-                              size: 16,
-                              color: Colors.white,
-                            )
-                          : null,
+                    ),
+                    icon: Icon(
+                      Icons.check_rounded,
+                      size: 17,
+                      color:
+                          isCompleted ? Colors.white : AppColors.textSecondary,
                     ),
                   ),
                 ],
