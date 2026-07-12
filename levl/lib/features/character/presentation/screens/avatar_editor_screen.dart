@@ -22,6 +22,7 @@ class AvatarEditorScreen extends ConsumerStatefulWidget {
 
 class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
   late AvatarConfig _config;
+  late AvatarConfig _initialConfig;
   int _currentSection = 0;
 
   static const _sections = [
@@ -41,6 +42,12 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
     } else {
       _config = const AvatarConfig();
     }
+    _initialConfig = _config;
+  }
+
+  void _reset() {
+    HapticFeedback.selectionClick();
+    setState(() => _config = _initialConfig);
   }
 
   Future<void> _save() async {
@@ -77,72 +84,41 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _TopBar(onClose: () => Navigator.of(context).pop(), onSave: _save),
+            _TopBar(
+              onClose: () => Navigator.of(context).pop(),
+              onReset: _reset,
+              onSave: _save,
+            ),
             const SizedBox(height: 10),
             _ReflectionStage(
               config: _config,
               user: user,
-              sectionIndex: _currentSection,
             ),
             const SizedBox(height: 14),
-            SizedBox(
-              height: 44,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _sections.length,
-                itemBuilder: (context, index) {
-                  final isActive = index == _currentSection;
-                  return GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _currentSection = index);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isActive
-                            ? AppColors.textPrimary
-                            : AppColors.surface,
-                        borderRadius: BorderRadius.circular(999),
-                        border: isActive
-                            ? null
-                            : Border.all(color: AppColors.divider),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _sections[index].$2,
-                            size: 14,
-                            color: isActive
-                                ? Colors.white
-                                : AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _sections[index].$1,
-                            style: GoogleFonts.dmSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: isActive
-                                  ? Colors.white
-                                  : AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+            _CategoryRail(
+              sections: _sections,
+              selectedIndex: _currentSection,
+              onSelected: (index) {
+                HapticFeedback.selectionClick();
+                setState(() => _currentSection = index);
+              },
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _sections[_currentSection].$1,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             Expanded(
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 220),
@@ -299,52 +275,18 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
       _ => null,
     };
   }
-
-  bool _sameStyle(AvatarConfig a, AvatarConfig b) {
-    return a.toJsonString() == b.toJsonString();
-  }
-
-  bool _isUnlocked(
-    UserProfile? user, {
-    required int requiredLevel,
-    required int requiredStreak,
-  }) {
-    final level = user?.level ?? 1;
-    final streak = user?.currentStreak ?? 0;
-    return level >= requiredLevel && streak >= requiredStreak;
-  }
-
-  String _requirement({
-    required int requiredLevel,
-    required int requiredStreak,
-  }) {
-    if (requiredStreak > 0) return '$requiredStreak дней подряд';
-    if (requiredLevel > 1) return 'Уровень $requiredLevel';
-    return 'Открыто';
-  }
-
-  void _lockedTap() {
-    HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Система пока не зафиксировала это изменение.',
-          style: GoogleFonts.dmSans(fontSize: 14),
-        ),
-        backgroundColor: AppColors.textPrimary,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
 }
 
 class _TopBar extends StatelessWidget {
   final VoidCallback onClose;
+  final VoidCallback onReset;
   final VoidCallback onSave;
 
-  const _TopBar({required this.onClose, required this.onSave});
+  const _TopBar({
+    required this.onClose,
+    required this.onReset,
+    required this.onSave,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -360,27 +302,36 @@ class _TopBar extends StatelessWidget {
               color: AppColors.textSecondary,
             ),
           ),
-          const Spacer(),
-          Column(
-            children: [
-              Text(
-                'Отражение',
-                style: GoogleFonts.dmSerifDisplay(
-                  fontSize: 22,
-                  color: AppColors.textPrimary,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Студия персонажа',
+                  style: GoogleFonts.dmSerifDisplay(
+                    fontSize: 22,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-              ),
-              Text(
-                'облик твоего пути',
-                style: GoogleFonts.dmSans(
-                  fontSize: 11,
-                  color: AppColors.textDisabled,
-                  letterSpacing: 0.8,
+                Text(
+                  'собери свой облик',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 11,
+                    color: AppColors.textDisabled,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const Spacer(),
+          IconButton(
+            tooltip: 'Сбросить изменения',
+            onPressed: onReset,
+            icon: const Icon(
+              Icons.restart_alt_rounded,
+              size: 20,
+              color: AppColors.textSecondary,
+            ),
+          ),
           TextButton(
             onPressed: onSave,
             child: Text(
@@ -398,85 +349,91 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-class _ReflectionStage extends StatelessWidget {
-  final AvatarConfig config;
-  final UserProfile? user;
-  final int sectionIndex;
+class _CategoryRail extends StatelessWidget {
+  final List<(String, IconData)> sections;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
 
-  const _ReflectionStage({
-    required this.config,
-    required this.user,
-    required this.sectionIndex,
+  const _CategoryRail({
+    required this.sections,
+    required this.selectedIndex,
+    required this.onSelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isFaceDetail = sectionIndex >= 2;
-    final hint = switch (sectionIndex) {
-      0 => 'Силуэт должен читаться сразу, без лишнего шума.',
-      1 => 'Натуральный тон волос без грязи на коже.',
-      2 => 'Тон меняет кожу, сохраняя естественный свет и текстуру.',
-      3 => 'Форма бровей меняет характер, но остается естественной.',
-      4 => 'Цвет глаз показан крупнее, чтобы выбор был заметен.',
-      _ => 'Облик фиксирует путь.',
-    };
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: List.generate(sections.length, (index) {
+          final selected = index == selectedIndex;
+          return Expanded(
+            child: Tooltip(
+              message: sections[index].$1,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () => onSelected(index),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  height: 50,
+                  margin: EdgeInsets.only(
+                      right: index == sections.length - 1 ? 0 : 6),
+                  decoration: BoxDecoration(
+                    color:
+                        selected ? AppColors.textPrimary : Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    sections[index].$2,
+                    size: 19,
+                    color: selected ? Colors.white : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
 
+class _ReflectionStage extends StatelessWidget {
+  final AvatarConfig config;
+  final UserProfile? user;
+
+  const _ReflectionStage({
+    required this.config,
+    required this.user,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18),
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.fromLTRB(20, isFaceDetail ? 16 : 18, 20, 18),
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(26),
-          border: Border.all(color: AppColors.divider),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 24,
-              offset: const Offset(0, 10),
-            ),
-          ],
+          color: AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 220),
-          switchInCurve: Curves.easeOutCubic,
-          switchOutCurve: Curves.easeInCubic,
-          child: isFaceDetail
-              ? Column(
-                  key: ValueKey('face-detail-stage-$sectionIndex'),
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    PremiumFaceAvatarWidget(
-                      config: config,
-                      size: 188,
-                      level: user?.level ?? 1,
-                      streak: user?.currentStreak ?? 0,
-                    ),
-                    const SizedBox(height: 12),
-                    _StageText(user: user, hint: hint, centered: true),
-                  ],
-                )
-              : Row(
-                  key: const ValueKey('default-stage'),
-                  children: [
-                    PremiumFaceAvatarWidget(
-                      config: config,
-                      size: 154,
-                      level: user?.level ?? 1,
-                      streak: user?.currentStreak ?? 0,
-                      compact: true,
-                    ),
-                    const SizedBox(width: 18),
-                    Expanded(
-                      child: _StageText(
-                        user: user,
-                        hint: hint,
-                        centered: false,
-                      ),
-                    ),
-                  ],
-                ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              child: PremiumFaceAvatarWidget(
+                key: ValueKey(config.toJsonString()),
+                config: config,
+                size: 210,
+                level: user?.level ?? 1,
+                streak: user?.currentStreak ?? 0,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _StageText(user: user, centered: true),
+          ],
         ),
       ),
     );
@@ -485,12 +442,10 @@ class _ReflectionStage extends StatelessWidget {
 
 class _StageText extends StatelessWidget {
   final UserProfile? user;
-  final String hint;
   final bool centered;
 
   const _StageText({
     required this.user,
-    required this.hint,
     required this.centered,
   });
 
@@ -521,115 +476,7 @@ class _StageText extends StatelessWidget {
             color: AppColors.gold,
           ),
         ),
-        const SizedBox(height: 10),
-        Text(
-          hint,
-          textAlign: align,
-          style: GoogleFonts.dmSans(
-            fontSize: 12.5,
-            color: AppColors.textSecondary,
-            height: 1.35,
-          ),
-        ),
       ],
-    );
-  }
-}
-
-class _ReflectionTile extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final bool selected;
-  final bool locked;
-  final String requirement;
-  final VoidCallback onTap;
-  final Widget child;
-
-  const _ReflectionTile({
-    required this.title,
-    required this.subtitle,
-    required this.selected,
-    required this.locked,
-    required this.requirement,
-    required this.onTap,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? AppColors.gold : AppColors.divider,
-            width: selected ? 1.6 : 1,
-          ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: AppColors.gold.withValues(alpha: 0.18),
-                    blurRadius: 20,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
-              : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Center(
-                child: Opacity(opacity: locked ? 0.42 : 1, child: child),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.dmSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-                if (locked)
-                  const Icon(
-                    Icons.lock_rounded,
-                    size: 14,
-                    color: AppColors.textDisabled,
-                  )
-                else if (selected)
-                  const Icon(
-                    Icons.check_circle_rounded,
-                    size: 15,
-                    color: AppColors.gold,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 2),
-            Text(
-              locked ? requirement : subtitle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.dmSans(
-                fontSize: 11,
-                color:
-                    locked ? AppColors.textDisabled : AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

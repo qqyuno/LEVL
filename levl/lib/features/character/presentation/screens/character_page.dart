@@ -352,7 +352,7 @@ class CharacterPage extends ConsumerWidget {
   }
 
   void _openAvatarEditor(BuildContext context) {
-    Navigator.of(context).push(
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(builder: (_) => const AvatarEditorScreen()),
     );
   }
