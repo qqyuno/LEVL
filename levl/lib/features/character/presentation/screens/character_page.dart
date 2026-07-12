@@ -56,52 +56,105 @@ class CharacterPage extends ConsumerWidget {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                  child: Column(
-                    children: [
-                      GestureDetector(
-                        onTap: () => _openAvatarEditor(context),
-                        child: Stack(
-                          alignment: Alignment.bottomRight,
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 620),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceElevated,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
                           children: [
-                            PremiumFaceAvatarWidget(
-                              config: _avatarFromUser(user),
-                              size: 190,
-                              level: user.level,
-                              streak: user.currentStreak,
-                            ),
-                            Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: AppColors.textPrimary,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                    color: AppColors.background, width: 2.5),
+                            GestureDetector(
+                              onTap: () => _openAvatarEditor(context),
+                              child: Stack(
+                                alignment: Alignment.bottomRight,
+                                children: [
+                                  PremiumFaceAvatarWidget(
+                                    config: _avatarFromUser(user),
+                                    size: 210,
+                                    level: user.level,
+                                    streak: user.currentStreak,
+                                  ),
+                                  Container(
+                                    width: 34,
+                                    height: 34,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.textPrimary,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: AppColors.surfaceElevated,
+                                        width: 3,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.edit_rounded,
+                                      size: 15,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              child: const Icon(Icons.edit,
-                                  size: 14, color: Colors.white),
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              user.name.isEmpty ? 'Твой персонаж' : user.name,
+                              style: GoogleFonts.dmSerifDisplay(
+                                fontSize: 24,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_titleForLevel(user.level)} · ${_stateForUser(user)}',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.dmSans(
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            const Divider(height: 1, color: AppColors.divider),
+                            const SizedBox(height: 16),
+                            IntrinsicHeight(
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: _CharacterMetric(
+                                      label: 'УРОВЕНЬ',
+                                      value: '${user.level}',
+                                    ),
+                                  ),
+                                  const VerticalDivider(
+                                    width: 1,
+                                    color: AppColors.divider,
+                                  ),
+                                  Expanded(
+                                    child: _CharacterMetric(
+                                      label: 'РИТМ',
+                                      value: '${user.currentStreak} дн.',
+                                    ),
+                                  ),
+                                  const VerticalDivider(
+                                    width: 1,
+                                    color: AppColors.divider,
+                                  ),
+                                  Expanded(
+                                    child: _CharacterMetric(
+                                      label: 'ВЫПОЛНЕНО',
+                                      value: '${user.questsCompleted}',
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        user.name,
-                        style: GoogleFonts.dmSerifDisplay(
-                          fontSize: 22,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _titleForLevel(user.level),
-                        style: GoogleFonts.dmSans(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -174,45 +227,67 @@ class CharacterPage extends ConsumerWidget {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-                  child: Column(
-                    children: [
-                      _StatBar(
-                          label: 'Дисциплина',
-                          description: QuestCategory.discipline.description,
-                          value: user.stats.discipline,
-                          color: AppColors.sphereDiscipline,
-                          icon: Icons.bolt),
-                      _StatBar(
-                          label: 'Знания',
-                          description: QuestCategory.knowledge.description,
-                          value: user.stats.knowledge,
-                          color: AppColors.sphereKnowledge,
-                          icon: Icons.menu_book),
-                      _StatBar(
-                          label: 'Отношения',
-                          description: QuestCategory.relations.description,
-                          value: user.stats.relations,
-                          color: AppColors.sphereRelations,
-                          icon: Icons.people),
-                      _StatBar(
-                          label: 'Энергия',
-                          description: QuestCategory.energy.description,
-                          value: user.stats.energy,
-                          color: AppColors.sphereEnergy,
-                          icon: Icons.local_fire_department),
-                      _StatBar(
-                          label: 'Воля',
-                          description: QuestCategory.will.description,
-                          value: user.stats.will,
-                          color: AppColors.sphereWill,
-                          icon: Icons.my_location),
-                      _StatBar(
-                          label: 'Мудрость',
-                          description: QuestCategory.wisdom.description,
-                          value: user.stats.wisdom,
-                          color: AppColors.sphereWisdom,
-                          icon: Icons.psychology),
-                    ],
+                  child: Theme(
+                    data: Theme.of(context).copyWith(
+                      dividerColor: Colors.transparent,
+                    ),
+                    child: ExpansionTile(
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 4),
+                      childrenPadding: const EdgeInsets.only(top: 12),
+                      title: Text(
+                        'Подробные показатели',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Шесть направлений роста',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      children: [
+                        _StatBar(
+                            label: 'Дисциплина',
+                            description: QuestCategory.discipline.description,
+                            value: user.stats.discipline,
+                            color: AppColors.sphereDiscipline,
+                            icon: Icons.bolt),
+                        _StatBar(
+                            label: 'Знания',
+                            description: QuestCategory.knowledge.description,
+                            value: user.stats.knowledge,
+                            color: AppColors.sphereKnowledge,
+                            icon: Icons.menu_book),
+                        _StatBar(
+                            label: 'Отношения',
+                            description: QuestCategory.relations.description,
+                            value: user.stats.relations,
+                            color: AppColors.sphereRelations,
+                            icon: Icons.people),
+                        _StatBar(
+                            label: 'Энергия',
+                            description: QuestCategory.energy.description,
+                            value: user.stats.energy,
+                            color: AppColors.sphereEnergy,
+                            icon: Icons.local_fire_department),
+                        _StatBar(
+                            label: 'Воля',
+                            description: QuestCategory.will.description,
+                            value: user.stats.will,
+                            color: AppColors.sphereWill,
+                            icon: Icons.my_location),
+                        _StatBar(
+                            label: 'Мудрость',
+                            description: QuestCategory.wisdom.description,
+                            value: user.stats.wisdom,
+                            color: AppColors.sphereWisdom,
+                            icon: Icons.psychology),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -298,6 +373,46 @@ class CharacterPage extends ConsumerWidget {
         >= 20 => 'Легенда',
         _ => 'Путник',
       };
+
+  static String _stateForUser(UserProfile user) {
+    if (user.currentStreak >= 7) return 'ритм закреплён';
+    if (user.currentStreak > 0) return 'в движении';
+    return 'готов к первому шагу';
+  }
+}
+
+class _CharacterMetric extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _CharacterMetric({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: GoogleFonts.dmSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.dmSans(
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textDisabled,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _StatBar extends StatelessWidget {
