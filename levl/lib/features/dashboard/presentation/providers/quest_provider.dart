@@ -14,6 +14,15 @@ import '../../../../core/notifications/notification_service.dart';
 
 part 'quest_provider.g.dart';
 
+enum QuestFeedbackReason {
+  tooHard('too_hard'),
+  notRelevant('not_relevant'),
+  noTime('no_time');
+
+  final String value;
+  const QuestFeedbackReason(this.value);
+}
+
 /// Helper: run a filtered Isar query by building it explicitly.
 Future<List<QuestLocal>> _questQuery(
   Isar isar,
@@ -56,7 +65,8 @@ class QuestNotifier extends _$QuestNotifier {
       Map<String, dynamic> characterState = {};
       try {
         if (profile.characterStateJson.isNotEmpty) {
-          characterState = jsonDecode(profile.characterStateJson) as Map<String, dynamic>;
+          characterState =
+              jsonDecode(profile.characterStateJson) as Map<String, dynamic>;
         }
       } catch (_) {}
 
@@ -93,7 +103,11 @@ class QuestNotifier extends _$QuestNotifier {
       if (lastActive == null) {
         profile.currentStreak = 1;
       } else {
-        final lastDay = DateTime(lastActive.year, lastActive.month, lastActive.day);
+        final lastDay = DateTime(
+          lastActive.year,
+          lastActive.month,
+          lastActive.day,
+        );
         final diff = today.difference(lastDay).inDays;
         if (diff == 0) return; // already checked in today
         if (diff == 1) {
@@ -140,7 +154,10 @@ class QuestNotifier extends _$QuestNotifier {
       // Check local cache (Isar) for today's quests
       final cached = await _questQuery(
         isar,
-        isar.questLocals.filter().createdAtGreaterThan(startOfDay, include: true),
+        isar.questLocals.filter().createdAtGreaterThan(
+          startOfDay,
+          include: true,
+        ),
       );
 
       if (cached.isNotEmpty) {
@@ -194,7 +211,9 @@ class QuestNotifier extends _$QuestNotifier {
         isar.questLocals.filter().statusEqualTo(QuestStatus.pending),
       );
       // Take last 3
-      final recent = allCached.length > 3 ? allCached.sublist(allCached.length - 3) : allCached;
+      final recent = allCached.length > 3
+          ? allCached.sublist(allCached.length - 3)
+          : allCached;
 
       if (recent.isNotEmpty) {
         state = AsyncData(_localToQuests(recent));
@@ -247,6 +266,33 @@ class QuestNotifier extends _$QuestNotifier {
     _syncCompletionToSupabase(questId, quest.xpReward);
   }
 
+  /// Remove an unsuitable quest from today and remember why it failed.
+  Future<void> skipQuest(String questId, QuestFeedbackReason reason) async {
+    final current = state.valueOrNull ?? [];
+    final questIndex = current.indexWhere((q) => q.id == questId);
+    if (questIndex == -1) return;
+
+    final quest = current[questIndex];
+    if (quest.status != QuestStatus.pending) return;
+
+    final updated = [...current];
+    updated[questIndex] = quest.copyWith(status: QuestStatus.skipped);
+    state = AsyncData(updated);
+
+    final isar = await ref.read(isarProvider.future);
+    final local = await _questQueryFirst(
+      isar.questLocals.filter().supabaseIdEqualTo(questId),
+    );
+    if (local != null) {
+      local.status = QuestStatus.skipped;
+      await isar.writeTxn(() async {
+        await isar.questLocals.put(local);
+      });
+    }
+
+    _syncFeedbackToSupabase(questId, reason);
+  }
+
   Future<void> _addXpToProfile(int xp, QuestCategory category) async {
     final isar = await ref.read(isarProvider.future);
     final profiles = await isar.userProfileLocals.where().build().findAll();
@@ -294,20 +340,45 @@ class QuestNotifier extends _$QuestNotifier {
   Future<void> _syncCompletionToSupabase(String questId, int xp) async {
     try {
       final client = ref.read(supabaseClientProvider);
-      await client.from('quests').update({
-        'status': 'completed',
-        'completed_at': DateTime.now().toIso8601String(),
-      }).eq('id', questId);
+      await client
+          .from('quests')
+          .update({
+            'status': 'completed',
+            'completed_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', questId);
 
       final uid = client.auth.currentUser?.id;
       if (uid != null) {
-        await client.rpc('add_xp', params: {
-          'user_id': uid,
-          'xp_amount': xp,
-        });
+        await client.rpc('add_xp', params: {'user_id': uid, 'xp_amount': xp});
       }
     } catch (_) {
       // Offline — will sync later
+    }
+  }
+
+  Future<void> _syncFeedbackToSupabase(
+    String questId,
+    QuestFeedbackReason reason,
+  ) async {
+    try {
+      final client = ref.read(supabaseClientProvider);
+      final uid = client.auth.currentUser?.id;
+      if (uid == null) return;
+
+      await client
+          .from('quests')
+          .update({'status': 'skipped'})
+          .eq('id', questId);
+
+      await client.from('quest_feedback').upsert({
+        'quest_id': questId,
+        'user_id': uid,
+        'reason': reason.value,
+        'created_at': DateTime.now().toUtc().toIso8601String(),
+      });
+    } catch (_) {
+      // The local skip remains valid if remote sync fails.
     }
   }
 
@@ -335,22 +406,26 @@ class QuestNotifier extends _$QuestNotifier {
   }
 
   List<Quest> _localToQuests(List<QuestLocal> locals) {
-    return locals.map((l) => Quest(
-      id: l.supabaseId,
-      userId: l.userId,
-      title: l.title,
-      description: l.description,
-      tip: l.tip,
-      xpReward: l.xpReward,
-      estimatedMinutes: l.estimatedMinutes,
-      isMainGoalTask: l.isMainGoalTask,
-      status: l.status,
-      difficulty: l.difficulty,
-      type: l.type,
-      category: l.category,
-      createdAt: l.createdAt,
-      completedAt: l.completedAt,
-    )).toList();
+    return locals
+        .map(
+          (l) => Quest(
+            id: l.supabaseId,
+            userId: l.userId,
+            title: l.title,
+            description: l.description,
+            tip: l.tip,
+            xpReward: l.xpReward,
+            estimatedMinutes: l.estimatedMinutes,
+            isMainGoalTask: l.isMainGoalTask,
+            status: l.status,
+            difficulty: l.difficulty,
+            type: l.type,
+            category: l.category,
+            createdAt: l.createdAt,
+            completedAt: l.completedAt,
+          ),
+        )
+        .toList();
   }
 }
 

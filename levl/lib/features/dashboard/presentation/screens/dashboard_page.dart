@@ -78,7 +78,11 @@ class DashboardPage extends ConsumerWidget {
                   ),
                   data: (quests) {
                     final mainQuest = quests
-                        .where((q) => q.isMainGoalTask)
+                        .where(
+                          (q) =>
+                              q.isMainGoalTask &&
+                              q.status != QuestStatus.skipped,
+                        )
                         .firstOrNull;
                     if (mainQuest == null) return const SizedBox.shrink();
                     return Padding(
@@ -125,7 +129,12 @@ class DashboardPage extends ConsumerWidget {
                       )
                       .firstOrNull;
                   final daily = quests
-                      .where((q) => !q.isMainGoalTask && q.id != nextQuest?.id)
+                      .where(
+                        (q) =>
+                            !q.isMainGoalTask &&
+                            q.id != nextQuest?.id &&
+                            q.status != QuestStatus.skipped,
+                      )
                       .toList();
                   return SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -437,7 +446,12 @@ class _SystemCommandCenter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dailyQuests = quests.where((quest) => !quest.isMainGoalTask).toList();
+    final dailyQuests = quests
+        .where(
+          (quest) =>
+              !quest.isMainGoalTask && quest.status != QuestStatus.skipped,
+        )
+        .toList();
     final nextQuest = dailyQuests
         .where((quest) => quest.status == QuestStatus.pending)
         .firstOrNull;
@@ -863,6 +877,126 @@ Future<bool> _showSystemConfirmation(
   return result ?? false;
 }
 
+Future<QuestFeedbackReason?> _showQuestFeedback(BuildContext context) {
+  return showModalBottomSheet<QuestFeedbackReason>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withValues(alpha: 0.6),
+    builder: (ctx) => SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Что не сработало?',
+              style: GoogleFonts.dmSerifDisplay(
+                fontSize: 22,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Система учтёт это в следующих заданиях.',
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _QuestFeedbackOption(
+              icon: Icons.trending_up_rounded,
+              label: 'Слишком сложно',
+              onTap: () => Navigator.pop(ctx, QuestFeedbackReason.tooHard),
+            ),
+            _QuestFeedbackOption(
+              icon: Icons.alt_route_rounded,
+              label: 'Не ведёт к моей цели',
+              onTap: () => Navigator.pop(ctx, QuestFeedbackReason.notRelevant),
+            ),
+            _QuestFeedbackOption(
+              icon: Icons.schedule_rounded,
+              label: 'Сейчас нет времени',
+              onTap: () => Navigator.pop(ctx, QuestFeedbackReason.noTime),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+void _showFeedbackSaved(BuildContext context) {
+  ScaffoldMessenger.of(context)
+    ..clearSnackBars()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(
+          'Учту это в следующих заданиях.',
+          style: GoogleFonts.dmSans(
+            fontWeight: FontWeight.w600,
+            color: AppColors.surface,
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.textPrimary,
+      ),
+    );
+}
+
+class _QuestFeedbackOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _QuestFeedbackOption({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: SizedBox(
+        height: 52,
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(icon, size: 18, color: AppColors.textSecondary),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: GoogleFonts.dmSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Main Quest Card (суперцель) — с Lottie burst при complete
 // ---------------------------------------------------------------------------
@@ -877,6 +1011,16 @@ class _MainQuestCard extends ConsumerStatefulWidget {
 
 class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
   bool _showBurst = false;
+
+  Future<void> _handleFeedback() async {
+    final reason = await _showQuestFeedback(context);
+    if (reason == null || !mounted) return;
+    HapticFeedback.selectionClick();
+    await ref
+        .read(questNotifierProvider.notifier)
+        .skipQuest(widget.quest.id, reason);
+    if (mounted) _showFeedbackSaved(context);
+  }
 
   Future<void> _handleComplete() async {
     final confirmed = await _showSystemConfirmation(
@@ -971,6 +1115,21 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
                 ),
               ),
               const Spacer(),
+              if (!isCompleted)
+                IconButton(
+                  tooltip: 'Задание не подходит',
+                  onPressed: _handleFeedback,
+                  style: IconButton.styleFrom(
+                    fixedSize: const Size(40, 40),
+                    minimumSize: const Size(40, 40),
+                    padding: EdgeInsets.zero,
+                  ),
+                  icon: const Icon(
+                    Icons.more_horiz_rounded,
+                    size: 19,
+                    color: AppColors.textDisabled,
+                  ),
+                ),
               Row(
                 children: List.generate(
                   widget.quest.difficulty.skulls,
@@ -1091,6 +1250,16 @@ class _QuestCard extends ConsumerStatefulWidget {
 class _QuestCardState extends ConsumerState<_QuestCard> {
   bool _showBurst = false;
 
+  Future<void> _handleFeedback() async {
+    final reason = await _showQuestFeedback(context);
+    if (reason == null || !mounted) return;
+    HapticFeedback.selectionClick();
+    await ref
+        .read(questNotifierProvider.notifier)
+        .skipQuest(widget.quest.id, reason);
+    if (mounted) _showFeedbackSaved(context);
+  }
+
   Future<void> _handleComplete() async {
     final confirmed = await _showSystemConfirmation(
       context,
@@ -1154,18 +1323,39 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      widget.quest.title,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: isCompleted
-                            ? AppColors.textDisabled
-                            : AppColors.textPrimary,
-                        decoration: isCompleted
-                            ? TextDecoration.lineThrough
-                            : null,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.quest.title,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: isCompleted
+                                  ? AppColors.textDisabled
+                                  : AppColors.textPrimary,
+                              decoration: isCompleted
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                          ),
+                        ),
+                        if (!isCompleted)
+                          IconButton(
+                            tooltip: 'Задание не подходит',
+                            onPressed: _handleFeedback,
+                            style: IconButton.styleFrom(
+                              fixedSize: const Size(40, 40),
+                              minimumSize: const Size(40, 40),
+                              padding: EdgeInsets.zero,
+                            ),
+                            icon: const Icon(
+                              Icons.more_horiz_rounded,
+                              size: 19,
+                              color: AppColors.textDisabled,
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
