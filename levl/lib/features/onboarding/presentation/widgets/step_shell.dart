@@ -38,6 +38,7 @@ class _StepShellState extends State<StepShell>
   late final Animation<Offset> _subtitleSlide;
   late final Animation<double> _contentFade;
   late final Animation<Offset> _contentSlide;
+  bool _animationStarted = false;
 
   @override
   void initState() {
@@ -55,37 +56,47 @@ class _StepShellState extends State<StepShell>
       parent: _ctrl,
       curve: const Interval(0.1, 0.55, curve: Curves.easeOut),
     );
-    _titleSlide = Tween<Offset>(
-      begin: const Offset(0, 0.25),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _ctrl,
-      curve: const Interval(0.1, 0.55, curve: Curves.easeOutCubic),
-    ));
+    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.25), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _ctrl,
+            curve: const Interval(0.1, 0.55, curve: Curves.easeOutCubic),
+          ),
+        );
     _subtitleFade = CurvedAnimation(
       parent: _ctrl,
       curve: const Interval(0.25, 0.7, curve: Curves.easeOut),
     );
-    _subtitleSlide = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _ctrl,
-      curve: const Interval(0.25, 0.7, curve: Curves.easeOutCubic),
-    ));
+    _subtitleSlide =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _ctrl,
+            curve: const Interval(0.25, 0.7, curve: Curves.easeOutCubic),
+          ),
+        );
     _contentFade = CurvedAnimation(
       parent: _ctrl,
       curve: const Interval(0.4, 1.0, curve: Curves.easeOut),
     );
-    _contentSlide = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _ctrl,
-      curve: const Interval(0.4, 1.0, curve: Curves.easeOutCubic),
-    ));
+    _contentSlide = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _ctrl,
+            curve: const Interval(0.4, 1.0, curve: Curves.easeOutCubic),
+          ),
+        );
+  }
 
-    _ctrl.forward();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_animationStarted) return;
+    _animationStarted = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _ctrl.value = 1;
+    } else {
+      _ctrl.forward();
+    }
   }
 
   @override
@@ -96,8 +107,7 @@ class _StepShellState extends State<StepShell>
 
   @override
   Widget build(BuildContext context) {
-    final padding = widget.padding ??
-        const EdgeInsets.fromLTRB(24, 32, 24, 16);
+    final padding = widget.padding ?? const EdgeInsets.fromLTRB(24, 32, 24, 16);
 
     final header = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,10 +170,7 @@ class _StepShellState extends State<StepShell>
 
     final content = FadeTransition(
       opacity: _contentFade,
-      child: SlideTransition(
-        position: _contentSlide,
-        child: widget.child,
-      ),
+      child: SlideTransition(position: _contentSlide, child: widget.child),
     );
 
     final body = Column(
@@ -202,11 +209,7 @@ class StepQuote extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 16,
-          height: 1,
-          color: AppColors.textDisabled,
-        ),
+        Container(width: 16, height: 1, color: AppColors.textDisabled),
         const SizedBox(width: 10),
         Flexible(
           child: Text(
@@ -221,11 +224,7 @@ class StepQuote extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        Container(
-          width: 16,
-          height: 1,
-          color: AppColors.textDisabled,
-        ),
+        Container(width: 16, height: 1, color: AppColors.textDisabled),
       ],
     );
   }

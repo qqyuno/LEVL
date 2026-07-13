@@ -44,10 +44,14 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     FocusScope.of(context).unfocus();
 
     if (_currentStep < _totalSteps - 1) {
-      _controller.nextPage(
-        duration: const Duration(milliseconds: 420),
-        curve: Curves.easeOutCubic,
-      );
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _controller.jumpToPage(_currentStep + 1);
+      } else {
+        _controller.nextPage(
+          duration: const Duration(milliseconds: 420),
+          curve: Curves.easeOutCubic,
+        );
+      }
       setState(() => _currentStep++);
     } else {
       _finish();
@@ -58,10 +62,14 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     if (_currentStep > 0) {
       HapticFeedback.selectionClick();
       FocusScope.of(context).unfocus();
-      _controller.previousPage(
-        duration: const Duration(milliseconds: 420),
-        curve: Curves.easeOutCubic,
-      );
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _controller.jumpToPage(_currentStep - 1);
+      } else {
+        _controller.previousPage(
+          duration: const Duration(milliseconds: 420),
+          curve: Curves.easeOutCubic,
+        );
+      }
       setState(() => _currentStep--);
     }
   }
@@ -134,10 +142,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
         ),
         content: const Text(
           'LEVL сохранит твои ответы, цели и прогресс, чтобы собрать персональные задачи и работу AI-наставника. Не вводи медицинские, финансовые, паспортные данные, пароли или seed-фразы.',
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            height: 1.45,
-          ),
+          style: TextStyle(color: AppColors.textSecondary, height: 1.45),
         ),
         actions: [
           TextButton(
@@ -197,16 +202,14 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
               child: Row(
                 children: [
-                  _BackButton(
-                    visible: _currentStep > 0,
-                    onTap: _back,
-                  ),
+                  _BackButton(visible: _currentStep > 0, onTap: _back),
                   const SizedBox(width: 14),
                   Expanded(
-                      child: _SegmentedProgress(
-                    total: _totalSteps,
-                    current: _currentStep,
-                  )),
+                    child: _SegmentedProgress(
+                      total: _totalSteps,
+                      current: _currentStep,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -256,118 +259,132 @@ class _OnboardingBriefing extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: AppColors.textPrimary,
-                      borderRadius: BorderRadius.circular(8),
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: (constraints.maxHeight - 50).clamp(
+                  0,
+                  double.infinity,
+                ),
+              ),
+              child: IntrinsicHeight(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 34,
+                          height: 34,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: AppColors.textPrimary,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'L',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.surface,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'НАСТРОЙКА СИСТЕМЫ',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textSecondary,
+                            letterSpacing: 1.8,
+                          ),
+                        ),
+                      ],
                     ),
-                    child: Text(
-                      'L',
+                    const Spacer(flex: 2),
+                    Text(
+                      'Твои ответы определят,\nкак LEVL будет вести тебя.',
+                      style: GoogleFonts.dmSerifDisplay(
+                        fontSize: 34,
+                        color: AppColors.textPrimary,
+                        height: 1.08,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Система соберёт из них задачи, темп и приоритеты. Здесь важна честность, а не красивый ответ.',
                       style: GoogleFonts.dmSans(
                         fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.surface,
+                        color: AppColors.textSecondary,
+                        height: 1.5,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'НАСТРОЙКА СИСТЕМЫ',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textSecondary,
-                      letterSpacing: 1.8,
+                    const SizedBox(height: 30),
+                    const _BriefingFact(
+                      icon: Icons.timer_outlined,
+                      title: 'Около 3 минут',
+                      detail: 'Семь коротких шагов без лишних вопросов',
                     ),
-                  ),
-                ],
-              ),
-              const Spacer(flex: 2),
-              Text(
-                'Твои ответы определят,\nкак LEVL будет вести тебя.',
-                style: GoogleFonts.dmSerifDisplay(
-                  fontSize: 34,
-                  color: AppColors.textPrimary,
-                  height: 1.08,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Система соберёт из них задачи, темп и приоритеты. Здесь важна честность, а не красивый ответ.',
-                style: GoogleFonts.dmSans(
-                  fontSize: 15,
-                  color: AppColors.textSecondary,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 30),
-              const _BriefingFact(
-                icon: Icons.timer_outlined,
-                title: 'Около 3 минут',
-                detail: 'Семь коротких шагов без лишних вопросов',
-              ),
-              const SizedBox(height: 18),
-              const _BriefingFact(
-                icon: Icons.tune_rounded,
-                title: 'Можно изменить позже',
-                detail: 'Цели и темп не останутся высеченными в камне',
-              ),
-              const SizedBox(height: 18),
-              const _BriefingFact(
-                icon: Icons.lock_outline_rounded,
-                title: 'Без чувствительных данных',
-                detail: 'Не указывай документы, пароли и финансовые сведения',
-              ),
-              const Spacer(flex: 3),
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: FilledButton(
-                  onPressed: onStart,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.textPrimary,
-                    foregroundColor: AppColors.surface,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                    const SizedBox(height: 18),
+                    const _BriefingFact(
+                      icon: Icons.tune_rounded,
+                      title: 'Можно изменить позже',
+                      detail: 'Цели и темп не останутся высеченными в камне',
                     ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Настроить Систему',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                    const SizedBox(height: 18),
+                    const _BriefingFact(
+                      icon: Icons.lock_outline_rounded,
+                      title: 'Без чувствительных данных',
+                      detail:
+                          'Не указывай документы, пароли и финансовые сведения',
+                    ),
+                    const Spacer(flex: 3),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 54,
+                      child: FilledButton(
+                        onPressed: onStart,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.textPrimary,
+                          foregroundColor: AppColors.surface,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Настроить Систему',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.arrow_forward_rounded, size: 19),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.arrow_forward_rounded, size: 19),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 10),
+                    Center(
+                      child: Text(
+                        'Отвечай так, как есть сейчас.',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          color: AppColors.textDisabled,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 10),
-              Center(
-                child: Text(
-                  'Отвечай так, как есть сейчас.',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 12,
-                    color: AppColors.textDisabled,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -643,29 +660,37 @@ class _SegmentedProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: List.generate(total, (i) {
-        final isPast = i < current;
-        final isActive = i == current;
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(right: i < total - 1 ? 6 : 0),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 350),
-              curve: Curves.easeOut,
-              height: isActive ? 4 : 3,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(2),
-                color: isActive
-                    ? AppColors.textPrimary
-                    : isPast
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 350);
+    return Semantics(
+      label: 'Шаг ${current + 1} из $total',
+      child: ExcludeSemantics(
+        child: Row(
+          children: List.generate(total, (i) {
+            final isPast = i < current;
+            final isActive = i == current;
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(right: i < total - 1 ? 6 : 0),
+                child: AnimatedContainer(
+                  duration: duration,
+                  curve: Curves.easeOut,
+                  height: isActive ? 4 : 3,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(2),
+                    color: isActive
+                        ? AppColors.textPrimary
+                        : isPast
                         ? AppColors.textPrimary.withValues(alpha: 0.55)
                         : AppColors.divider,
+                  ),
+                ),
               ),
-            ),
-          ),
-        );
-      }),
+            );
+          }),
+        ),
+      ),
     );
   }
 }
@@ -680,20 +705,27 @@ class _BackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 200);
     return AnimatedOpacity(
       opacity: visible ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 200),
+      duration: duration,
       child: IgnorePointer(
         ignoring: !visible,
-        child: GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.opaque,
-          child: Container(
-            width: 32,
-            height: 32,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: IconButton(
+            tooltip: 'Назад',
+            onPressed: onTap,
             alignment: Alignment.centerLeft,
-            child: const Icon(Icons.arrow_back_ios_new_rounded,
-                size: 16, color: AppColors.textSecondary),
+            padding: EdgeInsets.zero,
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 17,
+              color: AppColors.textSecondary,
+            ),
           ),
         ),
       ),
@@ -721,17 +753,20 @@ class _NextButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 250);
     final bg = isFinal
         ? AppColors.gold
         : enabled
-            ? AppColors.textPrimary
-            : AppColors.textPrimary.withValues(alpha: 0.35);
+        ? AppColors.textPrimary
+        : AppColors.textPrimary.withValues(alpha: 0.35);
 
     return SizedBox(
       width: double.infinity,
       height: 54,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+        duration: duration,
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(14),

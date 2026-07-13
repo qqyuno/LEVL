@@ -90,10 +90,7 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
               onSave: _save,
             ),
             const SizedBox(height: 10),
-            _ReflectionStage(
-              config: _config,
-              user: user,
-            ),
+            _ReflectionStage(config: _config, user: user),
             const SizedBox(height: 14),
             _CategoryRail(
               sections: _sections,
@@ -121,7 +118,9 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
             const SizedBox(height: 10),
             Expanded(
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 220),
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 220),
                 child: _buildSection(_currentSection, user),
               ),
             ),
@@ -134,38 +133,38 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
   Widget _buildSection(int index, UserProfile? user) {
     return switch (index) {
       0 => _buildSequentialGrid(
-          key: 'hair',
-          count: AvatarConfig.premiumHairStyleCount,
-          selected: _config.hair % AvatarConfig.premiumHairStyleCount,
-          onSelect: (v) => setState(() => _config = _config.copyWith(hair: v)),
-        ),
+        key: 'hair',
+        count: AvatarConfig.premiumHairStyleCount,
+        selected: _config.hair % AvatarConfig.premiumHairStyleCount,
+        onSelect: (v) => setState(() => _config = _config.copyWith(hair: v)),
+      ),
       1 => _buildSequentialGrid(
-          key: 'hairColor',
-          count: AvatarConfig.hairColorCount,
-          selected: _config.hairColor,
-          onSelect: (v) =>
-              setState(() => _config = _config.copyWith(hairColor: v)),
-        ),
+        key: 'hairColor',
+        count: AvatarConfig.hairColorCount,
+        selected: _config.hairColor,
+        onSelect: (v) =>
+            setState(() => _config = _config.copyWith(hairColor: v)),
+      ),
       2 => _buildSequentialGrid(
-          key: 'skinTone',
-          count: AvatarConfig.premiumSkinToneCount,
-          selected: _config.skinTone % AvatarConfig.premiumSkinToneCount,
-          onSelect: (v) =>
-              setState(() => _config = _config.copyWith(skinTone: v)),
-        ),
+        key: 'skinTone',
+        count: AvatarConfig.premiumSkinToneCount,
+        selected: _config.skinTone % AvatarConfig.premiumSkinToneCount,
+        onSelect: (v) =>
+            setState(() => _config = _config.copyWith(skinTone: v)),
+      ),
       3 => _buildSequentialGrid(
-          key: 'brows',
-          count: AvatarConfig.premiumBrowStyleCount,
-          selected: _config.brows % AvatarConfig.premiumBrowStyleCount,
-          onSelect: (v) => setState(() => _config = _config.copyWith(brows: v)),
-        ),
+        key: 'brows',
+        count: AvatarConfig.premiumBrowStyleCount,
+        selected: _config.brows % AvatarConfig.premiumBrowStyleCount,
+        onSelect: (v) => setState(() => _config = _config.copyWith(brows: v)),
+      ),
       4 => _buildSequentialGrid(
-          key: 'eyeColor',
-          count: AvatarConfig.eyeColorCount,
-          selected: _config.eyeColor,
-          onSelect: (v) =>
-              setState(() => _config = _config.copyWith(eyeColor: v)),
-        ),
+        key: 'eyeColor',
+        count: AvatarConfig.eyeColorCount,
+        selected: _config.eyeColor,
+        onSelect: (v) =>
+            setState(() => _config = _config.copyWith(eyeColor: v)),
+      ),
       _ => const SizedBox.shrink(),
     };
   }
@@ -234,20 +233,20 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
   String _optionLabel(String key, int value) {
     return switch (key) {
       'hair' => const [
-          'Объем',
-          'Кроп',
-          'Пробор',
-          'Buzz',
-          'Slick',
-          'Кудри',
-        ][value],
+        'Объем',
+        'Кроп',
+        'Пробор',
+        'Buzz',
+        'Slick',
+        'Кудри',
+      ][value],
       'hairColor' => const ['Графит', 'Брюнет', 'Каштан'][value],
       'skinTone' => const [
-          'Светлый',
-          'Натуральный',
-          'Теплый',
-          'Глубокий',
-        ][value],
+        'Светлый',
+        'Натуральный',
+        'Теплый',
+        'Глубокий',
+      ][value],
       'brows' => const ['Естественные', 'Прямые', 'Густые', 'Собранные'][value],
       'eyeColor' => const ['Карие', 'Серо-синие', 'Зеленые'][value],
       _ => '${value + 1}',
@@ -257,21 +256,21 @@ class _AvatarEditorScreenState extends ConsumerState<AvatarEditorScreen> {
   Color? _optionSwatch(String key, int value) {
     return switch (key) {
       'hairColor' => const [
-          Color(0xFF141211),
-          Color(0xFF3B261A),
-          Color(0xFF6B3F22),
-        ][value],
+        Color(0xFF141211),
+        Color(0xFF3B261A),
+        Color(0xFF6B3F22),
+      ][value],
       'skinTone' => const [
-          Color(0xFFE2B28F),
-          Color(0xFFC58E68),
-          Color(0xFFA96F4E),
-          Color(0xFF754A36),
-        ][value],
+        Color(0xFFE2B28F),
+        Color(0xFFC58E68),
+        Color(0xFFA96F4E),
+        Color(0xFF754A36),
+      ][value],
       'eyeColor' => const [
-          Color(0xFF6A4A32),
-          Color(0xFF4F8098),
-          Color(0xFF527956),
-        ][value],
+        Color(0xFF6A4A32),
+        Color(0xFF4F8098),
+        Color(0xFF527956),
+      ][value],
       _ => null,
     };
   }
@@ -295,6 +294,7 @@ class _TopBar extends StatelessWidget {
       child: Row(
         children: [
           IconButton(
+            tooltip: 'Закрыть студию',
             onPressed: onClose,
             icon: const Icon(
               Icons.close,
@@ -374,13 +374,17 @@ class _CategoryRail extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 onTap: () => onSelected(index),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero
+                      : const Duration(milliseconds: 180),
                   height: 50,
                   margin: EdgeInsets.only(
-                      right: index == sections.length - 1 ? 0 : 6),
+                    right: index == sections.length - 1 ? 0 : 6,
+                  ),
                   decoration: BoxDecoration(
-                    color:
-                        selected ? AppColors.textPrimary : Colors.transparent,
+                    color: selected
+                        ? AppColors.textPrimary
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -402,10 +406,7 @@ class _ReflectionStage extends StatelessWidget {
   final AvatarConfig config;
   final UserProfile? user;
 
-  const _ReflectionStage({
-    required this.config,
-    required this.user,
-  });
+  const _ReflectionStage({required this.config, required this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -422,7 +423,9 @@ class _ReflectionStage extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 180),
               child: PremiumFaceAvatarWidget(
                 key: ValueKey(config.toJsonString()),
                 config: config,
@@ -444,17 +447,15 @@ class _StageText extends StatelessWidget {
   final UserProfile? user;
   final bool centered;
 
-  const _StageText({
-    required this.user,
-    required this.centered,
-  });
+  const _StageText({required this.user, required this.centered});
 
   @override
   Widget build(BuildContext context) {
     final align = centered ? TextAlign.center : TextAlign.start;
     return Column(
-      crossAxisAlignment:
-          centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      crossAxisAlignment: centered
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
       children: [
         Text(
           user?.name.isNotEmpty == true ? user!.name : 'Путник',
@@ -494,19 +495,26 @@ class _OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        decoration: BoxDecoration(
-          color: isActive ? AppColors.textPrimary : AppColors.surface,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(
-            color: isActive ? AppColors.gold : AppColors.divider,
-            width: isActive ? 2 : 1,
+    return Semantics(
+      button: true,
+      selected: isActive,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
+        child: AnimatedContainer(
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 180),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.textPrimary : AppColors.surface,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: isActive ? AppColors.gold : AppColors.divider,
+              width: isActive ? 2 : 1,
+            ),
           ),
+          child: child,
         ),
-        child: child,
       ),
     );
   }

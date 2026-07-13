@@ -77,8 +77,9 @@ class DashboardPage extends ConsumerWidget {
                     ),
                   ),
                   data: (quests) {
-                    final mainQuest =
-                        quests.where((q) => q.isMainGoalTask).firstOrNull;
+                    final mainQuest = quests
+                        .where((q) => q.isMainGoalTask)
+                        .firstOrNull;
                     if (mainQuest == null) return const SizedBox.shrink();
                     return Padding(
                       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
@@ -117,8 +118,11 @@ class DashboardPage extends ConsumerWidget {
                     const SliverToBoxAdapter(child: SizedBox.shrink()),
                 data: (quests) {
                   final nextQuest = quests
-                      .where((q) =>
-                          !q.isMainGoalTask && q.status == QuestStatus.pending)
+                      .where(
+                        (q) =>
+                            !q.isMainGoalTask &&
+                            q.status == QuestStatus.pending,
+                      )
                       .firstOrNull;
                   final daily = quests
                       .where((q) => !q.isMainGoalTask && q.id != nextQuest?.id)
@@ -167,6 +171,7 @@ class _DashboardHeaderState extends State<_DashboardHeader>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _scale;
+  bool _pulseScheduled = false;
 
   @override
   void initState() {
@@ -175,10 +180,18 @@ class _DashboardHeaderState extends State<_DashboardHeader>
       vsync: this,
       duration: const Duration(milliseconds: 350),
     );
-    _scale = Tween(begin: 1.0, end: 1.3).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
-    if (widget.user.currentStreak > 0) {
+    _scale = Tween(
+      begin: 1.0,
+      end: 1.3,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_pulseScheduled || widget.user.currentStreak <= 0) return;
+    _pulseScheduled = true;
+    if (!MediaQuery.disableAnimationsOf(context)) {
       Future.delayed(const Duration(milliseconds: 600), _pulseTwice);
     }
   }
@@ -241,8 +254,10 @@ class _DashboardHeaderState extends State<_DashboardHeader>
             children: [
               // Streak badge с пульсом
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(20),
@@ -478,8 +493,8 @@ class _SystemCommandCenter extends StatelessWidget {
                   label: isLoading
                       ? 'СБОР'
                       : hasQuestError
-                          ? 'ОФЛАЙН'
-                          : '$completed/$total · ${user.currentStreak} ДН.',
+                      ? 'ОФЛАЙН'
+                      : '$completed/$total · ${user.currentStreak} ДН.',
                 ),
               ],
             ),
@@ -747,7 +762,9 @@ class _DailyProgressBar extends StatelessWidget {
 }
 
 Future<bool> _showSystemConfirmation(
-    BuildContext context, String questTitle) async {
+  BuildContext context,
+  String questTitle,
+) async {
   final result = await showModalBottomSheet<bool>(
     context: context,
     backgroundColor: Colors.transparent,
@@ -862,8 +879,10 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
   bool _showBurst = false;
 
   Future<void> _handleComplete() async {
-    final confirmed =
-        await _showSystemConfirmation(context, widget.quest.title);
+    final confirmed = await _showSystemConfirmation(
+      context,
+      widget.quest.title,
+    );
     if (!confirmed || !mounted) return;
     HapticFeedback.mediumImpact();
     ref.read(audioServiceProvider).playQuestComplete();
@@ -896,10 +915,9 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
                     repeat: false,
                     delegates: LottieDelegates(
                       values: [
-                        ValueDelegate.color(
-                          const ['**'],
-                          value: AppColors.gold,
-                        ),
+                        ValueDelegate.color(const [
+                          '**',
+                        ], value: AppColors.gold),
                       ],
                     ),
                   ),
@@ -958,8 +976,11 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
                   widget.quest.difficulty.skulls,
                   (_) => const Padding(
                     padding: EdgeInsets.only(left: 2),
-                    child:
-                        Icon(Icons.whatshot, size: 12, color: AppColors.gold),
+                    child: Icon(
+                      Icons.whatshot,
+                      size: 12,
+                      color: AppColors.gold,
+                    ),
                   ),
                 ),
               ),
@@ -970,8 +991,9 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
             widget.quest.title,
             style: GoogleFonts.dmSerifDisplay(
               fontSize: 18,
-              color:
-                  isCompleted ? AppColors.textDisabled : AppColors.textPrimary,
+              color: isCompleted
+                  ? AppColors.textDisabled
+                  : AppColors.textPrimary,
               letterSpacing: 0.5,
               decoration: isCompleted ? TextDecoration.lineThrough : null,
             ),
@@ -999,8 +1021,11 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.schedule,
-                  size: 14, color: AppColors.textDisabled),
+              const Icon(
+                Icons.schedule,
+                size: 14,
+                color: AppColors.textDisabled,
+              ),
               const SizedBox(width: 4),
               Text(
                 '${widget.quest.estimatedMinutes} мин',
@@ -1067,8 +1092,10 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
   bool _showBurst = false;
 
   Future<void> _handleComplete() async {
-    final confirmed =
-        await _showSystemConfirmation(context, widget.quest.title);
+    final confirmed = await _showSystemConfirmation(
+      context,
+      widget.quest.title,
+    );
     if (!confirmed || !mounted) return;
     HapticFeedback.mediumImpact();
     ref.read(audioServiceProvider).playQuestComplete();
@@ -1135,8 +1162,9 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                         color: isCompleted
                             ? AppColors.textDisabled
                             : AppColors.textPrimary,
-                        decoration:
-                            isCompleted ? TextDecoration.lineThrough : null,
+                        decoration: isCompleted
+                            ? TextDecoration.lineThrough
+                            : null,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -1193,8 +1221,9 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                     style: GoogleFonts.dmSans(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color:
-                          isCompleted ? AppColors.textDisabled : AppColors.gold,
+                      color: isCompleted
+                          ? AppColors.textDisabled
+                          : AppColors.gold,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -1205,8 +1234,9 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                       fixedSize: const Size(34, 34),
                       minimumSize: const Size(34, 34),
                       padding: EdgeInsets.zero,
-                      backgroundColor:
-                          isCompleted ? sphereColor : Colors.transparent,
+                      backgroundColor: isCompleted
+                          ? sphereColor
+                          : Colors.transparent,
                       side: BorderSide(
                         color: isCompleted ? sphereColor : AppColors.divider,
                         width: 1.5,
@@ -1215,8 +1245,9 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                     icon: Icon(
                       Icons.check_rounded,
                       size: 17,
-                      color:
-                          isCompleted ? Colors.white : AppColors.textSecondary,
+                      color: isCompleted
+                          ? Colors.white
+                          : AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -1240,10 +1271,9 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                     repeat: false,
                     delegates: LottieDelegates(
                       values: [
-                        ValueDelegate.color(
-                          const ['**'],
-                          value: AppColors.gold,
-                        ),
+                        ValueDelegate.color(const [
+                          '**',
+                        ], value: AppColors.gold),
                       ],
                     ),
                   ),
