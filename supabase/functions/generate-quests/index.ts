@@ -5,19 +5,16 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  buildFallbackQuests,
+  buildGenerationPlan,
+  normalizeQuests,
+  type GenerationPlan,
+  type QuestHistoryItem,
+  type QuestOutput,
+} from "./quest_engine.ts";
 
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-
-interface QuestOutput {
-  title: string;
-  description: string;
-  sphere: string;
-  isMainGoalTask: boolean;
-  xpReward: number;
-  estimatedMinutes: number;
-  difficulty: "trivial" | "easy" | "medium" | "hard" | "epic";
-  tip: string;
-}
 
 serve(async (req: Request) => {
   try {
@@ -44,7 +41,7 @@ serve(async (req: Request) => {
 
     // --- Check cache ---
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-    const cacheKey = `${user.id}_${today}`;
+    const cacheKey = `${user.id}_${today}_v2`;
 
     const { data: cached } = await supabase
       .from("quest_cache")
@@ -54,7 +51,11 @@ serve(async (req: Request) => {
       .single();
 
     if (cached?.quests) {
-      return jsonResponse({ quests: cached.quests, cached: true });
+      return jsonResponse({
+        quests: cached.quests,
+        cached: true,
+        engineVersion: "2.0",
+      });
     }
 
     // --- Parse client context (Flutter sends this as fallback for new/offline users) ---
@@ -95,34 +96,92 @@ serve(async (req: Request) => {
       if (typeof goals === "string") {
         sphereGoals = JSON.parse(goals);
       } else if (Array.isArray(goals)) {
-        sphereGoals = goals;
+        sphereGoals = goals.flatMap((goal: unknown) => {
+          if (typeof goal === "object" && goal !== null) {
+            const item = goal as Record<string, unknown>;
+            if (typeof item.sphere === "string" && typeof item.goal === "string") {
+              return [{ sphere: item.sphere, goal: item.goal }];
+            }
+          }
+          if (typeof goal === "string") {
+            const separator = goal.indexOf(":");
+            if (separator > 0) {
+              return [{
+                sphere: goal.slice(0, separator).trim(),
+                goal: goal.slice(separator + 1).trim(),
+              }];
+            }
+          }
+          return [];
+        });
       }
     } catch {
       sphereGoals = [];
     }
 
     // --- Determine today's sphere rotation ---
-    const spheres: string[] = profile.spheres ?? [];
+    const spheres: string[] = profile.spheres?.length > 0
+      ? profile.spheres
+      : ["discipline"];
     const dayOfYear = getDayOfYear(new Date());
     const todaySpheres = getRotatedSpheres(spheres, dayOfYear);
 
-    // --- Build prompt ---
-    const prompt = buildPrompt(profile, sphereGoals, todaySpheres);
+    // --- Load recent behavior before asking AI for more work ---
+    const historyStart = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
+      .toISOString();
+    const { data: historyRows } = await supabase
+      .from("quests")
+      .select("title,status,category,estimated_minutes,created_at")
+      .eq("user_id", user.id)
+      .gte("created_at", historyStart)
+      .order("created_at", { ascending: false })
+      .limit(42);
+    const history = (historyRows ?? []) as QuestHistoryItem[];
+    const plan = buildGenerationPlan(
+      Number(profile.daily_minutes ?? 30),
+      Number(profile.current_streak ?? 0),
+      history,
+    );
 
-    // --- Call Groq (all tiers) ---
-    const rawText = await callGroq(prompt);
+    // --- Generate, validate and retry once if quality is weak ---
+    const prompt = buildPrompt(
+      profile,
+      sphereGoals,
+      todaySpheres,
+      plan,
+      history,
+    );
+    let rawText = await callGroq(prompt);
+    let normalized = normalizeQuests(parseQuestsFromResponse(rawText), {
+      allowedSpheres: todaySpheres,
+      recentTitles: history.map((item) => item.title),
+      plan,
+    });
 
-    if (!rawText) {
-      return jsonResponse({ error: "AI generation failed" }, 502);
+    if (!normalized.valid) {
+      console.warn("Quest validation failed:", normalized.issues);
+      const correction = normalized.issues
+        .slice(0, 8)
+        .map((issue) => `- ${issue}`)
+        .join("\n");
+      rawText = await callGroq(
+        `${prompt}\n\nПРЕДЫДУЩАЯ ПОПЫТКА НЕ ПРОШЛА ПРОВЕРКУ:\n${correction}\nСоздай новый набор, исправив каждую проблему.`,
+      );
+      normalized = normalizeQuests(parseQuestsFromResponse(rawText), {
+        allowedSpheres: todaySpheres,
+        recentTitles: history.map((item) => item.title),
+        plan,
+      });
     }
 
-    // --- Parse JSON from AI response ---
-    const quests = parseQuestsFromResponse(rawText);
-
-    if (!quests || quests.length === 0) {
-      console.error("Failed to parse quests from:", rawText);
-      return jsonResponse({ error: "Failed to parse AI response" }, 500);
-    }
+    const usedFallback = !normalized.valid;
+    const quests = usedFallback
+      ? buildFallbackQuests(
+          String(profile.main_goal ?? "главная цель"),
+          todaySpheres,
+          plan,
+        )
+      : normalized.quests;
 
     // --- Save to quest_cache ---
     await supabase.from("quest_cache").upsert({
@@ -150,7 +209,13 @@ serve(async (req: Request) => {
 
     await supabase.from("quests").upsert(questRows);
 
-    return jsonResponse({ quests, cached: false });
+    return jsonResponse({
+      quests,
+      cached: false,
+      engineVersion: "2.0",
+      generationMode: plan.mode,
+      fallback: usedFallback,
+    });
   } catch (err) {
     console.error("Edge function error:", err);
     return jsonResponse({ error: "Internal server error" }, 500);
@@ -200,14 +265,15 @@ const SPHERE_LABELS: Record<string, string> = {
 function buildPrompt(
   profile: Record<string, unknown>,
   sphereGoals: { sphere: string; goal: string }[],
-  todaySpheres: string[]
+  todaySpheres: string[],
+  plan: GenerationPlan,
+  history: QuestHistoryItem[],
 ): string {
   const name = (profile.name as string) || "Путник";
   const lifeContext = profile.life_context ?? "—";
   const mainGoal = profile.main_goal ?? "—";
   const workStyle = profile.work_style ?? "—";
   const dailyMinutes = profile.daily_minutes ?? 30;
-  const level = profile.level ?? 1;
   const streak = profile.current_streak ?? 0;
   const painPoints = profile.pain_points ?? "";
 
@@ -219,21 +285,14 @@ function buildPrompt(
     })
     .join("\n");
 
-  const streakLine = streak >= 3
-    ? `  Стрик ${streak} дней — держит ритм.`
-    : streak === 0
-    ? `  Стрик прерван. Нужен лёгкий старт.`
-    : `  Стрик ${streak} день — только начинает.`;
+  const recentLines = history.length === 0
+    ? "  Истории пока нет."
+    : history.slice(0, 12).map((item) =>
+      `  [${item.status}] ${item.title}`
+    ).join("\n");
+  const completionPercent = Math.round(plan.completionRate * 100);
 
-  const difficultyHint = (level as number) <= 3
-    ? "trivial или easy — человек только входит в ритм, не перегружай"
-    : (level as number) <= 7
-    ? "easy или medium — уже есть привычка, можно чуть поднять планку"
-    : "medium или hard — уже стабилен, давай реальный вызов";
-
-  return `Ты — Система в приложении LEVL. Твоя задача: создать 3 задания на день для конкретного живого человека.
-
-Перед тем как писать задания — ВНИКНИ в этого человека:
+  return `Ты — планировщик действий в приложении LEVL. Создай ровно три небольших задания, которые двигают человека к целям и снижают сопротивление началу.
 
 КТО ОН:
   Имя: ${name}
@@ -241,76 +300,96 @@ function buildPrompt(
   Куда идёт (через год): ${mainGoal}
   Как работает: ${workStyle}
   Что его тормозит: ${painPoints || "не указано"}
-${streakLine}
-  Уровень: ${level}
-  Времени в день: ${dailyMinutes} мин
+  Серия: ${streak} дней
+  Заявленное время: ${dailyMinutes} мин
+  Выполнение последних заданий: ${completionPercent}%
+  Режим нагрузки: ${plan.mode}
+
+РЕШЕНИЕ ПЛАНИРОВЩИКА:
+  ${plan.guidance}
+  Реальный бюджет на сегодня: ${plan.timeBudget} мин
+  Первое задание: не более ${plan.firstQuestMaxMinutes} мин
+  Допустимая сложность: ${plan.allowedDifficulties.join(", ")}
 
 ЧТО РАЗВИВАЕТ СЕГОДНЯ:
 ${sphereLines}
 
-ПРИНЦИПЫ ПЕРСОНАЛИЗАЦИИ:
-- Задания должны звучать как будто написаны лично для ${name}, а не для "среднего пользователя"
-- Если человек говорит "хочу запустить стартап" — задание не "поработай над проектом", а "опиши одну функцию MVP и оцени её за 15 минут"
-- Если тормозит прокрастинация — задание начинается с самого маленького шага, не с большого
-- Если стрик только начался — задание лёгкое, чтобы не сломать momentum
-- Учитывай что у него ВСЕГО ${dailyMinutes} минут — задания реалистичные, не амбициозные планы на день
+ПОСЛЕДНИЕ ЗАДАНИЯ — НЕ ПОВТОРЯЙ ИХ И НЕ ПЕРЕФРАЗИРУЙ:
+${recentLines}
+
+ПРИНЦИПЫ:
+- Не мотивируй словами и не стыди. Уменьшай порог входа.
+- Каждое задание начинается с наблюдаемого действия: открыть, написать, отправить, выбрать, пройти, выполнить.
+- У каждого задания должен быть видимый финиш за сегодня: запись, решение, сообщение, подход, готовый артефакт.
+- Не используй формулировки "поработай над", "займись", "подумай о", "стань лучше".
+- description объясняет одно действие и критерий готовности. Не создавай многоступенчатый план на будущее.
+- tip — минимальная версия на случай сильного сопротивления, которую можно начать меньше чем за минуту.
+- Задание должно быть уважительным к человеку, который много прокрастинирует: маленьким, но не бессмысленным.
 
 ПРАВИЛА:
 1. Верни РОВНО 3 задания в JSON-массиве
 2. Задание 1 — прямой конкретный шаг к суперцели "${mainGoal}" (isMainGoalTask: true)
 3. Задания 2 и 3 — развитие оставшихся сфер, тоже конкретные (isMainGoalTask: false)
-4. Сумма estimatedMinutes ≤ ${dailyMinutes}
-5. Сложность: ${difficultyHint}
+4. Сумма estimatedMinutes ≤ ${plan.timeBudget}; первое ≤ ${plan.firstQuestMaxMinutes}
+5. Сложность — только ${plan.allowedDifficulties.join(" или ")}
 6. xpReward: trivial=10, easy=25, medium=50, hard=100, epic=200
 7. sphere — строго одно из: ${todaySpheres.join(", ")}
-8. tip — голос Системы: 1 предложение, без восклицаний, холодно и точно
-9. description — конкретное действие, не абстракция. Что именно делать, как именно, сколько
+8. tip — минимальный старт, одно предложение без восклицаний
+9. description — конкретное действие плюс проверяемый результат
 10. Язык: русский
 
 ФОРМАТ ОТВЕТА (только JSON, без markdown, без пояснений):
 [
   {
     "title": "короткое название действия",
-    "description": "конкретно что делать — шаг за шагом если нужно",
+    "description": "одно действие и конкретный критерий готовности",
     "sphere": "ключ_сферы",
     "isMainGoalTask": true,
     "xpReward": 25,
     "estimatedMinutes": 10,
     "difficulty": "easy",
-    "tip": "Одно предложение от Системы."
+    "tip": "Минимальная версия действия, если трудно начать."
   }
 ]`;
 }
 
 async function callGroq(prompt: string): Promise<string> {
   const apiKey = Deno.env.get("GROQ_API_KEY");
-  if (!apiKey) throw new Error("GROQ_API_KEY not configured");
-
-  const response = await fetch(GROQ_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
-      max_tokens: 1024,
-    }),
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    console.error("Groq API error:", errText);
+  if (!apiKey) {
+    console.error("GROQ_API_KEY not configured");
     return "";
   }
 
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content ?? "";
+  try {
+    const response = await fetch(GROQ_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.55,
+        max_tokens: 1200,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Groq API error:", errText);
+      return "";
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content ?? "";
+  } catch (error) {
+    console.error("Groq request failed:", error);
+    return "";
+  }
 }
 
-function parseQuestsFromResponse(text: string): QuestOutput[] | null {
+function parseQuestsFromResponse(text: string): unknown[] | null {
   try {
     // Try direct parse
     const parsed = JSON.parse(text);
