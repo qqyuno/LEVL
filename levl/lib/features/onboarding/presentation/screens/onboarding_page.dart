@@ -25,7 +25,13 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   final _controller = PageController();
   int _currentStep = 0;
   bool _saving = false;
+  bool _showBriefing = true;
   static const _totalSteps = 7;
+
+  void _beginOnboarding() {
+    HapticFeedback.mediumImpact();
+    setState(() => _showBriefing = false);
+  }
 
   void _next() {
     final data = ref.read(onboardingNotifierProvider);
@@ -173,6 +179,10 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_showBriefing) {
+      return _OnboardingBriefing(onStart: _beginOnboarding);
+    }
+
     final data = ref.watch(onboardingNotifierProvider);
     final canProceed = data.canProceed(_currentStep);
     final isFinal = _currentStep == _totalSteps - 1;
@@ -232,6 +242,191 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _OnboardingBriefing extends StatelessWidget {
+  final VoidCallback onStart;
+
+  const _OnboardingBriefing({required this.onStart});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.textPrimary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'L',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.surface,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'НАСТРОЙКА СИСТЕМЫ',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textSecondary,
+                      letterSpacing: 1.8,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(flex: 2),
+              Text(
+                'Твои ответы определят,\nкак LEVL будет вести тебя.',
+                style: GoogleFonts.dmSerifDisplay(
+                  fontSize: 34,
+                  color: AppColors.textPrimary,
+                  height: 1.08,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Система соберёт из них задачи, темп и приоритеты. Здесь важна честность, а не красивый ответ.',
+                style: GoogleFonts.dmSans(
+                  fontSize: 15,
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 30),
+              const _BriefingFact(
+                icon: Icons.timer_outlined,
+                title: 'Около 3 минут',
+                detail: 'Семь коротких шагов без лишних вопросов',
+              ),
+              const SizedBox(height: 18),
+              const _BriefingFact(
+                icon: Icons.tune_rounded,
+                title: 'Можно изменить позже',
+                detail: 'Цели и темп не останутся высеченными в камне',
+              ),
+              const SizedBox(height: 18),
+              const _BriefingFact(
+                icon: Icons.lock_outline_rounded,
+                title: 'Без чувствительных данных',
+                detail: 'Не указывай документы, пароли и финансовые сведения',
+              ),
+              const Spacer(flex: 3),
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: FilledButton(
+                  onPressed: onStart,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.textPrimary,
+                    foregroundColor: AppColors.surface,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Настроить Систему',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.arrow_forward_rounded, size: 19),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Center(
+                child: Text(
+                  'Отвечай так, как есть сейчас.',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 12,
+                    color: AppColors.textDisabled,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BriefingFact extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String detail;
+
+  const _BriefingFact({
+    required this.icon,
+    required this.title,
+    required this.detail,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceElevated,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 19, color: AppColors.textPrimary),
+        ),
+        const SizedBox(width: 13),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.dmSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                detail,
+                style: GoogleFonts.dmSans(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
