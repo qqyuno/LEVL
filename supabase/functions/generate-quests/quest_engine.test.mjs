@@ -2,10 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  adaptPlanToFeedback,
   areTitlesSimilar,
   buildFallbackQuests,
   buildGenerationPlan,
   normalizeQuests,
+  summarizeQuestFeedback,
 } from "./quest_engine.ts";
 
 const spheres = ["discipline", "knowledge", "energy"];
@@ -49,6 +51,71 @@ test("allows a stronger plan only after sustained completion", () => {
   assert.equal(plan.mode, "momentum");
   assert.equal(plan.timeBudget, 90);
   assert.deepEqual(plan.allowedDifficulties, ["medium", "hard"]);
+});
+
+test("shrinks the plan when time is the repeated rejection reason", () => {
+  const basePlan = buildGenerationPlan(90, 12, Array.from(
+    { length: 10 },
+    (_, index) => ({
+      title: `Quest ${index}`,
+      status: index < 8 ? "completed" : "pending",
+    }),
+  ));
+  const feedback = summarizeQuestFeedback([
+    "no_time",
+    "no_time",
+    "too_hard",
+    "unknown",
+  ]);
+  const plan = adaptPlanToFeedback(basePlan, feedback);
+
+  assert.equal(feedback.total, 3);
+  assert.equal(feedback.dominantReason, "no_time");
+  assert.equal(plan.timeBudget, 20);
+  assert.equal(plan.firstQuestMaxMinutes, 5);
+  assert.deepEqual(plan.allowedDifficulties, ["trivial", "easy"]);
+});
+
+test("keeps the base plan when feedback has no clear pattern", () => {
+  const basePlan = buildGenerationPlan(45, 5, []);
+  const feedback = summarizeQuestFeedback([
+    "no_time",
+    "too_hard",
+    "not_relevant",
+  ]);
+  const plan = adaptPlanToFeedback(basePlan, feedback);
+
+  assert.equal(feedback.dominantReason, null);
+  assert.deepEqual(plan, basePlan);
+});
+
+test("makes relevance feedback an explicit planning constraint", () => {
+  const basePlan = buildGenerationPlan(45, 5, []);
+  const feedback = summarizeQuestFeedback([
+    "not_relevant",
+    "not_relevant",
+  ]);
+  const plan = adaptPlanToFeedback(basePlan, feedback);
+
+  assert.equal(plan.timeBudget, basePlan.timeBudget);
+  assert.match(plan.guidance, /главную или выбранную сферную цель/);
+});
+
+test("reduces difficulty after repeated too-hard feedback", () => {
+  const basePlan = buildGenerationPlan(90, 12, Array.from(
+    { length: 10 },
+    (_, index) => ({
+      title: `Quest ${index}`,
+      status: index < 8 ? "completed" : "pending",
+    }),
+  ));
+  const plan = adaptPlanToFeedback(
+    basePlan,
+    summarizeQuestFeedback(["too_hard", "too_hard"]),
+  );
+
+  assert.equal(plan.firstQuestMaxMinutes, 7);
+  assert.deepEqual(plan.allowedDifficulties, ["easy", "medium"]);
 });
 
 test("normalizes difficulty, XP, main quest and total time", () => {

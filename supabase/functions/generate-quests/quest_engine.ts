@@ -35,6 +35,16 @@ export interface GenerationPlan {
   guidance: string;
 }
 
+export type QuestFeedbackReason = "too_hard" | "not_relevant" | "no_time";
+
+export interface QuestFeedbackSummary {
+  total: number;
+  tooHard: number;
+  notRelevant: number;
+  noTime: number;
+  dominantReason: QuestFeedbackReason | null;
+}
+
 export interface NormalizeOptions {
   allowedSpheres: string[];
   recentTitles: string[];
@@ -117,6 +127,74 @@ export function buildGenerationPlan(
     guidance:
       "Ритм устойчив. Можно дать ощутимый вызов, но каждое задание всё равно должно иметь конкретный финиш за сегодня.",
   };
+}
+
+export function summarizeQuestFeedback(
+  reasons: string[],
+): QuestFeedbackSummary {
+  const summary: QuestFeedbackSummary = {
+    total: 0,
+    tooHard: 0,
+    notRelevant: 0,
+    noTime: 0,
+    dominantReason: null,
+  };
+
+  for (const reason of reasons) {
+    if (reason === "too_hard") summary.tooHard += 1;
+    if (reason === "not_relevant") summary.notRelevant += 1;
+    if (reason === "no_time") summary.noTime += 1;
+  }
+  summary.total = summary.tooHard + summary.notRelevant + summary.noTime;
+
+  const ranked: [QuestFeedbackReason, number][] = [
+    ["too_hard", summary.tooHard],
+    ["not_relevant", summary.notRelevant],
+    ["no_time", summary.noTime],
+  ].sort((a, b) => b[1] - a[1]);
+  if (ranked[0][1] >= 2 && ranked[0][1] > ranked[1][1]) {
+    summary.dominantReason = ranked[0][0];
+  }
+
+  return summary;
+}
+
+export function adaptPlanToFeedback(
+  plan: GenerationPlan,
+  feedback: QuestFeedbackSummary,
+): GenerationPlan {
+  if (feedback.dominantReason === "no_time") {
+    return {
+      ...plan,
+      timeBudget: Math.min(plan.timeBudget, 20),
+      firstQuestMaxMinutes: Math.min(plan.firstQuestMaxMinutes, 5),
+      allowedDifficulties: ["trivial", "easy"],
+      guidance:
+        `${plan.guidance} Пользователь несколько раз указал, что задания не помещаются во время. Убери лишние шаги и дай действия, которые реально закрыть в коротком окне.`,
+    };
+  }
+
+  if (feedback.dominantReason === "too_hard") {
+    return {
+      ...plan,
+      firstQuestMaxMinutes: Math.min(plan.firstQuestMaxMinutes, 7),
+      allowedDifficulties: plan.mode === "momentum"
+        ? ["easy", "medium"]
+        : ["trivial", "easy"],
+      guidance:
+        `${plan.guidance} Пользователь несколько раз отметил задания как слишком сложные. Сохрани пользу, но сократи действие до одного ясного шага без подготовки.`,
+    };
+  }
+
+  if (feedback.dominantReason === "not_relevant") {
+    return {
+      ...plan,
+      guidance:
+        `${plan.guidance} Пользователь несколько раз не увидел связи с целью. Каждое задание должно прямо опираться на его главную или выбранную сферную цель; не добавляй общие привычки ради активности.`,
+    };
+  }
+
+  return plan;
 }
 
 export function normalizeQuests(

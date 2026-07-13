@@ -6,10 +6,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
+  adaptPlanToFeedback,
   buildFallbackQuests,
   buildGenerationPlan,
   normalizeQuests,
+  summarizeQuestFeedback,
   type GenerationPlan,
+  type QuestFeedbackSummary,
   type QuestHistoryItem,
   type QuestOutput,
 } from "./quest_engine.ts";
@@ -137,10 +140,23 @@ serve(async (req: Request) => {
       .order("created_at", { ascending: false })
       .limit(42);
     const history = (historyRows ?? []) as QuestHistoryItem[];
-    const plan = buildGenerationPlan(
-      Number(profile.daily_minutes ?? 30),
-      Number(profile.current_streak ?? 0),
-      history,
+    const { data: feedbackRows } = await supabase
+      .from("quest_feedback")
+      .select("reason,created_at")
+      .eq("user_id", user.id)
+      .gte("created_at", historyStart)
+      .order("created_at", { ascending: false })
+      .limit(30);
+    const feedback = summarizeQuestFeedback(
+      (feedbackRows ?? []).map((row) => String(row.reason ?? "")),
+    );
+    const plan = adaptPlanToFeedback(
+      buildGenerationPlan(
+        Number(profile.daily_minutes ?? 30),
+        Number(profile.current_streak ?? 0),
+        history,
+      ),
+      feedback,
     );
 
     // --- Generate, validate and retry once if quality is weak ---
@@ -150,6 +166,7 @@ serve(async (req: Request) => {
       todaySpheres,
       plan,
       history,
+      feedback,
     );
     let rawText = await callGroq(prompt);
     let normalized = normalizeQuests(parseQuestsFromResponse(rawText), {
@@ -212,7 +229,7 @@ serve(async (req: Request) => {
     return jsonResponse({
       quests,
       cached: false,
-      engineVersion: "2.0",
+      engineVersion: "2.1",
       generationMode: plan.mode,
       fallback: usedFallback,
     });
@@ -268,6 +285,7 @@ function buildPrompt(
   todaySpheres: string[],
   plan: GenerationPlan,
   history: QuestHistoryItem[],
+  feedback: QuestFeedbackSummary,
 ): string {
   const name = (profile.name as string) || "Путник";
   const lifeContext = profile.life_context ?? "—";
@@ -291,6 +309,13 @@ function buildPrompt(
       `  [${item.status}] ${item.title}`
     ).join("\n");
   const completionPercent = Math.round(plan.completionRate * 100);
+  const feedbackLines = feedback.total === 0
+    ? "  Причин отказа пока нет."
+    : [
+      `  Слишком сложно: ${feedback.tooHard}`,
+      `  Не связано с целью: ${feedback.notRelevant}`,
+      `  Не хватило времени: ${feedback.noTime}`,
+    ].join("\n");
 
   return `Ты — планировщик действий в приложении LEVL. Создай ровно три небольших задания, которые двигают человека к целям и снижают сопротивление началу.
 
@@ -316,6 +341,9 @@ ${sphereLines}
 
 ПОСЛЕДНИЕ ЗАДАНИЯ — НЕ ПОВТОРЯЙ ИХ И НЕ ПЕРЕФРАЗИРУЙ:
 ${recentLines}
+
+ПОЧЕМУ ПОЛЬЗОВАТЕЛЬ ОТКЛОНЯЛ ЗАДАНИЯ ЗА 14 ДНЕЙ:
+${feedbackLines}
 
 ПРИНЦИПЫ:
 - Не мотивируй словами и не стыди. Уменьшай порог входа.
