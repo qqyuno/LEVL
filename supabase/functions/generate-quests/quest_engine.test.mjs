@@ -6,6 +6,7 @@ import {
   areTitlesSimilar,
   buildFallbackQuests,
   buildGenerationPlan,
+  chooseVerificationType,
   normalizeQuests,
   summarizeQuestFeedback,
 } from "./quest_engine.ts";
@@ -23,6 +24,9 @@ function rawQuest(overrides = {}) {
     estimatedMinutes: 30,
     difficulty: "hard",
     tip: "Минимальная версия — написать только первое действие.",
+    successCriterion:
+      "В заметках записан один конкретный следующий шаг к выбранной цели.",
+    verificationType: "timer",
     ...overrides,
   };
 }
@@ -118,6 +122,30 @@ test("reduces difficulty after repeated too-hard feedback", () => {
   assert.deepEqual(plan.allowedDifficulties, ["easy", "medium"]);
 });
 
+test("overrides an unsafe timer for a visible result", () => {
+  assert.equal(
+    chooseVerificationType(
+      "timer",
+      "Отправь важное сообщение",
+      "Напиши коллеге один конкретный вопрос и отправь его.",
+      "Сообщение отправлено выбранному человеку.",
+    ),
+    "self_confirm",
+  );
+});
+
+test("uses a timer for sustained focus activity", () => {
+  assert.equal(
+    chooseVerificationType(
+      "self_confirm",
+      "Сделай короткую тренировку",
+      "Выполни разминку и один круг упражнений без отвлечений.",
+      "Тренировка длилась десять минут.",
+    ),
+    "timer",
+  );
+});
+
 test("normalizes difficulty, XP, main quest and total time", () => {
   const plan = buildGenerationPlan(20, 0, []);
   const result = normalizeQuests(
@@ -142,6 +170,8 @@ test("normalizes difficulty, XP, main quest and total time", () => {
   assert.ok(result.quests.reduce((sum, quest) => sum + quest.estimatedMinutes, 0) <= 20);
   assert.ok(result.quests.every((quest) => quest.difficulty === "trivial"));
   assert.ok(result.quests.every((quest) => quest.xpReward === 10));
+  assert.equal(result.quests[0].verificationType, "self_confirm");
+  assert.ok(result.quests.every((quest) => quest.successCriterion.length > 20));
 });
 
 test("rejects a quest that repeats recent history", () => {
@@ -183,6 +213,7 @@ test("fallback always returns three small actionable quests", () => {
   assert.ok(quests[0].estimatedMinutes <= 7);
   assert.ok(quests.reduce((sum, quest) => sum + quest.estimatedMinutes, 0) <= 15);
   assert.ok(quests.every((quest) => quest.description.length > 20));
+  assert.ok(quests.every((quest) => quest.successCriterion.length > 20));
 });
 
 test("fails safely when no development sphere is available", () => {

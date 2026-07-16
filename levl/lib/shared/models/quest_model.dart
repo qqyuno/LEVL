@@ -7,8 +7,14 @@ part 'quest_model.freezed.dart';
 part 'quest_model.g.dart';
 
 enum QuestStatus { pending, completed, skipped }
+
 enum QuestType { daily, main, side, epic }
+
 enum QuestCategory { discipline, knowledge, relations, energy, will, wisdom }
+
+enum QuestVerificationType { selfConfirm, timer }
+
+enum QuestVerificationStatus { notStarted, inProgress, verified }
 
 // Difficulty in skulls (1-5)
 enum QuestDifficulty { trivial, easy, medium, hard, epic }
@@ -30,6 +36,17 @@ class QuestLocal {
   late int xpReward;
   late int estimatedMinutes;
   late bool isMainGoalTask;
+  String successCriterion = '';
+
+  @Enumerated(EnumType.name)
+  QuestVerificationType verificationType = QuestVerificationType.selfConfirm;
+
+  @Enumerated(EnumType.name)
+  QuestVerificationStatus verificationStatus =
+      QuestVerificationStatus.notStarted;
+
+  DateTime? verificationStartedAt;
+  DateTime? verifiedAt;
 
   @Enumerated(EnumType.name)
   QuestStatus status = QuestStatus.pending;
@@ -62,6 +79,13 @@ class Quest with _$Quest {
     required int xpReward,
     @Default(30) int estimatedMinutes,
     @Default(false) bool isMainGoalTask,
+    @Default('') String successCriterion,
+    @Default(QuestVerificationType.selfConfirm)
+    QuestVerificationType verificationType,
+    @Default(QuestVerificationStatus.notStarted)
+    QuestVerificationStatus verificationStatus,
+    DateTime? verificationStartedAt,
+    DateTime? verifiedAt,
     @Default(QuestStatus.pending) QuestStatus status,
     @Default(QuestDifficulty.medium) QuestDifficulty difficulty,
     @Default(QuestType.daily) QuestType type,
@@ -70,13 +94,18 @@ class Quest with _$Quest {
     DateTime? completedAt,
   }) = _Quest;
 
-  factory Quest.fromJson(Map<String, dynamic> json) =>
-      _$QuestFromJson(json);
+  factory Quest.fromJson(Map<String, dynamic> json) => _$QuestFromJson(json);
 
   /// Build a Quest from Edge Function JSON response
-  factory Quest.fromEdgeFunction(Map<String, dynamic> json, String oderId, String userId) {
+  factory Quest.fromEdgeFunction(
+    Map<String, dynamic> json,
+    String orderId,
+    String userId,
+  ) {
     return Quest(
-      id: '${userId}_${DateTime.now().toIso8601String()}_$oderId',
+      id:
+          json['id'] as String? ??
+          '${userId}_${DateTime.now().toIso8601String()}_$orderId',
       userId: userId,
       title: json['title'] as String? ?? '',
       description: json['description'] as String? ?? '',
@@ -84,6 +113,11 @@ class Quest with _$Quest {
       xpReward: json['xpReward'] as int? ?? 25,
       estimatedMinutes: json['estimatedMinutes'] as int? ?? 15,
       isMainGoalTask: json['isMainGoalTask'] as bool? ?? false,
+      successCriterion: json['successCriterion'] as String? ?? '',
+      verificationType: switch (json['verificationType']) {
+        'timer' => QuestVerificationType.timer,
+        _ => QuestVerificationType.selfConfirm,
+      },
       difficulty: QuestDifficulty.values.firstWhere(
         (d) => d.name == json['difficulty'],
         orElse: () => QuestDifficulty.medium,
@@ -96,24 +130,58 @@ class Quest with _$Quest {
       createdAt: DateTime.now(),
     );
   }
+
+  String get effectiveSuccessCriterion => successCriterion.trim().isNotEmpty
+      ? successCriterion.trim()
+      : description.trim();
+
+  Duration verificationRemainingAt(DateTime now) {
+    if (verificationType != QuestVerificationType.timer) {
+      return Duration.zero;
+    }
+    final startedAt = verificationStartedAt;
+    if (startedAt == null) return Duration(minutes: estimatedMinutes);
+    final remaining = startedAt
+        .add(Duration(minutes: estimatedMinutes))
+        .difference(now);
+    return remaining.isNegative ? Duration.zero : remaining;
+  }
+
+  bool verificationReadyAt(DateTime now) {
+    if (verificationType == QuestVerificationType.selfConfirm) return true;
+    return verificationStatus == QuestVerificationStatus.inProgress &&
+        verificationRemainingAt(now) == Duration.zero;
+  }
+}
+
+extension QuestVerificationVisual on QuestVerificationType {
+  String get label => switch (this) {
+    QuestVerificationType.selfConfirm => 'Подтверждение',
+    QuestVerificationType.timer => 'Таймер',
+  };
+
+  IconData get icon => switch (this) {
+    QuestVerificationType.selfConfirm => Icons.verified_outlined,
+    QuestVerificationType.timer => Icons.timer_outlined,
+  };
 }
 
 // XP values by difficulty
 extension QuestDifficultyXp on QuestDifficulty {
   int get baseXp => switch (this) {
     QuestDifficulty.trivial => 10,
-    QuestDifficulty.easy    => 25,
-    QuestDifficulty.medium  => 50,
-    QuestDifficulty.hard    => 100,
-    QuestDifficulty.epic    => 200,
+    QuestDifficulty.easy => 25,
+    QuestDifficulty.medium => 50,
+    QuestDifficulty.hard => 100,
+    QuestDifficulty.epic => 200,
   };
 
   int get skulls => switch (this) {
     QuestDifficulty.trivial => 1,
-    QuestDifficulty.easy    => 2,
-    QuestDifficulty.medium  => 3,
-    QuestDifficulty.hard    => 4,
-    QuestDifficulty.epic    => 5,
+    QuestDifficulty.easy => 2,
+    QuestDifficulty.medium => 3,
+    QuestDifficulty.hard => 4,
+    QuestDifficulty.epic => 5,
   };
 }
 
@@ -121,37 +189,37 @@ extension QuestDifficultyXp on QuestDifficulty {
 extension QuestCategoryVisual on QuestCategory {
   IconData get icon => switch (this) {
     QuestCategory.discipline => Icons.bolt,
-    QuestCategory.knowledge  => Icons.menu_book,
-    QuestCategory.relations  => Icons.people,
-    QuestCategory.energy     => Icons.local_fire_department,
-    QuestCategory.will       => Icons.my_location,
-    QuestCategory.wisdom     => Icons.psychology,
+    QuestCategory.knowledge => Icons.menu_book,
+    QuestCategory.relations => Icons.people,
+    QuestCategory.energy => Icons.local_fire_department,
+    QuestCategory.will => Icons.my_location,
+    QuestCategory.wisdom => Icons.psychology,
   };
 
   Color get color => switch (this) {
     QuestCategory.discipline => AppColors.sphereDiscipline,
-    QuestCategory.knowledge  => AppColors.sphereKnowledge,
-    QuestCategory.relations  => AppColors.sphereRelations,
-    QuestCategory.energy     => AppColors.sphereEnergy,
-    QuestCategory.will       => AppColors.sphereWill,
-    QuestCategory.wisdom     => AppColors.sphereWisdom,
+    QuestCategory.knowledge => AppColors.sphereKnowledge,
+    QuestCategory.relations => AppColors.sphereRelations,
+    QuestCategory.energy => AppColors.sphereEnergy,
+    QuestCategory.will => AppColors.sphereWill,
+    QuestCategory.wisdom => AppColors.sphereWisdom,
   };
 
   String get label => switch (this) {
     QuestCategory.discipline => 'Дисциплина',
-    QuestCategory.knowledge  => 'Знания',
-    QuestCategory.relations  => 'Отношения',
-    QuestCategory.energy     => 'Энергия',
-    QuestCategory.will       => 'Воля',
-    QuestCategory.wisdom     => 'Мудрость',
+    QuestCategory.knowledge => 'Знания',
+    QuestCategory.relations => 'Отношения',
+    QuestCategory.energy => 'Энергия',
+    QuestCategory.will => 'Воля',
+    QuestCategory.wisdom => 'Мудрость',
   };
 
   String get description => switch (this) {
     QuestCategory.discipline => 'Привычки, режим, обязательства',
-    QuestCategory.knowledge  => 'Обучение, навыки, рост',
-    QuestCategory.relations  => 'Семья, друзья, нетворкинг',
-    QuestCategory.energy     => 'Здоровье, спорт, сон',
-    QuestCategory.will       => 'Фокус, упорство, преодоление',
-    QuestCategory.wisdom     => 'Рефлексия, решения, интуиция',
+    QuestCategory.knowledge => 'Обучение, навыки, рост',
+    QuestCategory.relations => 'Семья, друзья, нетворкинг',
+    QuestCategory.energy => 'Здоровье, спорт, сон',
+    QuestCategory.will => 'Фокус, упорство, преодоление',
+    QuestCategory.wisdom => 'Рефлексия, решения, интуиция',
   };
 }

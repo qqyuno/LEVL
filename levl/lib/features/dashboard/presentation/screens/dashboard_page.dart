@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,9 +53,16 @@ class DashboardPage extends ConsumerWidget {
                   data: (quests) => _SystemCommandCenter(
                     user: user,
                     quests: quests,
-                    onComplete: (quest) => ref
-                        .read(questNotifierProvider.notifier)
-                        .completeQuest(quest.id),
+                    onComplete: (quest) async {
+                      final confirmed = await _showQuestVerification(
+                        context,
+                        quest,
+                      );
+                      if (!confirmed) return;
+                      await ref
+                          .read(questNotifierProvider.notifier)
+                          .completeQuest(quest.id);
+                    },
                   ),
                 ),
               ),
@@ -464,6 +473,18 @@ class _SystemCommandCenter extends StatelessWidget {
     final note = nextQuest?.description.isNotEmpty == true
         ? nextQuest!.description
         : _note(completed, total);
+    final verificationInProgress =
+        nextQuest?.verificationStatus == QuestVerificationStatus.inProgress;
+    var actionLabel = 'Открыть Систему';
+    var actionIcon = Icons.auto_awesome;
+    if (nextQuest != null) {
+      actionLabel = verificationInProgress
+          ? 'Продолжить проверку'
+          : 'Открыть проверку';
+      actionIcon = verificationInProgress
+          ? Icons.timer_outlined
+          : nextQuest.verificationType.icon;
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
@@ -567,13 +588,7 @@ class _SystemCommandCenter extends StatelessWidget {
             GestureDetector(
               onTap: nextQuest == null
                   ? () => context.go(AppRoutes.aiMentor)
-                  : () async {
-                      final confirmed = await _showSystemConfirmation(
-                        context,
-                        nextQuest.title,
-                      );
-                      if (confirmed) onComplete(nextQuest);
-                    },
+                  : () => onComplete(nextQuest),
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -584,18 +599,10 @@ class _SystemCommandCenter extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      nextQuest == null
-                          ? Icons.auto_awesome
-                          : Icons.check_rounded,
-                      size: 17,
-                      color: AppColors.surface,
-                    ),
+                    Icon(actionIcon, size: 17, color: AppColors.surface),
                     const SizedBox(width: 8),
                     Text(
-                      nextQuest == null
-                          ? 'Открыть Систему'
-                          : 'Зафиксировать выполнение',
+                      actionLabel,
                       style: GoogleFonts.dmSans(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -775,106 +782,420 @@ class _DailyProgressBar extends StatelessWidget {
   }
 }
 
-Future<bool> _showSystemConfirmation(
-  BuildContext context,
-  String questTitle,
-) async {
+Future<bool> _showQuestVerification(BuildContext context, Quest quest) async {
   final result = await showModalBottomSheet<bool>(
     context: context,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withValues(alpha: 0.6),
     isScrollControlled: true,
-    builder: (ctx) => Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 28),
-            decoration: BoxDecoration(
-              color: AppColors.divider,
-              borderRadius: BorderRadius.circular(2),
-            ),
+    builder: (_) => _QuestVerificationPanel(initialQuest: quest),
+  );
+  return result ?? false;
+}
+
+class _QuestVerificationPanel extends ConsumerStatefulWidget {
+  final Quest initialQuest;
+
+  const _QuestVerificationPanel({required this.initialQuest});
+
+  @override
+  ConsumerState<_QuestVerificationPanel> createState() =>
+      _QuestVerificationPanelState();
+}
+
+class _QuestVerificationPanelState
+    extends ConsumerState<_QuestVerificationPanel> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialQuest.verificationType == QuestVerificationType.timer) {
+      _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  Quest _currentQuest() {
+    final quests = ref.watch(questNotifierProvider).valueOrNull ?? const [];
+    for (final quest in quests) {
+      if (quest.id == widget.initialQuest.id) return quest;
+    }
+    return widget.initialQuest;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final quest = _currentQuest();
+    final now = DateTime.now();
+    final remaining = quest.verificationRemainingAt(now);
+    final isTimer = quest.verificationType == QuestVerificationType.timer;
+    final isRunning =
+        quest.verificationStatus == QuestVerificationStatus.inProgress &&
+        remaining > Duration.zero;
+    final isReady = quest.verificationReadyAt(now);
+
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        child: Container(
+          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.divider),
           ),
-          Text(
-            'СИСТЕМА',
-            style: GoogleFonts.dmSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.gold,
-              letterSpacing: 3,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Зафиксировано.\nСистема доверяет тебе.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.dmSerifDisplay(
-              fontSize: 24,
-              color: AppColors.textPrimary,
-              height: 1.3,
-              letterSpacing: 0.3,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            questTitle,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.dmSans(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-              fontStyle: FontStyle.italic,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            child: GestureDetector(
-              onTap: () => Navigator.of(ctx).pop(true),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'ПРОВЕРКА СИСТЕМЫ',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.gold,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'Закрыть',
+                    onPressed: () => Navigator.pop(context, false),
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                  ),
+                ],
+              ),
+              Text(
+                quest.title,
+                style: GoogleFonts.dmSerifDisplay(
+                  fontSize: 24,
+                  height: 1.15,
                   color: AppColors.textPrimary,
-                  borderRadius: BorderRadius.circular(14),
                 ),
+              ),
+              const SizedBox(height: 16),
+              _SuccessCriterion(quest: quest),
+              const SizedBox(height: 22),
+              if (!isTimer)
+                _SelfConfirmationBody(
+                  onConfirm: () => Navigator.pop(context, true),
+                )
+              else if (quest.verificationStatus ==
+                  QuestVerificationStatus.notStarted)
+                _TimerStartBody(
+                  minutes: quest.estimatedMinutes,
+                  onStart: () async {
+                    HapticFeedback.mediumImpact();
+                    await ref
+                        .read(questNotifierProvider.notifier)
+                        .startQuestVerification(quest.id);
+                  },
+                )
+              else
+                _TimerProgressBody(
+                  quest: quest,
+                  remaining: remaining,
+                  isRunning: isRunning,
+                  isReady: isReady,
+                  onConfirm: () => Navigator.pop(context, true),
+                ),
+              const SizedBox(height: 14),
+              Center(
                 child: Text(
-                  'Подтвердить',
+                  'XP начислится только после подтверждения результата',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.dmSans(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.background,
+                    fontSize: 11,
+                    color: AppColors.textDisabled,
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: () => Navigator.of(ctx).pop(false),
-            child: Text(
-              'Ещё не выполнено',
-              style: GoogleFonts.dmSans(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SuccessCriterion extends StatelessWidget {
+  final Quest quest;
+
+  const _SuccessCriterion({required this.quest});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.flag_outlined, size: 18, color: AppColors.gold),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ГОТОВО, КОГДА',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textDisabled,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  quest.effectiveSuccessCriterion,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 13,
+                    height: 1.4,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
-    ),
-  );
-  return result ?? false;
+    );
+  }
+}
+
+class _SelfConfirmationBody extends StatelessWidget {
+  final VoidCallback onConfirm;
+
+  const _SelfConfirmationBody({required this.onConfirm});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const Icon(
+          Icons.verified_outlined,
+          size: 42,
+          color: AppColors.textPrimary,
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Результат действительно готов?',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.dmSans(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Система доверяет тебе. Подтверди только завершённое действие.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.dmSans(
+            fontSize: 13,
+            height: 1.4,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 18),
+        _VerificationPrimaryButton(
+          label: 'Подтвердить результат',
+          icon: Icons.check_rounded,
+          onPressed: onConfirm,
+        ),
+      ],
+    );
+  }
+}
+
+class _TimerStartBody extends StatelessWidget {
+  final int minutes;
+  final VoidCallback onStart;
+
+  const _TimerStartBody({required this.minutes, required this.onStart});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const Icon(
+          Icons.timer_outlined,
+          size: 46,
+          color: AppColors.textPrimary,
+        ),
+        const SizedBox(height: 10),
+        Text(
+          '$minutes минут фокуса',
+          style: GoogleFonts.dmSans(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Таймер сохранится, даже если приложение будет свёрнуто.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.dmSans(
+            fontSize: 13,
+            height: 1.4,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 18),
+        _VerificationPrimaryButton(
+          label: 'Начать',
+          icon: Icons.play_arrow_rounded,
+          onPressed: onStart,
+        ),
+      ],
+    );
+  }
+}
+
+class _TimerProgressBody extends StatelessWidget {
+  final Quest quest;
+  final Duration remaining;
+  final bool isRunning;
+  final bool isReady;
+  final VoidCallback onConfirm;
+
+  const _TimerProgressBody({
+    required this.quest,
+    required this.remaining,
+    required this.isRunning,
+    required this.isReady,
+    required this.onConfirm,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final totalSeconds = quest.estimatedMinutes * 60;
+    final remainingSeconds = remaining.inSeconds.clamp(0, totalSeconds);
+    final progress = totalSeconds == 0
+        ? 1.0
+        : 1 - (remainingSeconds / totalSeconds);
+
+    return Column(
+      children: [
+        SizedBox(
+          width: 116,
+          height: 116,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox.expand(
+                child: CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 5,
+                  backgroundColor: AppColors.divider,
+                  color: isReady ? AppColors.gold : AppColors.textPrimary,
+                ),
+              ),
+              if (isReady)
+                const Icon(Icons.check_rounded, size: 40, color: AppColors.gold)
+              else
+                Text(
+                  _formatDuration(remaining),
+                  style: GoogleFonts.dmSans(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          isReady ? 'Время зафиксировано' : 'Фокус идёт',
+          style: GoogleFonts.dmSans(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          isRunning
+              ? 'Можно закрыть экран и вернуться позже.'
+              : 'Теперь подтверди, что результат действительно готов.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.dmSans(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        if (isReady) ...[
+          const SizedBox(height: 18),
+          _VerificationPrimaryButton(
+            label: 'Подтвердить результат',
+            icon: Icons.verified_rounded,
+            onPressed: onConfirm,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _VerificationPrimaryButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _VerificationPrimaryButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          minimumSize: const Size.fromHeight(50),
+          backgroundColor: AppColors.textPrimary,
+          foregroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        icon: Icon(icon, size: 18),
+        label: Text(
+          label,
+          style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w700),
+        ),
+      ),
+    );
+  }
+}
+
+String _formatDuration(Duration duration) {
+  final totalSeconds = duration.inSeconds.clamp(0, 24 * 60 * 60);
+  final minutes = totalSeconds ~/ 60;
+  final seconds = totalSeconds % 60;
+  return '${minutes.toString().padLeft(2, '0')}:'
+      '${seconds.toString().padLeft(2, '0')}';
 }
 
 Future<QuestFeedbackReason?> _showQuestFeedback(BuildContext context) {
@@ -997,6 +1318,113 @@ class _QuestFeedbackOption extends StatelessWidget {
   }
 }
 
+class _QuestCriterionPreview extends StatelessWidget {
+  final Quest quest;
+  final bool compact;
+
+  const _QuestCriterionPreview({required this.quest, this.compact = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 12,
+        vertical: compact ? 8 : 10,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 1),
+            child: Icon(Icons.flag_outlined, size: 14, color: AppColors.gold),
+          ),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: 'Готово, когда: ',
+                    style: GoogleFonts.dmSans(fontWeight: FontWeight.w700),
+                  ),
+                  TextSpan(text: quest.effectiveSuccessCriterion),
+                ],
+              ),
+              maxLines: compact ? 2 : 3,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.dmSans(
+                fontSize: compact ? 11.5 : 12.5,
+                height: 1.35,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VerificationBadge extends StatelessWidget {
+  final Quest quest;
+
+  const _VerificationBadge({required this.quest});
+
+  @override
+  Widget build(BuildContext context) {
+    final isVerified =
+        quest.verificationStatus == QuestVerificationStatus.verified ||
+        quest.status == QuestStatus.completed;
+    final isTimer = quest.verificationType == QuestVerificationType.timer;
+    final isRunning =
+        quest.verificationStatus == QuestVerificationStatus.inProgress;
+    final String label;
+    if (isVerified) {
+      label = 'Проверено';
+    } else if (isTimer && isRunning) {
+      label = 'Таймер идёт';
+    } else if (isTimer) {
+      label = 'Таймер · ${quest.estimatedMinutes} мин';
+    } else {
+      label = 'Подтверждение';
+    }
+    final color = isVerified ? AppColors.gold : AppColors.textDisabled;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isVerified ? Icons.verified_rounded : quest.verificationType.icon,
+            size: 12,
+            color: color,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: GoogleFonts.dmSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Main Quest Card (суперцель) — с Lottie burst при complete
 // ---------------------------------------------------------------------------
@@ -1023,10 +1451,7 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
   }
 
   Future<void> _handleComplete() async {
-    final confirmed = await _showSystemConfirmation(
-      context,
-      widget.quest.title,
-    );
+    final confirmed = await _showQuestVerification(context, widget.quest);
     if (!confirmed || !mounted) return;
     HapticFeedback.mediumImpact();
     ref.read(audioServiceProvider).playQuestComplete();
@@ -1178,6 +1603,13 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
             ),
           ],
           const SizedBox(height: 12),
+          _QuestCriterionPreview(quest: widget.quest),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _VerificationBadge(quest: widget.quest),
+          ),
+          const SizedBox(height: 12),
           Row(
             children: [
               const Icon(
@@ -1206,15 +1638,19 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
               ),
               const Spacer(),
               if (!isCompleted)
-                GestureDetector(
-                  onTap: _handleComplete,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.gold, width: 1.5),
-                    ),
+                IconButton(
+                  tooltip: 'Открыть проверку',
+                  onPressed: _handleComplete,
+                  style: IconButton.styleFrom(
+                    fixedSize: const Size(40, 40),
+                    minimumSize: const Size(40, 40),
+                    padding: EdgeInsets.zero,
+                    side: const BorderSide(color: AppColors.gold, width: 1.5),
+                  ),
+                  icon: Icon(
+                    widget.quest.verificationType.icon,
+                    size: 18,
+                    color: AppColors.gold,
                   ),
                 )
               else
@@ -1261,10 +1697,7 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
   }
 
   Future<void> _handleComplete() async {
-    final confirmed = await _showSystemConfirmation(
-      context,
-      widget.quest.title,
-    );
+    final confirmed = await _showQuestVerification(context, widget.quest);
     if (!confirmed || !mounted) return;
     HapticFeedback.mediumImpact();
     ref.read(audioServiceProvider).playQuestComplete();
@@ -1366,6 +1799,13 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 7),
+                    _QuestCriterionPreview(quest: widget.quest, compact: true),
+                    const SizedBox(height: 7),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: _VerificationBadge(quest: widget.quest),
                     ),
                     const SizedBox(height: 6),
                     Row(

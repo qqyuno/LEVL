@@ -5,6 +5,8 @@ export type QuestDifficulty =
   | "hard"
   | "epic";
 
+export type QuestVerificationType = "self_confirm" | "timer";
+
 export interface QuestOutput {
   title: string;
   description: string;
@@ -14,6 +16,8 @@ export interface QuestOutput {
   estimatedMinutes: number;
   difficulty: QuestDifficulty;
   tip: string;
+  successCriterion: string;
+  verificationType: QuestVerificationType;
 }
 
 export interface QuestHistoryItem {
@@ -80,6 +84,37 @@ const VAGUE_PHRASES = [
   "развивай",
   "стань лучше",
   "сделай прогресс",
+];
+
+const SELF_CONFIRM_HINTS = [
+  "напиши",
+  "запиши",
+  "отправ",
+  "позвони",
+  "выбери",
+  "определи",
+  "создай",
+  "составь",
+  "подготов",
+  "реши",
+  "оплати",
+  "забронируй",
+  "сохрани",
+];
+
+const TIMER_HINTS = [
+  "трениров",
+  "размин",
+  "читай",
+  "прочитай",
+  "убор",
+  "медит",
+  "фокус",
+  "работай",
+  "учись",
+  "гуля",
+  "пройди",
+  "практик",
 ];
 
 export function buildGenerationPlan(
@@ -256,6 +291,7 @@ function normalizeSingleQuest(
   const title = cleanText(raw.title, 80);
   const description = cleanText(raw.description, 520);
   const tip = cleanText(raw.tip, 180);
+  const successCriterion = cleanText(raw.successCriterion, 220);
   const sphere = cleanText(raw.sphere, 40);
 
   if (title.length < 4) issues.push(`У задания ${index + 1} нет ясного названия.`);
@@ -263,6 +299,9 @@ function normalizeSingleQuest(
     issues.push(`У задания "${title || index + 1}" нет конкретного действия.`);
   }
   if (tip.length < 6) issues.push(`У задания "${title || index + 1}" нет микрошага.`);
+  if (successCriterion.length < 12) {
+    issues.push(`У задания "${title || index + 1}" нет критерия готовности.`);
+  }
   if (!options.allowedSpheres.includes(sphere)) {
     issues.push(`Недопустимая сфера "${sphere}".`);
   }
@@ -288,7 +327,30 @@ function normalizeSingleQuest(
     estimatedMinutes: clampInteger(raw.estimatedMinutes, 5, 90, 10),
     difficulty,
     tip,
+    successCriterion,
+    verificationType: chooseVerificationType(
+      raw.verificationType,
+      title,
+      description,
+      successCriterion,
+    ),
   };
+}
+
+export function chooseVerificationType(
+  requested: unknown,
+  title: string,
+  description: string,
+  successCriterion: string,
+): QuestVerificationType {
+  const text = `${title} ${description} ${successCriterion}`.toLowerCase();
+  if (SELF_CONFIRM_HINTS.some((hint) => text.includes(hint))) {
+    return "self_confirm";
+  }
+  if (TIMER_HINTS.some((hint) => text.includes(hint))) {
+    return "timer";
+  }
+  return requested === "timer" ? "timer" : "self_confirm";
 }
 
 function fitTimeBudget(
@@ -364,6 +426,9 @@ export function buildFallbackQuests(
       estimatedMinutes: Math.min(7, plan.firstQuestMaxMinutes),
       difficulty: firstDifficulty,
       tip: "Минимальная версия — открыть заметки и написать один глагол действия.",
+      successCriterion:
+        "В заметках записано одно конкретное действие и начаты его первые две минуты.",
+      verificationType: "self_confirm",
     },
     {
       title: "Убери одно препятствие",
@@ -375,6 +440,9 @@ export function buildFallbackQuests(
       estimatedMinutes: 5,
       difficulty: firstDifficulty,
       tip: "Начни с закрытой вкладки, выключенного уведомления или подготовленного рабочего места.",
+      successCriterion:
+        "Одно выбранное препятствие убрано минимум на десять минут.",
+      verificationType: "self_confirm",
     },
     {
       title: "Зафиксируй маленькую победу",
@@ -386,6 +454,9 @@ export function buildFallbackQuests(
       estimatedMinutes: 5,
       difficulty: firstDifficulty,
       tip: "Результат должен быть видимым: запись, отправленное сообщение или завершённый подход.",
+      successCriterion:
+        "Полезное действие завершено, а его результат записан одним предложением.",
+      verificationType: "self_confirm",
     },
   ];
 

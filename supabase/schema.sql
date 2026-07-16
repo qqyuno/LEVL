@@ -53,6 +53,13 @@ create table if not exists quests (
   tip text,
   status text default 'pending',
   estimated_minutes integer,
+  success_criterion text not null default '',
+  verification_type text not null default 'self_confirm'
+    check (verification_type in ('self_confirm', 'timer')),
+  verification_status text not null default 'not_started'
+    check (verification_status in ('not_started', 'in_progress', 'verified')),
+  verification_started_at timestamptz,
+  verified_at timestamptz,
   created_at timestamptz default now(),
   completed_at timestamptz
 );

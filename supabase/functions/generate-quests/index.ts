@@ -44,7 +44,7 @@ serve(async (req: Request) => {
 
     // --- Check cache ---
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-    const cacheKey = `${user.id}_${today}_v2`;
+    const cacheKey = `${user.id}_${today}_v3`;
 
     const { data: cached } = await supabase
       .from("quest_cache")
@@ -57,7 +57,7 @@ serve(async (req: Request) => {
       return jsonResponse({
         quests: cached.quests,
         cached: true,
-        engineVersion: "2.0",
+        engineVersion: "2.2",
       });
     }
 
@@ -200,17 +200,22 @@ serve(async (req: Request) => {
         )
       : normalized.quests;
 
+    const persistedQuests = quests.map((quest, index) => ({
+      ...quest,
+      id: `${cacheKey}_${index}`,
+    }));
+
     // --- Save to quest_cache ---
     await supabase.from("quest_cache").upsert({
       user_id: user.id,
       cache_key: cacheKey,
-      quests: quests,
+      quests: persistedQuests,
       generated_at: new Date().toISOString(),
     });
 
     // --- Save individual quests ---
-    const questRows = quests.map((q: QuestOutput, i: number) => ({
-      id: `${cacheKey}_${i}`,
+    const questRows = persistedQuests.map((q) => ({
+      id: q.id,
       user_id: user.id,
       title: q.title,
       description: q.description,
@@ -219,6 +224,9 @@ serve(async (req: Request) => {
       difficulty: q.difficulty,
       type: q.isMainGoalTask ? "main" : "daily",
       tip: q.tip,
+      success_criterion: q.successCriterion,
+      verification_type: q.verificationType,
+      verification_status: "not_started",
       status: "pending",
       estimated_minutes: q.estimatedMinutes,
       created_at: new Date().toISOString(),
@@ -227,9 +235,9 @@ serve(async (req: Request) => {
     await supabase.from("quests").upsert(questRows);
 
     return jsonResponse({
-      quests,
+      quests: persistedQuests,
       cached: false,
-      engineVersion: "2.1",
+      engineVersion: "2.2",
       generationMode: plan.mode,
       fallback: usedFallback,
     });
@@ -352,6 +360,8 @@ ${feedbackLines}
 - Не используй формулировки "поработай над", "займись", "подумай о", "стань лучше".
 - description объясняет одно действие и критерий готовности. Не создавай многоступенчатый план на будущее.
 - tip — минимальная версия на случай сильного сопротивления, которую можно начать меньше чем за минуту.
+- successCriterion — одно наблюдаемое условие, после которого нельзя спорить, что задание закончено.
+- verificationType — выбери timer для длительного процесса (фокус, чтение, движение, практика) и self_confirm для готового результата (запись, сообщение, решение, артефакт).
 - Задание должно быть уважительным к человеку, который много прокрастинирует: маленьким, но не бессмысленным.
 
 ПРАВИЛА:
@@ -364,7 +374,9 @@ ${feedbackLines}
 7. sphere — строго одно из: ${todaySpheres.join(", ")}
 8. tip — минимальный старт, одно предложение без восклицаний
 9. description — конкретное действие плюс проверяемый результат
-10. Язык: русский
+10. successCriterion — короткое предложение без абстрактных слов
+11. verificationType — только self_confirm или timer
+12. Язык: русский
 
 ФОРМАТ ОТВЕТА (только JSON, без markdown, без пояснений):
 [
@@ -376,7 +388,9 @@ ${feedbackLines}
     "xpReward": 25,
     "estimatedMinutes": 10,
     "difficulty": "easy",
-    "tip": "Минимальная версия действия, если трудно начать."
+    "tip": "Минимальная версия действия, если трудно начать.",
+    "successCriterion": "Конкретный наблюдаемый результат уже готов.",
+    "verificationType": "self_confirm"
   }
 ]`;
 }

@@ -223,18 +223,65 @@ class QuestNotifier extends _$QuestNotifier {
     }
   }
 
-  /// Mark a quest as completed, add XP
-  Future<void> completeQuest(String questId) async {
+  /// Start a timer-backed verification and persist it across app restarts.
+  Future<bool> startQuestVerification(String questId) async {
     final current = state.valueOrNull ?? [];
     final questIndex = current.indexWhere((q) => q.id == questId);
-    if (questIndex == -1) return;
+    if (questIndex == -1) return false;
 
     final quest = current[questIndex];
-    if (quest.status == QuestStatus.completed) return;
+    if (quest.status != QuestStatus.pending ||
+        quest.verificationType != QuestVerificationType.timer) {
+      return false;
+    }
+    if (quest.verificationStatus == QuestVerificationStatus.inProgress) {
+      return true;
+    }
 
+    final startedAt = DateTime.now();
+    final started = quest.copyWith(
+      verificationStatus: QuestVerificationStatus.inProgress,
+      verificationStartedAt: startedAt,
+    );
+    final updated = [...current];
+    updated[questIndex] = started;
+    state = AsyncData(updated);
+
+    final isar = await ref.read(isarProvider.future);
+    final local = await _questQueryFirst(
+      isar.questLocals.filter().supabaseIdEqualTo(questId),
+    );
+    if (local != null) {
+      local.verificationStatus = QuestVerificationStatus.inProgress;
+      local.verificationStartedAt = startedAt;
+      await isar.writeTxn(() async {
+        await isar.questLocals.put(local);
+      });
+    }
+
+    _syncVerificationStart(questId, startedAt);
+    return true;
+  }
+
+  /// Mark a verified quest as completed and add XP.
+  Future<bool> completeQuest(String questId) async {
+    final current = state.valueOrNull ?? [];
+    final questIndex = current.indexWhere((q) => q.id == questId);
+    if (questIndex == -1) return false;
+
+    final quest = current[questIndex];
+    final now = DateTime.now();
+    if (quest.status != QuestStatus.pending ||
+        !quest.verificationReadyAt(now)) {
+      return false;
+    }
+
+    final verifiedAt = now;
     final completed = quest.copyWith(
       status: QuestStatus.completed,
-      completedAt: DateTime.now(),
+      completedAt: verifiedAt,
+      verificationStatus: QuestVerificationStatus.verified,
+      verifiedAt: verifiedAt,
     );
 
     // Update UI immediately
@@ -250,7 +297,9 @@ class QuestNotifier extends _$QuestNotifier {
 
     if (local != null) {
       local.status = QuestStatus.completed;
-      local.completedAt = DateTime.now();
+      local.completedAt = verifiedAt;
+      local.verificationStatus = QuestVerificationStatus.verified;
+      local.verifiedAt = verifiedAt;
       await isar.writeTxn(() async {
         await isar.questLocals.put(local);
       });
@@ -263,7 +312,8 @@ class QuestNotifier extends _$QuestNotifier {
     NotificationService.instance.cancelStreakAlert();
 
     // Update Supabase (best effort, don't block UI)
-    _syncCompletionToSupabase(questId, quest.xpReward);
+    _syncCompletionToSupabase(questId, quest.xpReward, verifiedAt);
+    return true;
   }
 
   /// Remove an unsuitable quest from today and remember why it failed.
@@ -337,14 +387,38 @@ class QuestNotifier extends _$QuestNotifier {
     }
   }
 
-  Future<void> _syncCompletionToSupabase(String questId, int xp) async {
+  Future<void> _syncVerificationStart(
+    String questId,
+    DateTime startedAt,
+  ) async {
+    try {
+      final client = ref.read(supabaseClientProvider);
+      await client
+          .from('quests')
+          .update({
+            'verification_status': 'in_progress',
+            'verification_started_at': startedAt.toUtc().toIso8601String(),
+          })
+          .eq('id', questId);
+    } catch (_) {
+      // Local verification remains active if remote sync fails.
+    }
+  }
+
+  Future<void> _syncCompletionToSupabase(
+    String questId,
+    int xp,
+    DateTime verifiedAt,
+  ) async {
     try {
       final client = ref.read(supabaseClientProvider);
       await client
           .from('quests')
           .update({
             'status': 'completed',
-            'completed_at': DateTime.now().toIso8601String(),
+            'completed_at': verifiedAt.toUtc().toIso8601String(),
+            'verification_status': 'verified',
+            'verified_at': verifiedAt.toUtc().toIso8601String(),
           })
           .eq('id', questId);
 
@@ -395,6 +469,11 @@ class QuestNotifier extends _$QuestNotifier {
           ..xpReward = q.xpReward
           ..estimatedMinutes = q.estimatedMinutes
           ..isMainGoalTask = q.isMainGoalTask
+          ..successCriterion = q.successCriterion
+          ..verificationType = q.verificationType
+          ..verificationStatus = q.verificationStatus
+          ..verificationStartedAt = q.verificationStartedAt
+          ..verifiedAt = q.verifiedAt
           ..status = q.status
           ..difficulty = q.difficulty
           ..type = q.type
@@ -417,6 +496,11 @@ class QuestNotifier extends _$QuestNotifier {
             xpReward: l.xpReward,
             estimatedMinutes: l.estimatedMinutes,
             isMainGoalTask: l.isMainGoalTask,
+            successCriterion: l.successCriterion,
+            verificationType: l.verificationType,
+            verificationStatus: l.verificationStatus,
+            verificationStartedAt: l.verificationStartedAt,
+            verifiedAt: l.verifiedAt,
             status: l.status,
             difficulty: l.difficulty,
             type: l.type,
