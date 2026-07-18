@@ -146,6 +146,18 @@ test("uses a timer for sustained focus activity", () => {
   );
 });
 
+test("uses a timer for Russian infinitive reading tasks", () => {
+  assert.equal(
+    chooseVerificationType(
+      "self_confirm",
+      "Прочитать главу книги",
+      "Открыть книгу и прочитать одну главу без отвлечений.",
+      "Прочитана одна глава.",
+    ),
+    "timer",
+  );
+});
+
 test("normalizes difficulty, XP, main quest and total time", () => {
   const plan = buildGenerationPlan(20, 0, []);
   const result = normalizeQuests(

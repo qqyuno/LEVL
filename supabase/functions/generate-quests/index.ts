@@ -44,7 +44,7 @@ serve(async (req: Request) => {
 
     // --- Check cache ---
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-    const cacheKey = `${user.id}_${today}_v3`;
+    const cacheKey = `${user.id}_${today}_v4`;
 
     const { data: cached } = await supabase
       .from("quest_cache")
@@ -57,7 +57,7 @@ serve(async (req: Request) => {
       return jsonResponse({
         quests: cached.quests,
         cached: true,
-        engineVersion: "2.2",
+        engineVersion: "2.3",
       });
     }
 
@@ -237,7 +237,7 @@ serve(async (req: Request) => {
     return jsonResponse({
       quests: persistedQuests,
       cached: false,
-      engineVersion: "2.2",
+      engineVersion: "2.3",
       generationMode: plan.mode,
       fallback: usedFallback,
     });

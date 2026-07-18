@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/supabase/isar_service.dart';
 import '../../../../core/supabase/supabase_service.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../shared/models/user_model.dart';
 
 part 'chat_provider.g.dart';
@@ -76,25 +77,44 @@ class ChatNotifier extends _$ChatNotifier {
       );
     } catch (_) {
       state = state.copyWith(
-        messages: [ChatMessage(content: 'Система на связи. О чём думаешь?', isUser: false)],
+        messages: [
+          ChatMessage(
+            content: 'Система на связи. О чём думаешь?',
+            isUser: false,
+          ),
+        ],
       );
     }
   }
 
   /// Build a greeting based on streak, level, and context.
   String _personalizedGreeting(UserProfileLocal? profile) {
-    if (profile == null) return 'Система на связи. О чём думаешь?';
+    if (profile == null) {
+      return 'Система на связи. О чём думаешь?';
+    }
 
     final streak = profile.currentStreak;
     final level = profile.level;
     final name = profile.name;
 
-    if (streak >= 100) return 'Сто дней. Система фиксирует: ты изменился.';
-    if (streak >= 30) return 'Тридцать дней подряд. Это уже не случайность.';
-    if (streak >= 7) return '$streak дней подряд. Ты уже не тот, что был неделю назад.';
-    if (streak >= 3) return 'Три дня подряд — это уже ритм, $name. О чём думаешь?';
-    if (level >= 10) return 'Уровень $level. Немногие доходят сюда. Что на уме?';
-    if (level >= 5) return 'Уровень $level. Система наблюдает. О чём думаешь?';
+    if (streak >= 100) {
+      return 'Сто дней. Система фиксирует: ты изменился.';
+    }
+    if (streak >= 30) {
+      return 'Тридцать дней подряд. Это уже не случайность.';
+    }
+    if (streak >= 7) {
+      return '$streak дней подряд. Ты уже не тот, что был неделю назад.';
+    }
+    if (streak >= 3) {
+      return 'Три дня подряд — это уже ритм, $name. О чём думаешь?';
+    }
+    if (level >= 10) {
+      return 'Уровень $level. Немногие доходят сюда. Что на уме?';
+    }
+    if (level >= 5) {
+      return 'Уровень $level. Система наблюдает. О чём думаешь?';
+    }
     if (profile.mainGoal.isNotEmpty) {
       return 'Система зафиксировала цель. Что мешает прямо сейчас?';
     }
@@ -137,10 +157,7 @@ class ChatNotifier extends _$ChatNotifier {
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty || state.isLoading) return;
 
-    final userMsg = ChatMessage(
-      content: text.trim(),
-      isUser: true,
-    );
+    final userMsg = ChatMessage(content: text.trim(), isUser: true);
 
     state = state.copyWith(
       messages: [...state.messages, userMsg],
@@ -150,19 +167,20 @@ class ChatNotifier extends _$ChatNotifier {
 
     try {
       final client = ref.read(supabaseClientProvider);
+      final session = await ref
+          .read(authNotifierProvider.notifier)
+          .ensureRemoteSession();
+      if (session == null) {
+        throw const AuthException('Не удалось восстановить гостевую сессию');
+      }
       final userContext = await _buildUserContext();
 
-      final apiMessages = state.messages
-          .map((m) => m.toApi())
-          .toList();
+      final apiMessages = state.messages.map((m) => m.toApi()).toList();
 
       final response = await client.functions.invoke(
         'ai-mentor',
         method: HttpMethod.post,
-        body: {
-          'messages': apiMessages,
-          'userContext': userContext,
-        },
+        body: {'messages': apiMessages, 'userContext': userContext},
       );
 
       final data = response.data as Map<String, dynamic>;
@@ -176,20 +194,14 @@ class ChatNotifier extends _$ChatNotifier {
         return;
       }
 
-      final assistantMsg = ChatMessage(
-        content: reply,
-        isUser: false,
-      );
+      final assistantMsg = ChatMessage(content: reply, isUser: false);
 
       state = state.copyWith(
         messages: [...state.messages, assistantMsg],
         isLoading: false,
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Нет связи с Системой.',
-      );
+      state = state.copyWith(isLoading: false, error: 'Нет связи с Системой.');
     }
   }
 

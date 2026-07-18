@@ -24,6 +24,7 @@ final localGuestModeProvider = StateProvider<bool>((ref) => false);
 @Riverpod(keepAlive: true)
 class AuthNotifier extends _$AuthNotifier {
   StreamSubscription<AuthState>? _sub;
+  Future<Session?>? _remoteSessionAttempt;
 
   @override
   AsyncValue<Session?> build() {
@@ -127,6 +128,38 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
+  /// Restore a server-backed guest session after an offline/local fallback.
+  /// Concurrent AI requests share one sign-in attempt to avoid duplicate users.
+  Future<Session?> ensureRemoteSession() {
+    final client = ref.read(supabaseClientProvider);
+    final currentSession = client.auth.currentSession;
+    if (currentSession != null) return Future.value(currentSession);
+
+    final pendingAttempt = _remoteSessionAttempt;
+    if (pendingAttempt != null) return pendingAttempt;
+
+    final attempt = _createRemoteGuestSession();
+    _remoteSessionAttempt = attempt;
+    attempt.whenComplete(() {
+      if (identical(_remoteSessionAttempt, attempt)) {
+        _remoteSessionAttempt = null;
+      }
+    });
+    return attempt;
+  }
+
+  Future<Session?> _createRemoteGuestSession() async {
+    try {
+      final client = ref.read(supabaseClientProvider);
+      final response = await client.auth.signInAnonymously();
+      await _setLocalGuestMode(false);
+      state = AsyncData(response.session);
+      return response.session;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Sign out and clear session.
   Future<void> signOut() async {
     try {
@@ -195,8 +228,10 @@ class AuthNotifier extends _$AuthNotifier {
     const charset =
         '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._';
     final random = Random.secure();
-    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
-        .join();
+    return List.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
   }
 }
 

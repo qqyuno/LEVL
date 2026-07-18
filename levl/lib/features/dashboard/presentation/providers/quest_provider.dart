@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/audio/audio_service.dart';
 import '../../../../core/supabase/isar_service.dart';
 import '../../../../core/supabase/supabase_service.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../shared/models/quest_model.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/providers/level_up_provider.dart';
@@ -177,6 +178,12 @@ class QuestNotifier extends _$QuestNotifier {
     state = const AsyncLoading();
     try {
       final client = ref.read(supabaseClientProvider);
+      final session = await ref
+          .read(authNotifierProvider.notifier)
+          .ensureRemoteSession();
+      if (session == null) {
+        throw const AuthException('Не удалось восстановить гостевую сессию');
+      }
 
       // Build profile context from Isar — Edge Function uses it if Supabase profile is missing
       final userContext = await _buildUserContext();
