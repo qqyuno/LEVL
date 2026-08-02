@@ -156,9 +156,9 @@ class QuestNotifier extends _$QuestNotifier {
       final cached = await _questQuery(
         isar,
         isar.questLocals.filter().createdAtGreaterThan(
-          startOfDay,
-          include: true,
-        ),
+              startOfDay,
+              include: true,
+            ),
       );
 
       if (cached.isNotEmpty) {
@@ -178,9 +178,8 @@ class QuestNotifier extends _$QuestNotifier {
     state = const AsyncLoading();
     try {
       final client = ref.read(supabaseClientProvider);
-      final session = await ref
-          .read(authNotifierProvider.notifier)
-          .ensureRemoteSession();
+      final session =
+          await ref.read(authNotifierProvider.notifier).ensureRemoteSession();
       if (session == null) {
         throw const AuthException('Не удалось восстановить гостевую сессию');
       }
@@ -291,15 +290,14 @@ class QuestNotifier extends _$QuestNotifier {
     }
 
     final cleanProofValue = proofValue.trim();
-    final hasImage =
-        proofType == QuestProofType.image &&
+    final hasImage = proofType == QuestProofType.image &&
         proofImageBytes != null &&
         proofImageBytes.isNotEmpty;
     final effectiveProofType = hasImage
         ? QuestProofType.image
         : cleanProofValue.isNotEmpty
-        ? proofType
-        : QuestProofType.none;
+            ? proofType
+            : QuestProofType.none;
     final proofAddedAt = effectiveProofType == QuestProofType.none ? null : now;
     final verifiedAt = now;
     final completed = quest.copyWith(
@@ -438,13 +436,10 @@ class QuestNotifier extends _$QuestNotifier {
   ) async {
     try {
       final client = ref.read(supabaseClientProvider);
-      await client
-          .from('quests')
-          .update({
-            'verification_status': 'in_progress',
-            'verification_started_at': startedAt.toUtc().toIso8601String(),
-          })
-          .eq('id', questId);
+      await client.from('quests').update({
+        'verification_status': 'in_progress',
+        'verification_started_at': startedAt.toUtc().toIso8601String(),
+      }).eq('id', questId);
     } catch (_) {
       // Local verification remains active if remote sync fails.
     }
@@ -480,22 +475,18 @@ class QuestNotifier extends _$QuestNotifier {
         }
       }
 
-      await client
-          .from('quests')
-          .update({
-            'status': 'completed',
-            'completed_at': verifiedAt.toUtc().toIso8601String(),
-            'verification_status': 'verified',
-            'verified_at': verifiedAt.toUtc().toIso8601String(),
-            'proof_type': proofType.name,
-            'proof_value': proofValue,
-            'proof_image_name': proofType == QuestProofType.image
-                ? proofImageName
-                : '',
-            'proof_storage_path': proofStoragePath,
-            'proof_added_at': proofAddedAt?.toUtc().toIso8601String(),
-          })
-          .eq('id', questId);
+      await client.from('quests').update({
+        'status': 'completed',
+        'completed_at': verifiedAt.toUtc().toIso8601String(),
+        'verification_status': 'verified',
+        'verified_at': verifiedAt.toUtc().toIso8601String(),
+        'proof_type': proofType.name,
+        'proof_value': proofValue,
+        'proof_image_name':
+            proofType == QuestProofType.image ? proofImageName : '',
+        'proof_storage_path': proofStoragePath,
+        'proof_added_at': proofAddedAt?.toUtc().toIso8601String(),
+      }).eq('id', questId);
 
       final isar = await ref.read(isarProvider.future);
       final local = await _questQueryFirst(
@@ -532,9 +523,7 @@ class QuestNotifier extends _$QuestNotifier {
     final safeQuestId = questId.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
     final path =
         '$uid/${safeQuestId}_${DateTime.now().microsecondsSinceEpoch}.$extension';
-    await client.storage
-        .from('quest-proofs')
-        .uploadBinary(
+    await client.storage.from('quest-proofs').uploadBinary(
           path,
           bytes,
           fileOptions: FileOptions(contentType: mimeType, upsert: false),
@@ -576,8 +565,7 @@ class QuestNotifier extends _$QuestNotifier {
 
       await client
           .from('quests')
-          .update({'status': 'skipped'})
-          .eq('id', questId);
+          .update({'status': 'skipped'}).eq('id', questId);
 
       await client.from('quest_feedback').upsert({
         'quest_id': questId,
@@ -604,7 +592,11 @@ class QuestNotifier extends _$QuestNotifier {
           ..estimatedMinutes = q.estimatedMinutes
           ..isMainGoalTask = q.isMainGoalTask
           ..successCriterion = q.successCriterion
+          ..actionType = q.actionType
           ..verificationType = q.verificationType
+          ..verificationMinutes = q.verificationMinutes
+          ..suggestedProofType = q.suggestedProofType
+          ..proofPrompt = q.proofPrompt
           ..verificationStatus = q.verificationStatus
           ..verificationStartedAt = q.verificationStartedAt
           ..verifiedAt = q.verifiedAt
@@ -636,7 +628,11 @@ class QuestNotifier extends _$QuestNotifier {
             estimatedMinutes: l.estimatedMinutes,
             isMainGoalTask: l.isMainGoalTask,
             successCriterion: l.successCriterion,
+            actionType: l.actionType,
             verificationType: l.verificationType,
+            verificationMinutes: l.verificationMinutes,
+            suggestedProofType: l.suggestedProofType,
+            proofPrompt: l.proofPrompt,
             verificationStatus: l.verificationStatus,
             verificationStartedAt: l.verificationStartedAt,
             verifiedAt: l.verifiedAt,

@@ -7,6 +7,7 @@ Quest _quest({
       QuestVerificationStatus.notStarted,
   DateTime? verificationStartedAt,
   int estimatedMinutes = 15,
+  int verificationMinutes = 0,
   String successCriterion = 'Готов один конкретный результат.',
 }) {
   return Quest(
@@ -19,6 +20,7 @@ Quest _quest({
     estimatedMinutes: estimatedMinutes,
     successCriterion: successCriterion,
     verificationType: verificationType,
+    verificationMinutes: verificationMinutes,
     verificationStatus: verificationStatus,
     verificationStartedAt: verificationStartedAt,
     createdAt: DateTime(2026, 7, 16),
@@ -57,12 +59,20 @@ void main() {
           'description': 'Выполни одно конкретное действие по своей цели.',
           'tip': 'Начни с минимальной версии.',
           'xpReward': 25,
+          'actionType': 'reflection',
+          'verificationType': 'self_confirm',
+          'verificationMinutes': 0,
+          'suggestedProofType': 'text',
+          'proofPrompt': 'Запиши один вывод.',
         },
         '7',
         'user-1',
       );
 
       expect(quest.id, 'server-quest-7');
+      expect(quest.actionType, QuestActionType.reflection);
+      expect(quest.suggestedProofType, QuestProofType.text);
+      expect(quest.effectiveProofPrompt, 'Запиши один вывод.');
     });
 
     test('self confirmation is ready immediately', () {
@@ -123,6 +133,25 @@ void main() {
           startedAt.add(const Duration(minutes: 11)),
         ),
         Duration.zero,
+      );
+    });
+
+    test('timer uses verification duration instead of total estimate', () {
+      final startedAt = DateTime(2026, 7, 16, 12);
+      final quest = _quest(
+        verificationType: QuestVerificationType.timer,
+        verificationStatus: QuestVerificationStatus.inProgress,
+        verificationStartedAt: startedAt,
+        estimatedMinutes: 30,
+        verificationMinutes: 12,
+      );
+
+      expect(quest.effectiveVerificationMinutes, 12);
+      expect(
+        quest.verificationRemainingAt(
+          startedAt.add(const Duration(minutes: 5)),
+        ),
+        const Duration(minutes: 7),
       );
     });
 

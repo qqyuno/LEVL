@@ -6,6 +6,8 @@ import {
   areTitlesSimilar,
   buildFallbackQuests,
   buildGenerationPlan,
+  buildVerificationPolicy,
+  chooseQuestActionType,
   chooseVerificationType,
   normalizeQuests,
   summarizeQuestFeedback,
@@ -26,7 +28,9 @@ function rawQuest(overrides = {}) {
     tip: "Минимальная версия — написать только первое действие.",
     successCriterion:
       "В заметках записан один конкретный следующий шаг к выбранной цели.",
+    actionType: "reflection",
     verificationType: "timer",
+    verificationMinutes: 30,
     ...overrides,
   };
 }
@@ -158,6 +162,46 @@ test("uses a timer for Russian infinitive reading tasks", () => {
   );
 });
 
+test("classifies communication without asking for private screenshots", () => {
+  const actionType = chooseQuestActionType(
+    "focus",
+    "Позвони старому другу",
+    "Позвони и договорись о встрече на этой неделе.",
+    "Дата встречи согласована.",
+  );
+  const policy = buildVerificationPolicy(actionType, 30, 30);
+
+  assert.equal(actionType, "communication");
+  assert.equal(policy.verificationType, "self_confirm");
+  assert.equal(policy.suggestedProofType, "text");
+  assert.match(policy.proofPrompt, /Без скриншотов/);
+});
+
+test("uses a bounded timer only for sustained actions", () => {
+  const movement = buildVerificationPolicy("movement", 90, 75);
+  const routine = buildVerificationPolicy("routine", 30, 30);
+
+  assert.equal(movement.verificationType, "timer");
+  assert.equal(movement.verificationMinutes, 60);
+  assert.equal(movement.suggestedProofType, "none");
+  assert.equal(routine.verificationType, "self_confirm");
+  assert.equal(routine.verificationMinutes, 0);
+});
+
+test("suggests visible proof only for a finished artifact", () => {
+  const actionType = chooseQuestActionType(
+    "routine",
+    "Собери первый прототип",
+    "Подготовь один кликабельный экран продукта.",
+    "Кликабельный экран открывается без ошибок.",
+  );
+  const policy = buildVerificationPolicy(actionType, 20, 20);
+
+  assert.equal(actionType, "result");
+  assert.equal(policy.verificationType, "self_confirm");
+  assert.equal(policy.suggestedProofType, "image");
+});
+
 test("normalizes difficulty, XP, main quest and total time", () => {
   const plan = buildGenerationPlan(20, 0, []);
   const result = normalizeQuests(
@@ -183,6 +227,13 @@ test("normalizes difficulty, XP, main quest and total time", () => {
   assert.ok(result.quests.every((quest) => quest.difficulty === "trivial"));
   assert.ok(result.quests.every((quest) => quest.xpReward === 10));
   assert.equal(result.quests[0].verificationType, "self_confirm");
+  assert.equal(result.quests[0].actionType, "reflection");
+  assert.equal(result.quests[0].verificationMinutes, 0);
+  assert.equal(result.quests[0].suggestedProofType, "text");
+  assert.ok(result.quests.every((quest) =>
+    quest.verificationType !== "timer" ||
+    quest.verificationMinutes <= quest.estimatedMinutes
+  ));
   assert.ok(result.quests.every((quest) => quest.successCriterion.length > 20));
 });
 

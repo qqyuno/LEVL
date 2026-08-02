@@ -500,9 +500,8 @@ class _SystemCommandCenter extends StatelessWidget {
     var actionLabel = 'Открыть Систему';
     var actionIcon = Icons.auto_awesome;
     if (nextQuest != null) {
-      actionLabel = verificationInProgress
-          ? 'Продолжить проверку'
-          : 'Открыть проверку';
+      actionLabel =
+          verificationInProgress ? 'Продолжить проверку' : 'Открыть проверку';
       actionIcon = verificationInProgress
           ? Icons.timer_outlined
           : nextQuest.verificationType.icon;
@@ -550,8 +549,8 @@ class _SystemCommandCenter extends StatelessWidget {
                   label: isLoading
                       ? 'СБОР'
                       : hasQuestError
-                      ? 'ОФЛАЙН'
-                      : '$completed/$total · ${user.currentStreak} ДН.',
+                          ? 'ОФЛАЙН'
+                          : '$completed/$total · ${user.currentStreak} ДН.',
                 ),
               ],
             ),
@@ -915,8 +914,7 @@ class _QuestVerificationPanelState
     final value = _proofController.text.trim();
     if (value.isEmpty) return const _QuestCompletionEvidence();
     final uri = Uri.tryParse(value);
-    final isLink =
-        uri != null &&
+    final isLink = uri != null &&
         (uri.scheme == 'http' || uri.scheme == 'https') &&
         uri.host.isNotEmpty;
     return _QuestCompletionEvidence(
@@ -941,7 +939,7 @@ class _QuestVerificationPanelState
     final isTimer = quest.verificationType == QuestVerificationType.timer;
     final isRunning =
         quest.verificationStatus == QuestVerificationStatus.inProgress &&
-        remaining > Duration.zero;
+            remaining > Duration.zero;
     final isReady = quest.verificationReadyAt(now);
 
     return AnimatedPadding(
@@ -996,6 +994,8 @@ class _QuestVerificationPanelState
                 _OptionalProofField(
                   controller: _proofController,
                   proofType: _proofType,
+                  suggestedProofType: quest.suggestedProofType,
+                  proofPrompt: quest.effectiveProofPrompt,
                   imageName: _proofImageName,
                   isPickingImage: _isPickingImage,
                   onTextSelected: () {
@@ -1024,7 +1024,7 @@ class _QuestVerificationPanelState
                 else if (quest.verificationStatus ==
                     QuestVerificationStatus.notStarted)
                   _TimerStartBody(
-                    minutes: quest.estimatedMinutes,
+                    minutes: quest.effectiveVerificationMinutes,
                     onStart: () async {
                       HapticFeedback.mediumImpact();
                       await ref
@@ -1114,6 +1114,8 @@ class _SuccessCriterion extends StatelessWidget {
 class _OptionalProofField extends StatelessWidget {
   final TextEditingController controller;
   final QuestProofType proofType;
+  final QuestProofType suggestedProofType;
+  final String proofPrompt;
   final String imageName;
   final bool isPickingImage;
   final VoidCallback onTextSelected;
@@ -1123,6 +1125,8 @@ class _OptionalProofField extends StatelessWidget {
   const _OptionalProofField({
     required this.controller,
     required this.proofType,
+    required this.suggestedProofType,
+    required this.proofPrompt,
     required this.imageName,
     required this.isPickingImage,
     required this.onTextSelected,
@@ -1170,6 +1174,30 @@ class _OptionalProofField extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
+        if (!hasProof && suggestedProofType != QuestProofType.none) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.auto_awesome_outlined,
+                size: 15,
+                color: AppColors.gold,
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  proofPrompt,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 11,
+                    height: 1.35,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+        ],
         Row(
           children: [
             Expanded(
@@ -1181,9 +1209,8 @@ class _OptionalProofField extends StatelessWidget {
                 ),
                 label: const Text('Текст / ссылка'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: hasText
-                      ? AppColors.gold
-                      : AppColors.textSecondary,
+                  foregroundColor:
+                      hasText ? AppColors.gold : AppColors.textSecondary,
                   side: BorderSide(
                     color: hasText ? AppColors.gold : AppColors.divider,
                   ),
@@ -1211,9 +1238,8 @@ class _OptionalProofField extends StatelessWidget {
                       ),
                 label: const Text('Фото / скрин'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: hasImage
-                      ? AppColors.gold
-                      : AppColors.textSecondary,
+                  foregroundColor:
+                      hasImage ? AppColors.gold : AppColors.textSecondary,
                   side: BorderSide(
                     color: hasImage ? AppColors.gold : AppColors.divider,
                   ),
@@ -1236,7 +1262,9 @@ class _OptionalProofField extends StatelessWidget {
             minLines: 1,
             textInputAction: TextInputAction.done,
             decoration: InputDecoration(
-              hintText: 'Что получилось или ссылка на результат',
+              hintText: proofPrompt.isEmpty
+                  ? 'Что получилось или ссылка на результат'
+                  : proofPrompt,
               counterText: '',
               filled: true,
               fillColor: AppColors.surfaceElevated,
@@ -1388,11 +1416,10 @@ class _TimerProgressBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalSeconds = quest.estimatedMinutes * 60;
+    final totalSeconds = quest.effectiveVerificationMinutes * 60;
     final remainingSeconds = remaining.inSeconds.clamp(0, totalSeconds);
-    final progress = totalSeconds == 0
-        ? 1.0
-        : 1 - (remainingSeconds / totalSeconds);
+    final progress =
+        totalSeconds == 0 ? 1.0 : 1 - (remainingSeconds / totalSeconds);
 
     return Column(
       children: [
@@ -1681,7 +1708,7 @@ class _VerificationBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final isVerified =
         quest.verificationStatus == QuestVerificationStatus.verified ||
-        quest.status == QuestStatus.completed;
+            quest.status == QuestStatus.completed;
     final isTimer = quest.verificationType == QuestVerificationType.timer;
     final isRunning =
         quest.verificationStatus == QuestVerificationStatus.inProgress;
@@ -1691,7 +1718,7 @@ class _VerificationBadge extends StatelessWidget {
     } else if (isTimer && isRunning) {
       label = 'Таймер идёт';
     } else if (isTimer) {
-      label = 'Таймер · ${quest.estimatedMinutes} мин';
+      label = 'Таймер · ${quest.effectiveVerificationMinutes} мин';
     } else {
       label = 'Подтверждение';
     }
@@ -1877,9 +1904,8 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
             widget.quest.title,
             style: GoogleFonts.dmSerifDisplay(
               fontSize: 18,
-              color: isCompleted
-                  ? AppColors.textDisabled
-                  : AppColors.textPrimary,
+              color:
+                  isCompleted ? AppColors.textDisabled : AppColors.textPrimary,
               letterSpacing: 0.5,
               decoration: isCompleted ? TextDecoration.lineThrough : null,
             ),
@@ -2153,9 +2179,8 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                     style: GoogleFonts.dmSans(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: isCompleted
-                          ? AppColors.textDisabled
-                          : AppColors.gold,
+                      color:
+                          isCompleted ? AppColors.textDisabled : AppColors.gold,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -2166,9 +2191,8 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                       fixedSize: const Size(34, 34),
                       minimumSize: const Size(34, 34),
                       padding: EdgeInsets.zero,
-                      backgroundColor: isCompleted
-                          ? sphereColor
-                          : Colors.transparent,
+                      backgroundColor:
+                          isCompleted ? sphereColor : Colors.transparent,
                       side: BorderSide(
                         color: isCompleted ? sphereColor : AppColors.divider,
                         width: 1.5,
@@ -2177,9 +2201,8 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
                     icon: Icon(
                       Icons.check_rounded,
                       size: 17,
-                      color: isCompleted
-                          ? Colors.white
-                          : AppColors.textSecondary,
+                      color:
+                          isCompleted ? Colors.white : AppColors.textSecondary,
                     ),
                   ),
                 ],

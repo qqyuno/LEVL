@@ -54,8 +54,15 @@ create table if not exists quests (
   status text default 'pending',
   estimated_minutes integer,
   success_criterion text not null default '',
+  action_type text not null default 'routine'
+    check (action_type in ('focus', 'movement', 'reflection', 'communication', 'result', 'routine')),
   verification_type text not null default 'self_confirm'
     check (verification_type in ('self_confirm', 'timer')),
+  verification_minutes integer not null default 0
+    check (verification_minutes between 0 and 60),
+  suggested_proof_type text not null default 'none'
+    check (suggested_proof_type in ('none', 'text', 'link', 'image')),
+  proof_prompt text not null default '',
   verification_status text not null default 'not_started'
     check (verification_status in ('not_started', 'in_progress', 'verified')),
   verification_started_at timestamptz,

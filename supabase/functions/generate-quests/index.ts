@@ -44,7 +44,7 @@ serve(async (req: Request) => {
 
     // --- Check cache ---
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-    const cacheKey = `${user.id}_${today}_v4`;
+    const cacheKey = `${user.id}_${today}_v5`;
 
     const { data: cached } = await supabase
       .from("quest_cache")
@@ -57,7 +57,7 @@ serve(async (req: Request) => {
       return jsonResponse({
         quests: cached.quests,
         cached: true,
-        engineVersion: "2.3",
+        engineVersion: "2.4",
       });
     }
 
@@ -225,7 +225,11 @@ serve(async (req: Request) => {
       type: q.isMainGoalTask ? "main" : "daily",
       tip: q.tip,
       success_criterion: q.successCriterion,
+      action_type: q.actionType,
       verification_type: q.verificationType,
+      verification_minutes: q.verificationMinutes,
+      suggested_proof_type: q.suggestedProofType,
+      proof_prompt: q.proofPrompt,
       verification_status: "not_started",
       status: "pending",
       estimated_minutes: q.estimatedMinutes,
@@ -237,7 +241,7 @@ serve(async (req: Request) => {
     return jsonResponse({
       quests: persistedQuests,
       cached: false,
-      engineVersion: "2.3",
+      engineVersion: "2.4",
       generationMode: plan.mode,
       fallback: usedFallback,
     });
@@ -361,7 +365,10 @@ ${feedbackLines}
 - description объясняет одно действие и критерий готовности. Не создавай многоступенчатый план на будущее.
 - tip — минимальная версия на случай сильного сопротивления, которую можно начать меньше чем за минуту.
 - successCriterion — одно наблюдаемое условие, после которого нельзя спорить, что задание закончено.
-- verificationType — выбери timer для длительного процесса (фокус, чтение, движение, практика) и self_confirm для готового результата (запись, сообщение, решение, артефакт).
+- actionType — один из focus, movement, reflection, communication, result, routine. Только одно основное действие в задании.
+- verificationType — timer только для focus и movement; self_confirm для reflection, communication, result и routine.
+- verificationMinutes — длительность чистого действия для timer, от 5 до 60 минут и не больше estimatedMinutes. Для self_confirm всегда 0.
+- Не создавай задания, которым нужна конкретная геолокация: сохранённые места появятся в следующей версии.
 - Задание должно быть уважительным к человеку, который много прокрастинирует: маленьким, но не бессмысленным.
 
 ПРАВИЛА:
@@ -375,8 +382,10 @@ ${feedbackLines}
 8. tip — минимальный старт, одно предложение без восклицаний
 9. description — конкретное действие плюс проверяемый результат
 10. successCriterion — короткое предложение без абстрактных слов
-11. verificationType — только self_confirm или timer
-12. Язык: русский
+11. actionType — только focus, movement, reflection, communication, result или routine
+12. verificationType — только self_confirm или timer
+13. verificationMinutes — целое число; 0 для self_confirm
+14. Язык: русский
 
 ФОРМАТ ОТВЕТА (только JSON, без markdown, без пояснений):
 [
@@ -390,7 +399,9 @@ ${feedbackLines}
     "difficulty": "easy",
     "tip": "Минимальная версия действия, если трудно начать.",
     "successCriterion": "Конкретный наблюдаемый результат уже готов.",
-    "verificationType": "self_confirm"
+    "actionType": "reflection",
+    "verificationType": "self_confirm",
+    "verificationMinutes": 0
   }
 ]`;
 }

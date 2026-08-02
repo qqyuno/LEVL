@@ -7,6 +7,16 @@ export type QuestDifficulty =
 
 export type QuestVerificationType = "self_confirm" | "timer";
 
+export type QuestActionType =
+  | "focus"
+  | "movement"
+  | "reflection"
+  | "communication"
+  | "result"
+  | "routine";
+
+export type SuggestedProofType = "none" | "text" | "link" | "image";
+
 export interface QuestOutput {
   title: string;
   description: string;
@@ -17,7 +27,11 @@ export interface QuestOutput {
   difficulty: QuestDifficulty;
   tip: string;
   successCriterion: string;
+  actionType: QuestActionType;
   verificationType: QuestVerificationType;
+  verificationMinutes: number;
+  suggestedProofType: SuggestedProofType;
+  proofPrompt: string;
 }
 
 export interface QuestHistoryItem {
@@ -86,35 +100,84 @@ const VAGUE_PHRASES = [
   "сделай прогресс",
 ];
 
-const SELF_CONFIRM_HINTS = [
-  "напиши",
-  "запиши",
+const COMMUNICATION_HINTS = [
   "отправ",
   "позвони",
-  "выбери",
-  "определи",
-  "создай",
-  "составь",
-  "подготов",
-  "реши",
-  "оплати",
-  "забронируй",
-  "сохрани",
+  "сообщение",
+  "поговори",
+  "обсуди",
+  "спроси",
+  "ответь",
 ];
 
-const TIMER_HINTS = [
+const RESULT_HINTS = [
+  "создай",
+  "собери",
+  "подготов",
+  "заверши",
+  "закончи",
+  "опубликуй",
+  "прототип",
+  "макет",
+  "черновик",
+  "таблиц",
+  "презентац",
+];
+
+const MOVEMENT_HINTS = [
   "трениров",
   "размин",
+  "упражнен",
+  "пробеж",
+  "бег",
+  "прогул",
+  "гуля",
+  "шагов",
+  "растяж",
+];
+
+const FOCUS_HINTS = [
   "чита",
   "прочит",
-  "убор",
   "медит",
   "фокус",
   "работай",
   "учись",
-  "гуля",
-  "пройди",
+  "изучи",
   "практик",
+  "без отвлечений",
+];
+
+const REFLECTION_HINTS = [
+  "напиши",
+  "запиши",
+  "выбери",
+  "определи",
+  "составь",
+  "реши",
+  "проанализ",
+  "итог",
+  "вывод",
+  "план",
+];
+
+const ROUTINE_HINTS = [
+  "оплати",
+  "забронируй",
+  "сохрани",
+  "убор",
+  "разбери",
+  "купи",
+  "закажи",
+];
+
+const ACTION_TYPES: QuestActionType[] = [
+  "focus",
+  "movement",
+  "reflection",
+  "communication",
+  "result",
+  "routine",
 ];
 
 export function buildGenerationPlan(
@@ -316,6 +379,19 @@ function normalizeSingleQuest(
     ? requestedDifficulty
     : options.plan.allowedDifficulties[0];
 
+  const estimatedMinutes = clampInteger(raw.estimatedMinutes, 5, 90, 10);
+  const actionType = chooseQuestActionType(
+    raw.actionType,
+    title,
+    description,
+    successCriterion,
+  );
+  const verification = buildVerificationPolicy(
+    actionType,
+    raw.verificationMinutes,
+    estimatedMinutes,
+  );
+
   return {
     title,
     description,
@@ -324,33 +400,114 @@ function normalizeSingleQuest(
       : options.allowedSpheres[index % options.allowedSpheres.length],
     isMainGoalTask: index === 0,
     xpReward: XP_BY_DIFFICULTY[difficulty],
-    estimatedMinutes: clampInteger(raw.estimatedMinutes, 5, 90, 10),
+    estimatedMinutes,
     difficulty,
     tip,
     successCriterion,
-    verificationType: chooseVerificationType(
-      raw.verificationType,
-      title,
-      description,
-      successCriterion,
-    ),
+    actionType,
+    ...verification,
   };
 }
 
-export function chooseVerificationType(
+export function chooseQuestActionType(
   requested: unknown,
   title: string,
   description: string,
   successCriterion: string,
-): QuestVerificationType {
+): QuestActionType {
   const text = `${title} ${description} ${successCriterion}`.toLowerCase();
-  if (SELF_CONFIRM_HINTS.some((hint) => text.includes(hint))) {
-    return "self_confirm";
+  if (COMMUNICATION_HINTS.some((hint) => text.includes(hint))) {
+    return "communication";
   }
-  if (TIMER_HINTS.some((hint) => text.includes(hint))) {
-    return "timer";
+  if (MOVEMENT_HINTS.some((hint) => text.includes(hint))) return "movement";
+  if (RESULT_HINTS.some((hint) => text.includes(hint))) return "result";
+  if (FOCUS_HINTS.some((hint) => text.includes(hint))) return "focus";
+  if (REFLECTION_HINTS.some((hint) => text.includes(hint))) return "reflection";
+  if (ROUTINE_HINTS.some((hint) => text.includes(hint))) return "routine";
+  return ACTION_TYPES.includes(requested as QuestActionType)
+    ? requested as QuestActionType
+    : "routine";
+}
+
+export function buildVerificationPolicy(
+  actionType: QuestActionType,
+  requestedMinutes: unknown,
+  estimatedMinutes: number,
+): Pick<
+  QuestOutput,
+  "verificationType" | "verificationMinutes" | "suggestedProofType" | "proofPrompt"
+> {
+  const usesTimer = actionType === "focus" || actionType === "movement";
+  const maximumMinutes = Math.max(5, Math.min(60, estimatedMinutes));
+  const verificationMinutes = usesTimer
+    ? clampInteger(
+      requestedMinutes,
+      5,
+      maximumMinutes,
+      Math.min(estimatedMinutes, 15),
+    )
+    : 0;
+
+  switch (actionType) {
+    case "focus":
+      return {
+        verificationType: "timer",
+        verificationMinutes,
+        suggestedProofType: "none",
+        proofPrompt: "",
+      };
+    case "movement":
+      return {
+        verificationType: "timer",
+        verificationMinutes,
+        suggestedProofType: "none",
+        proofPrompt: "",
+      };
+    case "reflection":
+      return {
+        verificationType: "self_confirm",
+        verificationMinutes: 0,
+        suggestedProofType: "text",
+        proofPrompt: "Одной фразой запиши решение, вывод или следующий шаг.",
+      };
+    case "communication":
+      return {
+        verificationType: "self_confirm",
+        verificationMinutes: 0,
+        suggestedProofType: "text",
+        proofPrompt: "Без скриншотов переписки: коротко зафиксируй результат контакта.",
+      };
+    case "result":
+      return {
+        verificationType: "self_confirm",
+        verificationMinutes: 0,
+        suggestedProofType: "image",
+        proofPrompt: "Добавь фото, скрин или ссылку на готовый результат.",
+      };
+    case "routine":
+      return {
+        verificationType: "self_confirm",
+        verificationMinutes: 0,
+        suggestedProofType: "none",
+        proofPrompt: "",
+      };
   }
-  return requested === "timer" ? "timer" : "self_confirm";
+}
+
+export function chooseVerificationType(
+  _requested: unknown,
+  title: string,
+  description: string,
+  successCriterion: string,
+): QuestVerificationType {
+  const actionType = chooseQuestActionType(
+    undefined,
+    title,
+    description,
+    successCriterion,
+  );
+  return buildVerificationPolicy(actionType, undefined, 15)
+    .verificationType;
 }
 
 function fitTimeBudget(
@@ -366,7 +523,10 @@ function fitTimeBudget(
   const minimumTotal = quests.length * 5;
   const budget = Math.max(minimumTotal, timeBudget);
   const requestedTotal = quests.reduce((sum, quest) => sum + quest.estimatedMinutes, 0);
-  if (requestedTotal <= budget) return;
+  if (requestedTotal <= budget) {
+    alignVerificationMinutes(quests);
+    return;
+  }
 
   let remaining = budget;
   quests.forEach((quest, index) => {
@@ -377,6 +537,20 @@ function fitTimeBudget(
     quest.estimatedMinutes = minutes;
     remaining -= minutes;
   });
+  alignVerificationMinutes(quests);
+}
+
+function alignVerificationMinutes(quests: QuestOutput[]): void {
+  for (const quest of quests) {
+    if (quest.verificationType !== "timer") {
+      quest.verificationMinutes = 0;
+      continue;
+    }
+    quest.verificationMinutes = Math.max(
+      5,
+      Math.min(quest.verificationMinutes, quest.estimatedMinutes, 60),
+    );
+  }
 }
 
 export function areTitlesSimilar(left: string, right: string): boolean {
@@ -428,7 +602,11 @@ export function buildFallbackQuests(
       tip: "Минимальная версия — открыть заметки и написать один глагол действия.",
       successCriterion:
         "В заметках записано одно конкретное действие и начаты его первые две минуты.",
+      actionType: "reflection",
       verificationType: "self_confirm",
+      verificationMinutes: 0,
+      suggestedProofType: "text",
+      proofPrompt: "Одной фразой запиши выбранный следующий шаг.",
     },
     {
       title: "Убери одно препятствие",
@@ -442,7 +620,11 @@ export function buildFallbackQuests(
       tip: "Начни с закрытой вкладки, выключенного уведомления или подготовленного рабочего места.",
       successCriterion:
         "Одно выбранное препятствие убрано минимум на десять минут.",
+      actionType: "routine",
       verificationType: "self_confirm",
+      verificationMinutes: 0,
+      suggestedProofType: "none",
+      proofPrompt: "",
     },
     {
       title: "Зафиксируй маленькую победу",
@@ -456,7 +638,11 @@ export function buildFallbackQuests(
       tip: "Результат должен быть видимым: запись, отправленное сообщение или завершённый подход.",
       successCriterion:
         "Полезное действие завершено, а его результат записан одним предложением.",
+      actionType: "reflection",
       verificationType: "self_confirm",
+      verificationMinutes: 0,
+      suggestedProofType: "text",
+      proofPrompt: "Одной фразой запиши конкретный результат.",
     },
   ];
 
