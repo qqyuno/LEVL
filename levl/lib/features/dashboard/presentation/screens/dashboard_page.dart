@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/audio/audio_service.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -54,14 +55,21 @@ class DashboardPage extends ConsumerWidget {
                     user: user,
                     quests: quests,
                     onComplete: (quest) async {
-                      final confirmed = await _showQuestVerification(
+                      final evidence = await _showQuestVerification(
                         context,
                         quest,
                       );
-                      if (!confirmed) return;
+                      if (evidence == null) return;
                       await ref
                           .read(questNotifierProvider.notifier)
-                          .completeQuest(quest.id);
+                          .completeQuest(
+                            quest.id,
+                            proofType: evidence.type,
+                            proofValue: evidence.value,
+                            proofImageBytes: evidence.imageBytes,
+                            proofImageName: evidence.imageName,
+                            proofMimeType: evidence.imageMimeType,
+                          );
                     },
                   ),
                 ),
@@ -98,9 +106,16 @@ class DashboardPage extends ConsumerWidget {
                       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
                       child: _MainQuestCard(
                         quest: mainQuest,
-                        onComplete: () => ref
+                        onComplete: (evidence) => ref
                             .read(questNotifierProvider.notifier)
-                            .completeQuest(mainQuest.id),
+                            .completeQuest(
+                              mainQuest.id,
+                              proofType: evidence.type,
+                              proofValue: evidence.value,
+                              proofImageBytes: evidence.imageBytes,
+                              proofImageName: evidence.imageName,
+                              proofMimeType: evidence.imageMimeType,
+                            ),
                       ),
                     );
                   },
@@ -153,9 +168,16 @@ class DashboardPage extends ConsumerWidget {
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _QuestCard(
                             quest: daily[index],
-                            onComplete: () => ref
+                            onComplete: (evidence) => ref
                                 .read(questNotifierProvider.notifier)
-                                .completeQuest(daily[index].id),
+                                .completeQuest(
+                                  daily[index].id,
+                                  proofType: evidence.type,
+                                  proofValue: evidence.value,
+                                  proofImageBytes: evidence.imageBytes,
+                                  proofImageName: evidence.imageName,
+                                  proofMimeType: evidence.imageMimeType,
+                                ),
                           ),
                         ),
                         childCount: daily.length,
@@ -782,15 +804,33 @@ class _DailyProgressBar extends StatelessWidget {
   }
 }
 
-Future<bool> _showQuestVerification(BuildContext context, Quest quest) async {
-  final result = await showModalBottomSheet<bool>(
+class _QuestCompletionEvidence {
+  final QuestProofType type;
+  final String value;
+  final Uint8List? imageBytes;
+  final String imageName;
+  final String imageMimeType;
+
+  const _QuestCompletionEvidence({
+    this.type = QuestProofType.none,
+    this.value = '',
+    this.imageBytes,
+    this.imageName = '',
+    this.imageMimeType = 'image/jpeg',
+  });
+}
+
+Future<_QuestCompletionEvidence?> _showQuestVerification(
+  BuildContext context,
+  Quest quest,
+) async {
+  return showModalBottomSheet<_QuestCompletionEvidence>(
     context: context,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withValues(alpha: 0.6),
     isScrollControlled: true,
     builder: (_) => _QuestVerificationPanel(initialQuest: quest),
   );
-  return result ?? false;
 }
 
 class _QuestVerificationPanel extends ConsumerStatefulWidget {
@@ -806,6 +846,13 @@ class _QuestVerificationPanel extends ConsumerStatefulWidget {
 class _QuestVerificationPanelState
     extends ConsumerState<_QuestVerificationPanel> {
   Timer? _ticker;
+  final _proofController = TextEditingController();
+  final _imagePicker = ImagePicker();
+  QuestProofType _proofType = QuestProofType.none;
+  Uint8List? _proofImageBytes;
+  String _proofImageName = '';
+  String _proofImageMimeType = 'image/jpeg';
+  bool _isPickingImage = false;
 
   @override
   void initState() {
@@ -820,7 +867,62 @@ class _QuestVerificationPanelState
   @override
   void dispose() {
     _ticker?.cancel();
+    _proofController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickProofImage() async {
+    if (_isPickingImage) return;
+    setState(() => _isPickingImage = true);
+    try {
+      final image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1600,
+        imageQuality: 82,
+      );
+      if (image == null || !mounted) return;
+      final bytes = await image.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _proofType = QuestProofType.image;
+        _proofImageBytes = bytes;
+        _proofImageName = image.name;
+        _proofImageMimeType = image.mimeType ?? 'image/jpeg';
+        _proofController.clear();
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Не удалось открыть фото. Попробуй ещё раз.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isPickingImage = false);
+    }
+  }
+
+  _QuestCompletionEvidence _completionEvidence() {
+    if (_proofType == QuestProofType.image && _proofImageBytes != null) {
+      return _QuestCompletionEvidence(
+        type: QuestProofType.image,
+        imageBytes: _proofImageBytes,
+        imageName: _proofImageName,
+        imageMimeType: _proofImageMimeType,
+      );
+    }
+
+    final value = _proofController.text.trim();
+    if (value.isEmpty) return const _QuestCompletionEvidence();
+    final uri = Uri.tryParse(value);
+    final isLink =
+        uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
+    return _QuestCompletionEvidence(
+      type: isLink ? QuestProofType.link : QuestProofType.text,
+      value: value,
+    );
   }
 
   Quest _currentQuest() {
@@ -842,86 +944,116 @@ class _QuestVerificationPanelState
         remaining > Duration.zero;
     final isReady = quest.verificationReadyAt(now);
 
-    return SafeArea(
-      top: false,
-      child: SingleChildScrollView(
-        child: Container(
-          margin: const EdgeInsets.all(12),
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.divider),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    'ПРОВЕРКА СИСТЕМЫ',
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Container(
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.divider),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'ПРОВЕРКА СИСТЕМЫ',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.gold,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      tooltip: 'Закрыть',
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                    ),
+                  ],
+                ),
+                Text(
+                  quest.title,
+                  style: GoogleFonts.dmSerifDisplay(
+                    fontSize: 24,
+                    height: 1.15,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _SuccessCriterion(quest: quest),
+                const SizedBox(height: 14),
+                _OptionalProofField(
+                  controller: _proofController,
+                  proofType: _proofType,
+                  imageName: _proofImageName,
+                  isPickingImage: _isPickingImage,
+                  onTextSelected: () {
+                    setState(() {
+                      _proofType = QuestProofType.text;
+                      _proofImageBytes = null;
+                      _proofImageName = '';
+                    });
+                  },
+                  onImageSelected: _pickProofImage,
+                  onClear: () {
+                    setState(() {
+                      _proofType = QuestProofType.none;
+                      _proofController.clear();
+                      _proofImageBytes = null;
+                      _proofImageName = '';
+                    });
+                  },
+                ),
+                const SizedBox(height: 22),
+                if (!isTimer)
+                  _SelfConfirmationBody(
+                    onConfirm: () =>
+                        Navigator.pop(context, _completionEvidence()),
+                  )
+                else if (quest.verificationStatus ==
+                    QuestVerificationStatus.notStarted)
+                  _TimerStartBody(
+                    minutes: quest.estimatedMinutes,
+                    onStart: () async {
+                      HapticFeedback.mediumImpact();
+                      await ref
+                          .read(questNotifierProvider.notifier)
+                          .startQuestVerification(quest.id);
+                    },
+                  )
+                else
+                  _TimerProgressBody(
+                    quest: quest,
+                    remaining: remaining,
+                    isRunning: isRunning,
+                    isReady: isReady,
+                    onConfirm: () =>
+                        Navigator.pop(context, _completionEvidence()),
+                  ),
+                const SizedBox(height: 14),
+                Center(
+                  child: Text(
+                    'XP начислится только после подтверждения результата',
+                    textAlign: TextAlign.center,
                     style: GoogleFonts.dmSans(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.gold,
-                      letterSpacing: 2,
+                      fontSize: 11,
+                      color: AppColors.textDisabled,
                     ),
                   ),
-                  const Spacer(),
-                  IconButton(
-                    tooltip: 'Закрыть',
-                    onPressed: () => Navigator.pop(context, false),
-                    icon: const Icon(Icons.close_rounded, size: 20),
-                  ),
-                ],
-              ),
-              Text(
-                quest.title,
-                style: GoogleFonts.dmSerifDisplay(
-                  fontSize: 24,
-                  height: 1.15,
-                  color: AppColors.textPrimary,
                 ),
-              ),
-              const SizedBox(height: 16),
-              _SuccessCriterion(quest: quest),
-              const SizedBox(height: 22),
-              if (!isTimer)
-                _SelfConfirmationBody(
-                  onConfirm: () => Navigator.pop(context, true),
-                )
-              else if (quest.verificationStatus ==
-                  QuestVerificationStatus.notStarted)
-                _TimerStartBody(
-                  minutes: quest.estimatedMinutes,
-                  onStart: () async {
-                    HapticFeedback.mediumImpact();
-                    await ref
-                        .read(questNotifierProvider.notifier)
-                        .startQuestVerification(quest.id);
-                  },
-                )
-              else
-                _TimerProgressBody(
-                  quest: quest,
-                  remaining: remaining,
-                  isRunning: isRunning,
-                  isReady: isReady,
-                  onConfirm: () => Navigator.pop(context, true),
-                ),
-              const SizedBox(height: 14),
-              Center(
-                child: Text(
-                  'XP начислится только после подтверждения результата',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 11,
-                    color: AppColors.textDisabled,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -975,6 +1107,176 @@ class _SuccessCriterion extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _OptionalProofField extends StatelessWidget {
+  final TextEditingController controller;
+  final QuestProofType proofType;
+  final String imageName;
+  final bool isPickingImage;
+  final VoidCallback onTextSelected;
+  final VoidCallback onImageSelected;
+  final VoidCallback onClear;
+
+  const _OptionalProofField({
+    required this.controller,
+    required this.proofType,
+    required this.imageName,
+    required this.isPickingImage,
+    required this.onTextSelected,
+    required this.onImageSelected,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasProof = proofType != QuestProofType.none;
+    final hasImage = proofType == QuestProofType.image;
+    final hasText =
+        proofType == QuestProofType.text || proofType == QuestProofType.link;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'ОСТАВИТЬ СЛЕД',
+              style: GoogleFonts.dmSans(
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDisabled,
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'необязательно',
+              style: GoogleFonts.dmSans(
+                fontSize: 11,
+                color: AppColors.textDisabled,
+              ),
+            ),
+            const Spacer(),
+            if (hasProof)
+              IconButton(
+                tooltip: 'Убрать подтверждение',
+                onPressed: onClear,
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.close_rounded, size: 18),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: onTextSelected,
+                icon: Icon(
+                  hasText ? Icons.check_rounded : Icons.notes_rounded,
+                  size: 18,
+                ),
+                label: const Text('Текст / ссылка'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: hasText
+                      ? AppColors.gold
+                      : AppColors.textSecondary,
+                  side: BorderSide(
+                    color: hasText ? AppColors.gold : AppColors.divider,
+                  ),
+                  minimumSize: const Size.fromHeight(44),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: isPickingImage ? null : onImageSelected,
+                icon: isPickingImage
+                    ? const SizedBox.square(
+                        dimension: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        hasImage
+                            ? Icons.check_rounded
+                            : Icons.add_photo_alternate_outlined,
+                        size: 18,
+                      ),
+                label: const Text('Фото / скрин'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: hasImage
+                      ? AppColors.gold
+                      : AppColors.textSecondary,
+                  side: BorderSide(
+                    color: hasImage ? AppColors.gold : AppColors.divider,
+                  ),
+                  minimumSize: const Size.fromHeight(44),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (hasText) ...[
+          const SizedBox(height: 10),
+          TextField(
+            controller: controller,
+            autofocus: true,
+            maxLength: 240,
+            maxLines: 3,
+            minLines: 1,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(
+              hintText: 'Что получилось или ссылка на результат',
+              counterText: '',
+              filled: true,
+              fillColor: AppColors.surfaceElevated,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+        ],
+        if (hasImage) ...[
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(Icons.image_outlined, size: 17, color: AppColors.gold),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  imageName.isEmpty ? 'Изображение добавлено' : imageName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 8),
+        Text(
+          'Не добавляй документы, пароли и личные данные.',
+          style: GoogleFonts.dmSans(
+            fontSize: 10,
+            color: AppColors.textDisabled,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1430,7 +1732,7 @@ class _VerificationBadge extends StatelessWidget {
 // ---------------------------------------------------------------------------
 class _MainQuestCard extends ConsumerStatefulWidget {
   final Quest quest;
-  final VoidCallback onComplete;
+  final ValueChanged<_QuestCompletionEvidence> onComplete;
   const _MainQuestCard({required this.quest, required this.onComplete});
 
   @override
@@ -1451,12 +1753,12 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
   }
 
   Future<void> _handleComplete() async {
-    final confirmed = await _showQuestVerification(context, widget.quest);
-    if (!confirmed || !mounted) return;
+    final evidence = await _showQuestVerification(context, widget.quest);
+    if (evidence == null || !mounted) return;
     HapticFeedback.mediumImpact();
     ref.read(audioServiceProvider).playQuestComplete();
     setState(() => _showBurst = true);
-    widget.onComplete();
+    widget.onComplete(evidence);
     Future.delayed(const Duration(milliseconds: 1200), () {
       if (mounted) setState(() => _showBurst = false);
     });
@@ -1676,7 +1978,7 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
 // ---------------------------------------------------------------------------
 class _QuestCard extends ConsumerStatefulWidget {
   final Quest quest;
-  final VoidCallback onComplete;
+  final ValueChanged<_QuestCompletionEvidence> onComplete;
   const _QuestCard({required this.quest, required this.onComplete});
 
   @override
@@ -1697,12 +1999,12 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
   }
 
   Future<void> _handleComplete() async {
-    final confirmed = await _showQuestVerification(context, widget.quest);
-    if (!confirmed || !mounted) return;
+    final evidence = await _showQuestVerification(context, widget.quest);
+    if (evidence == null || !mounted) return;
     HapticFeedback.mediumImpact();
     ref.read(audioServiceProvider).playQuestComplete();
     setState(() => _showBurst = true);
-    widget.onComplete();
+    widget.onComplete(evidence);
     Future.delayed(const Duration(milliseconds: 1200), () {
       if (mounted) setState(() => _showBurst = false);
     });

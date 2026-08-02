@@ -271,7 +271,14 @@ class QuestNotifier extends _$QuestNotifier {
   }
 
   /// Mark a verified quest as completed and add XP.
-  Future<bool> completeQuest(String questId) async {
+  Future<bool> completeQuest(
+    String questId, {
+    QuestProofType proofType = QuestProofType.none,
+    String proofValue = '',
+    Uint8List? proofImageBytes,
+    String proofImageName = '',
+    String proofMimeType = 'image/jpeg',
+  }) async {
     final current = state.valueOrNull ?? [];
     final questIndex = current.indexWhere((q) => q.id == questId);
     if (questIndex == -1) return false;
@@ -283,12 +290,27 @@ class QuestNotifier extends _$QuestNotifier {
       return false;
     }
 
+    final cleanProofValue = proofValue.trim();
+    final hasImage =
+        proofType == QuestProofType.image &&
+        proofImageBytes != null &&
+        proofImageBytes.isNotEmpty;
+    final effectiveProofType = hasImage
+        ? QuestProofType.image
+        : cleanProofValue.isNotEmpty
+        ? proofType
+        : QuestProofType.none;
+    final proofAddedAt = effectiveProofType == QuestProofType.none ? null : now;
     final verifiedAt = now;
     final completed = quest.copyWith(
       status: QuestStatus.completed,
       completedAt: verifiedAt,
       verificationStatus: QuestVerificationStatus.verified,
       verifiedAt: verifiedAt,
+      proofType: effectiveProofType,
+      proofValue: cleanProofValue,
+      proofImageName: hasImage ? proofImageName : '',
+      proofAddedAt: proofAddedAt,
     );
 
     // Update UI immediately
@@ -307,6 +329,12 @@ class QuestNotifier extends _$QuestNotifier {
       local.completedAt = verifiedAt;
       local.verificationStatus = QuestVerificationStatus.verified;
       local.verifiedAt = verifiedAt;
+      local.proofType = effectiveProofType;
+      local.proofValue = cleanProofValue;
+      local.proofImageName = hasImage ? proofImageName : '';
+      local.proofImageBytes = hasImage ? proofImageBytes.toList() : null;
+      local.proofAddedAt = proofAddedAt;
+      local.syncedToSupabase = false;
       await isar.writeTxn(() async {
         await isar.questLocals.put(local);
       });
@@ -319,7 +347,17 @@ class QuestNotifier extends _$QuestNotifier {
     NotificationService.instance.cancelStreakAlert();
 
     // Update Supabase (best effort, don't block UI)
-    _syncCompletionToSupabase(questId, quest.xpReward, verifiedAt);
+    _syncCompletionToSupabase(
+      questId,
+      quest.xpReward,
+      verifiedAt,
+      proofType: effectiveProofType,
+      proofValue: cleanProofValue,
+      proofImageBytes: proofImageBytes,
+      proofImageName: proofImageName,
+      proofMimeType: proofMimeType,
+      proofAddedAt: proofAddedAt,
+    );
     return true;
   }
 
@@ -415,10 +453,33 @@ class QuestNotifier extends _$QuestNotifier {
   Future<void> _syncCompletionToSupabase(
     String questId,
     int xp,
-    DateTime verifiedAt,
-  ) async {
+    DateTime verifiedAt, {
+    required QuestProofType proofType,
+    required String proofValue,
+    Uint8List? proofImageBytes,
+    required String proofImageName,
+    required String proofMimeType,
+    DateTime? proofAddedAt,
+  }) async {
     try {
       final client = ref.read(supabaseClientProvider);
+      var proofStoragePath = '';
+      if (proofType == QuestProofType.image &&
+          proofImageBytes != null &&
+          proofImageBytes.isNotEmpty) {
+        try {
+          proofStoragePath = await _uploadProofImage(
+            client,
+            questId,
+            proofImageBytes,
+            proofImageName,
+            proofMimeType,
+          );
+        } catch (_) {
+          // Proof is optional: a failed upload must not block completion sync.
+        }
+      }
+
       await client
           .from('quests')
           .update({
@@ -426,8 +487,27 @@ class QuestNotifier extends _$QuestNotifier {
             'completed_at': verifiedAt.toUtc().toIso8601String(),
             'verification_status': 'verified',
             'verified_at': verifiedAt.toUtc().toIso8601String(),
+            'proof_type': proofType.name,
+            'proof_value': proofValue,
+            'proof_image_name': proofType == QuestProofType.image
+                ? proofImageName
+                : '',
+            'proof_storage_path': proofStoragePath,
+            'proof_added_at': proofAddedAt?.toUtc().toIso8601String(),
           })
           .eq('id', questId);
+
+      final isar = await ref.read(isarProvider.future);
+      final local = await _questQueryFirst(
+        isar.questLocals.filter().supabaseIdEqualTo(questId),
+      );
+      if (local != null) {
+        local.proofStoragePath = proofStoragePath;
+        local.syncedToSupabase = true;
+        await isar.writeTxn(() async {
+          await isar.questLocals.put(local);
+        });
+      }
 
       final uid = client.auth.currentUser?.id;
       if (uid != null) {
@@ -436,6 +516,53 @@ class QuestNotifier extends _$QuestNotifier {
     } catch (_) {
       // Offline — will sync later
     }
+  }
+
+  Future<String> _uploadProofImage(
+    SupabaseClient client,
+    String questId,
+    Uint8List bytes,
+    String originalName,
+    String mimeType,
+  ) async {
+    final uid = client.auth.currentUser?.id;
+    if (uid == null) return '';
+
+    final extension = _proofExtension(originalName, mimeType);
+    final safeQuestId = questId.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    final path =
+        '$uid/${safeQuestId}_${DateTime.now().microsecondsSinceEpoch}.$extension';
+    await client.storage
+        .from('quest-proofs')
+        .uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(contentType: mimeType, upsert: false),
+        );
+    return path;
+  }
+
+  String _proofExtension(String originalName, String mimeType) {
+    final rawExtension = originalName.contains('.')
+        ? originalName.split('.').last.toLowerCase()
+        : '';
+    if (const {
+      'jpg',
+      'jpeg',
+      'png',
+      'webp',
+      'heic',
+      'heif',
+    }.contains(rawExtension)) {
+      return rawExtension == 'jpeg' ? 'jpg' : rawExtension;
+    }
+    return switch (mimeType) {
+      'image/png' => 'png',
+      'image/webp' => 'webp',
+      'image/heic' => 'heic',
+      'image/heif' => 'heif',
+      _ => 'jpg',
+    };
   }
 
   Future<void> _syncFeedbackToSupabase(
@@ -481,6 +608,11 @@ class QuestNotifier extends _$QuestNotifier {
           ..verificationStatus = q.verificationStatus
           ..verificationStartedAt = q.verificationStartedAt
           ..verifiedAt = q.verifiedAt
+          ..proofType = q.proofType
+          ..proofValue = q.proofValue
+          ..proofImageName = q.proofImageName
+          ..proofStoragePath = q.proofStoragePath
+          ..proofAddedAt = q.proofAddedAt
           ..status = q.status
           ..difficulty = q.difficulty
           ..type = q.type
@@ -508,6 +640,11 @@ class QuestNotifier extends _$QuestNotifier {
             verificationStatus: l.verificationStatus,
             verificationStartedAt: l.verificationStartedAt,
             verifiedAt: l.verifiedAt,
+            proofType: l.proofType,
+            proofValue: l.proofValue,
+            proofImageName: l.proofImageName,
+            proofStoragePath: l.proofStoragePath,
+            proofAddedAt: l.proofAddedAt,
             status: l.status,
             difficulty: l.difficulty,
             type: l.type,

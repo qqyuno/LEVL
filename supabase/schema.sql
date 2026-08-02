@@ -60,6 +60,12 @@ create table if not exists quests (
     check (verification_status in ('not_started', 'in_progress', 'verified')),
   verification_started_at timestamptz,
   verified_at timestamptz,
+  proof_type text not null default 'none'
+    check (proof_type in ('none', 'text', 'link', 'image')),
+  proof_value text not null default '',
+  proof_image_name text not null default '',
+  proof_storage_path text not null default '',
+  proof_added_at timestamptz,
   created_at timestamptz default now(),
   completed_at timestamptz
 );

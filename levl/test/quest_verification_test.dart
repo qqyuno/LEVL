@@ -27,6 +27,28 @@ Quest _quest({
 
 void main() {
   group('quest verification', () {
+    test('proof is optional by default', () {
+      final quest = _quest();
+
+      expect(quest.proofType, QuestProofType.none);
+      expect(quest.proofValue, isEmpty);
+      expect(quest.proofStoragePath, isEmpty);
+      expect(quest.proofAddedAt, isNull);
+    });
+
+    test('copyWith keeps an attached text result', () {
+      final addedAt = DateTime(2026, 7, 27, 12);
+      final quest = _quest().copyWith(
+        proofType: QuestProofType.text,
+        proofValue: 'Готов первый экран прототипа',
+        proofAddedAt: addedAt,
+      );
+
+      expect(quest.proofType, QuestProofType.text);
+      expect(quest.proofValue, 'Готов первый экран прототипа');
+      expect(quest.proofAddedAt, addedAt);
+    });
+
     test('uses the persisted Supabase id returned by the edge function', () {
       final quest = Quest.fromEdgeFunction(
         {

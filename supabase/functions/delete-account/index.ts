@@ -38,6 +38,7 @@ serve(async (req: Request) => {
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
 
+    await deleteQuestProofs(admin, user.id);
     await deleteRows(admin, "quest_cache", "user_id", user.id);
     await deleteRows(admin, "quests", "user_id", user.id);
     await deleteRows(admin, "daily_checkins", "user_id", user.id);
@@ -55,6 +56,24 @@ serve(async (req: Request) => {
     return jsonResponse({ error: "Internal server error" }, 500);
   }
 });
+
+async function deleteQuestProofs(client: any, userId: string) {
+  const bucket = client.storage.from("quest-proofs");
+  const { data, error } = await bucket.list(userId, { limit: 1000 });
+  if (error && !error.message.toLowerCase().includes("not found")) {
+    throw new Error(`quest-proofs: ${error.message}`);
+  }
+
+  const paths = (data ?? [])
+    .filter((item: any) => item.id)
+    .map((item: any) => `${userId}/${item.name}`);
+  if (paths.length === 0) return;
+
+  const { error: removeError } = await bucket.remove(paths);
+  if (removeError) {
+    throw new Error(`quest-proofs: ${removeError.message}`);
+  }
+}
 
 async function deleteRows(
   client: any,

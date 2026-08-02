@@ -79,5 +79,7 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>LEVL accesses your library only when you choose a photo or screenshot as optional task proof.</string>
 </dict>
 </plist>

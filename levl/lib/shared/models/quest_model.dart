@@ -16,6 +16,8 @@ enum QuestVerificationType { selfConfirm, timer }
 
 enum QuestVerificationStatus { notStarted, inProgress, verified }
 
+enum QuestProofType { none, text, link, image }
+
 // Difficulty in skulls (1-5)
 enum QuestDifficulty { trivial, easy, medium, hard, epic }
 
@@ -47,6 +49,15 @@ class QuestLocal {
 
   DateTime? verificationStartedAt;
   DateTime? verifiedAt;
+
+  @Enumerated(EnumType.name)
+  QuestProofType proofType = QuestProofType.none;
+
+  String proofValue = '';
+  String proofImageName = '';
+  List<byte>? proofImageBytes;
+  String proofStoragePath = '';
+  DateTime? proofAddedAt;
 
   @Enumerated(EnumType.name)
   QuestStatus status = QuestStatus.pending;
@@ -86,6 +97,11 @@ class Quest with _$Quest {
     QuestVerificationStatus verificationStatus,
     DateTime? verificationStartedAt,
     DateTime? verifiedAt,
+    @Default(QuestProofType.none) QuestProofType proofType,
+    @Default('') String proofValue,
+    @Default('') String proofImageName,
+    @Default('') String proofStoragePath,
+    DateTime? proofAddedAt,
     @Default(QuestStatus.pending) QuestStatus status,
     @Default(QuestDifficulty.medium) QuestDifficulty difficulty,
     @Default(QuestType.daily) QuestType type,
