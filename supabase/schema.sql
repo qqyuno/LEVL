@@ -57,9 +57,14 @@ create table if not exists quests (
   action_type text not null default 'routine'
     check (action_type in ('focus', 'movement', 'reflection', 'communication', 'result', 'routine')),
   verification_type text not null default 'self_confirm'
-    check (verification_type in ('self_confirm', 'timer')),
+    check (verification_type in ('self_confirm', 'timer', 'location_timer')),
   verification_minutes integer not null default 0
     check (verification_minutes between 0 and 60),
+  required_place_type text not null default ''
+    check (required_place_type in ('', 'home', 'work', 'training', 'focus')),
+  location_checks_passed integer not null default 0
+    check (location_checks_passed between 0 and 10),
+  last_location_check_at timestamptz,
   suggested_proof_type text not null default 'none'
     check (suggested_proof_type in ('none', 'text', 'link', 'image')),
   proof_prompt text not null default '',

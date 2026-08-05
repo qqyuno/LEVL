@@ -8,6 +8,7 @@ import {
   buildGenerationPlan,
   buildVerificationPolicy,
   chooseQuestActionType,
+  chooseRequiredPlaceType,
   chooseVerificationType,
   normalizeQuests,
   summarizeQuestFeedback,
@@ -186,6 +187,59 @@ test("uses a bounded timer only for sustained actions", () => {
   assert.equal(movement.suggestedProofType, "none");
   assert.equal(routine.verificationType, "self_confirm");
   assert.equal(routine.verificationMinutes, 0);
+});
+
+test("uses location verification only for a saved training place", () => {
+  const placeType = chooseRequiredPlaceType(
+    "movement",
+    "Проведи тренировку в спортзале",
+    ["training"],
+  );
+  const policy = buildVerificationPolicy("movement", 45, 45, placeType);
+
+  assert.equal(placeType, "training");
+  assert.equal(policy.verificationType, "location_timer");
+  assert.equal(policy.requiredPlaceType, "training");
+});
+
+test("falls back to a regular timer when no training place is saved", () => {
+  const placeType = chooseRequiredPlaceType(
+    "movement",
+    "Проведи тренировку в спортзале",
+    [],
+  );
+  const policy = buildVerificationPolicy("movement", 45, 45, placeType);
+
+  assert.equal(placeType, "");
+  assert.equal(policy.verificationType, "timer");
+  assert.equal(policy.requiredPlaceType, "");
+});
+
+test("normalization upgrades a gym quest to location verification", () => {
+  const plan = buildGenerationPlan(60, 5, []);
+  const result = normalizeQuests(
+    [
+      rawQuest({
+        title: "Проведи тренировку в спортзале",
+        description: "Выполни разминку и три упражнения в сохранённом зале.",
+        successCriterion: "Три упражнения в спортзале полностью выполнены.",
+        actionType: "movement",
+        verificationMinutes: 30,
+      }),
+      rawQuest({ title: "Подготовь рабочее место", sphere: "knowledge" }),
+      rawQuest({ title: "Запиши итоги дня", sphere: "energy" }),
+    ],
+    {
+      allowedSpheres: spheres,
+      recentTitles: [],
+      plan,
+      availablePlaceTypes: ["training"],
+    },
+  );
+
+  assert.equal(result.valid, true);
+  assert.equal(result.quests[0].verificationType, "location_timer");
+  assert.equal(result.quests[0].requiredPlaceType, "training");
 });
 
 test("suggests visible proof only for a finished artifact", () => {

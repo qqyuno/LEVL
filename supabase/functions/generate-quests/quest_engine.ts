@@ -5,7 +5,10 @@ export type QuestDifficulty =
   | "hard"
   | "epic";
 
-export type QuestVerificationType = "self_confirm" | "timer";
+export type QuestVerificationType =
+  | "self_confirm"
+  | "timer"
+  | "location_timer";
 
 export type QuestActionType =
   | "focus"
@@ -30,6 +33,7 @@ export interface QuestOutput {
   actionType: QuestActionType;
   verificationType: QuestVerificationType;
   verificationMinutes: number;
+  requiredPlaceType: string;
   suggestedProofType: SuggestedProofType;
   proofPrompt: string;
 }
@@ -67,6 +71,7 @@ export interface NormalizeOptions {
   allowedSpheres: string[];
   recentTitles: string[];
   plan: GenerationPlan;
+  availablePlaceTypes?: string[];
 }
 
 export interface NormalizeResult {
@@ -386,10 +391,16 @@ function normalizeSingleQuest(
     description,
     successCriterion,
   );
+  const requiredPlaceType = chooseRequiredPlaceType(
+    actionType,
+    `${title} ${description} ${successCriterion}`,
+    options.availablePlaceTypes ?? [],
+  );
   const verification = buildVerificationPolicy(
     actionType,
     raw.verificationMinutes,
     estimatedMinutes,
+    requiredPlaceType,
   );
 
   return {
@@ -433,9 +444,14 @@ export function buildVerificationPolicy(
   actionType: QuestActionType,
   requestedMinutes: unknown,
   estimatedMinutes: number,
+  requiredPlaceType = "",
 ): Pick<
   QuestOutput,
-  "verificationType" | "verificationMinutes" | "suggestedProofType" | "proofPrompt"
+  | "verificationType"
+  | "verificationMinutes"
+  | "requiredPlaceType"
+  | "suggestedProofType"
+  | "proofPrompt"
 > {
   const usesTimer = actionType === "focus" || actionType === "movement";
   const maximumMinutes = Math.max(5, Math.min(60, estimatedMinutes));
@@ -453,13 +469,17 @@ export function buildVerificationPolicy(
       return {
         verificationType: "timer",
         verificationMinutes,
+        requiredPlaceType: "",
         suggestedProofType: "none",
         proofPrompt: "",
       };
     case "movement":
       return {
-        verificationType: "timer",
+        verificationType: requiredPlaceType === "training"
+          ? "location_timer"
+          : "timer",
         verificationMinutes,
+        requiredPlaceType: requiredPlaceType === "training" ? "training" : "",
         suggestedProofType: "none",
         proofPrompt: "",
       };
@@ -467,6 +487,7 @@ export function buildVerificationPolicy(
       return {
         verificationType: "self_confirm",
         verificationMinutes: 0,
+        requiredPlaceType: "",
         suggestedProofType: "text",
         proofPrompt: "Одной фразой запиши решение, вывод или следующий шаг.",
       };
@@ -474,6 +495,7 @@ export function buildVerificationPolicy(
       return {
         verificationType: "self_confirm",
         verificationMinutes: 0,
+        requiredPlaceType: "",
         suggestedProofType: "text",
         proofPrompt: "Без скриншотов переписки: коротко зафиксируй результат контакта.",
       };
@@ -481,6 +503,7 @@ export function buildVerificationPolicy(
       return {
         verificationType: "self_confirm",
         verificationMinutes: 0,
+        requiredPlaceType: "",
         suggestedProofType: "image",
         proofPrompt: "Добавь фото, скрин или ссылку на готовый результат.",
       };
@@ -488,10 +511,33 @@ export function buildVerificationPolicy(
       return {
         verificationType: "self_confirm",
         verificationMinutes: 0,
+        requiredPlaceType: "",
         suggestedProofType: "none",
         proofPrompt: "",
       };
   }
+}
+
+export function chooseRequiredPlaceType(
+  actionType: QuestActionType,
+  text: string,
+  availablePlaceTypes: string[],
+): string {
+  if (actionType !== "movement" || !availablePlaceTypes.includes("training")) {
+    return "";
+  }
+  const normalized = text.toLowerCase().replace(/ё/g, "е");
+  const trainingPlaceHints = [
+    "спортзал",
+    "тренажер",
+    "фитнес",
+    "качалк",
+    "в зале",
+    "до зала",
+  ];
+  return trainingPlaceHints.some((hint) => normalized.includes(hint))
+    ? "training"
+    : "";
 }
 
 export function chooseVerificationType(
@@ -542,7 +588,10 @@ function fitTimeBudget(
 
 function alignVerificationMinutes(quests: QuestOutput[]): void {
   for (const quest of quests) {
-    if (quest.verificationType !== "timer") {
+    if (
+      quest.verificationType !== "timer" &&
+      quest.verificationType !== "location_timer"
+    ) {
       quest.verificationMinutes = 0;
       continue;
     }
@@ -605,6 +654,7 @@ export function buildFallbackQuests(
       actionType: "reflection",
       verificationType: "self_confirm",
       verificationMinutes: 0,
+      requiredPlaceType: "",
       suggestedProofType: "text",
       proofPrompt: "Одной фразой запиши выбранный следующий шаг.",
     },
@@ -623,6 +673,7 @@ export function buildFallbackQuests(
       actionType: "routine",
       verificationType: "self_confirm",
       verificationMinutes: 0,
+      requiredPlaceType: "",
       suggestedProofType: "none",
       proofPrompt: "",
     },
@@ -641,6 +692,7 @@ export function buildFallbackQuests(
       actionType: "reflection",
       verificationType: "self_confirm",
       verificationMinutes: 0,
+      requiredPlaceType: "",
       suggestedProofType: "text",
       proofPrompt: "Одной фразой запиши конкретный результат.",
     },

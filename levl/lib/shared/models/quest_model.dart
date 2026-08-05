@@ -21,7 +21,7 @@ enum QuestActionType {
   result
 }
 
-enum QuestVerificationType { selfConfirm, timer }
+enum QuestVerificationType { selfConfirm, timer, locationTimer }
 
 enum QuestVerificationStatus { notStarted, inProgress, verified }
 
@@ -56,6 +56,9 @@ class QuestLocal {
   QuestVerificationType verificationType = QuestVerificationType.selfConfirm;
 
   int verificationMinutes = 0;
+  String requiredPlaceType = '';
+  int locationChecksPassed = 0;
+  DateTime? lastLocationCheckAt;
 
   @Enumerated(EnumType.name)
   QuestProofType suggestedProofType = QuestProofType.none;
@@ -114,6 +117,9 @@ class Quest with _$Quest {
     @Default(QuestVerificationType.selfConfirm)
     QuestVerificationType verificationType,
     @Default(0) int verificationMinutes,
+    @Default('') String requiredPlaceType,
+    @Default(0) int locationChecksPassed,
+    DateTime? lastLocationCheckAt,
     @Default(QuestProofType.none) QuestProofType suggestedProofType,
     @Default('') String proofPrompt,
     @Default(QuestVerificationStatus.notStarted)
@@ -158,9 +164,11 @@ class Quest with _$Quest {
       ),
       verificationType: switch (json['verificationType']) {
         'timer' => QuestVerificationType.timer,
+        'location_timer' => QuestVerificationType.locationTimer,
         _ => QuestVerificationType.selfConfirm,
       },
       verificationMinutes: json['verificationMinutes'] as int? ?? 0,
+      requiredPlaceType: _safePlaceType(json['requiredPlaceType']),
       suggestedProofType: switch (json['suggestedProofType']) {
         'text' => QuestProofType.text,
         'link' => QuestProofType.link,
@@ -186,7 +194,7 @@ class Quest with _$Quest {
       : description.trim();
 
   int get effectiveVerificationMinutes {
-    if (verificationType != QuestVerificationType.timer) return 0;
+    if (!isTimedVerification) return 0;
     if (verificationMinutes > 0) return verificationMinutes;
     return estimatedMinutes.clamp(1, 90);
   }
@@ -202,7 +210,7 @@ class Quest with _$Quest {
   }
 
   Duration verificationRemainingAt(DateTime now) {
-    if (verificationType != QuestVerificationType.timer) {
+    if (!isTimedVerification) {
       return Duration.zero;
     }
     final startedAt = verificationStartedAt;
@@ -217,20 +225,79 @@ class Quest with _$Quest {
 
   bool verificationReadyAt(DateTime now) {
     if (verificationType == QuestVerificationType.selfConfirm) return true;
-    return verificationStatus == QuestVerificationStatus.inProgress &&
-        verificationRemainingAt(now) == Duration.zero;
+    final timerReady =
+        verificationStatus == QuestVerificationStatus.inProgress &&
+            verificationRemainingAt(now) == Duration.zero;
+    if (verificationType == QuestVerificationType.locationTimer) {
+      return timerReady && locationChecksPassed >= requiredLocationChecks;
+    }
+    return timerReady;
   }
+
+  bool get isTimedVerification =>
+      verificationType == QuestVerificationType.timer ||
+      verificationType == QuestVerificationType.locationTimer;
+
+  int get requiredLocationChecks {
+    if (verificationType != QuestVerificationType.locationTimer) return 0;
+    return effectiveVerificationMinutes >= 30 ? 3 : 2;
+  }
+
+  String get requiredPlaceLabel => switch (requiredPlaceType) {
+        'home' => 'Дом',
+        'work' => 'Работа',
+        'training' => 'Тренировка',
+        'focus' => 'Фокус',
+        _ => 'Сохранённое место',
+      };
+
+  bool locationCheckpointAvailableAt(DateTime now) {
+    if (verificationType != QuestVerificationType.locationTimer ||
+        verificationStatus != QuestVerificationStatus.inProgress ||
+        requiredLocationChecks < 3 ||
+        locationChecksPassed != 1 ||
+        verificationStartedAt == null) {
+      return false;
+    }
+    final elapsed = now.difference(verificationStartedAt!);
+    return elapsed >=
+        Duration(minutes: (effectiveVerificationMinutes / 2).floor());
+  }
+
+  bool locationCheckSpacingReadyAt(DateTime now) {
+    final lastCheck = lastLocationCheckAt;
+    return lastCheck == null ||
+        now.difference(lastCheck) >= const Duration(minutes: 1);
+  }
+
+  bool locationFinalCheckAvailableAt(DateTime now) {
+    if (verificationType != QuestVerificationType.locationTimer ||
+        verificationStatus != QuestVerificationStatus.inProgress) {
+      return false;
+    }
+    return verificationRemainingAt(now) == Duration.zero &&
+        locationChecksPassed == requiredLocationChecks - 1 &&
+        locationCheckSpacingReadyAt(now);
+  }
+}
+
+String _safePlaceType(Object? value) {
+  const allowed = {'home', 'work', 'training', 'focus'};
+  final normalized = value?.toString() ?? '';
+  return allowed.contains(normalized) ? normalized : '';
 }
 
 extension QuestVerificationVisual on QuestVerificationType {
   String get label => switch (this) {
         QuestVerificationType.selfConfirm => 'Подтверждение',
         QuestVerificationType.timer => 'Таймер',
+        QuestVerificationType.locationTimer => 'Место + таймер',
       };
 
   IconData get icon => switch (this) {
         QuestVerificationType.selfConfirm => Icons.verified_outlined,
         QuestVerificationType.timer => Icons.timer_outlined,
+        QuestVerificationType.locationTimer => Icons.location_on_outlined,
       };
 }
 

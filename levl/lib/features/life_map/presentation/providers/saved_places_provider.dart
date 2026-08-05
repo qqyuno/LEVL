@@ -1,9 +1,9 @@
-import 'package:geolocator/geolocator.dart';
 import 'package:isar/isar.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/supabase/isar_service.dart';
 import '../../../../shared/models/user_model.dart';
+import '../../application/device_location_service.dart';
 import '../../domain/saved_place.dart';
 
 part 'saved_places_provider.g.dart';
@@ -24,30 +24,7 @@ class SavedPlacesNotifier extends _$SavedPlacesNotifier {
     state = const AsyncLoading();
 
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        state = AsyncData(previous);
-        return 'Включи геолокацию на устройстве и попробуй снова.';
-      }
-
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied) {
-        state = AsyncData(previous);
-        return 'Без доступа к геопозиции место сохранить не получится.';
-      }
-      if (permission == LocationPermission.deniedForever) {
-        state = AsyncData(previous);
-        return 'Разреши геопозицию для LEVL в настройках телефона.';
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 15),
-        ),
-      );
+      final position = await const DeviceLocationService().currentPoint();
       final isar = await ref.read(isarProvider.future);
       final profile = await isar.userProfileLocals.where().findFirst();
       final userId = profile?.supabaseId ?? 'local';
@@ -63,6 +40,9 @@ class SavedPlacesNotifier extends _$SavedPlacesNotifier {
       });
       state = AsyncData(await _readPlaces(isar, userId));
       return null;
+    } on DeviceLocationException catch (error) {
+      state = AsyncData(previous);
+      return error.message;
     } catch (_) {
       state = AsyncData(previous);
       return 'Не удалось определить точку. Выйди ближе к окну и повтори.';

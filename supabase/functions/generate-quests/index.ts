@@ -44,7 +44,7 @@ serve(async (req: Request) => {
 
     // --- Check cache ---
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-    const cacheKey = `${user.id}_${today}_v5`;
+    const cacheKey = `${user.id}_${today}_v6`;
 
     const { data: cached } = await supabase
       .from("quest_cache")
@@ -57,13 +57,16 @@ serve(async (req: Request) => {
       return jsonResponse({
         quests: cached.quests,
         cached: true,
-        engineVersion: "2.4",
+        engineVersion: "2.5",
       });
     }
 
     // --- Parse client context (Flutter sends this as fallback for new/offline users) ---
     const body = await req.json().catch(() => ({}));
     const clientContext = body.userContext ?? {};
+    const availablePlaceTypes = normalizePlaceTypes(
+      clientContext.availablePlaceTypes,
+    );
 
     // --- Load profile from Supabase (source of truth) ---
     const { data: supabaseProfile } = await supabase
@@ -167,12 +170,14 @@ serve(async (req: Request) => {
       plan,
       history,
       feedback,
+      availablePlaceTypes,
     );
     let rawText = await callGroq(prompt);
     let normalized = normalizeQuests(parseQuestsFromResponse(rawText), {
       allowedSpheres: todaySpheres,
       recentTitles: history.map((item) => item.title),
       plan,
+      availablePlaceTypes,
     });
 
     if (!normalized.valid) {
@@ -188,6 +193,7 @@ serve(async (req: Request) => {
         allowedSpheres: todaySpheres,
         recentTitles: history.map((item) => item.title),
         plan,
+        availablePlaceTypes,
       });
     }
 
@@ -228,6 +234,7 @@ serve(async (req: Request) => {
       action_type: q.actionType,
       verification_type: q.verificationType,
       verification_minutes: q.verificationMinutes,
+      required_place_type: q.requiredPlaceType,
       suggested_proof_type: q.suggestedProofType,
       proof_prompt: q.proofPrompt,
       verification_status: "not_started",
@@ -241,7 +248,7 @@ serve(async (req: Request) => {
     return jsonResponse({
       quests: persistedQuests,
       cached: false,
-      engineVersion: "2.4",
+      engineVersion: "2.5",
       generationMode: plan.mode,
       fallback: usedFallback,
     });
@@ -267,6 +274,16 @@ function getDayOfYear(date: Date): number {
   const start = new Date(date.getFullYear(), 0, 0);
   const diff = date.getTime() - start.getTime();
   return Math.floor(diff / (1000 * 60 * 60 * 24));
+}
+
+function normalizePlaceTypes(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const allowed = new Set(["home", "work", "training", "focus"]);
+  return [...new Set(
+    value
+      .map((item) => String(item))
+      .filter((item) => allowed.has(item)),
+  )].sort();
 }
 
 /**
@@ -298,6 +315,7 @@ function buildPrompt(
   plan: GenerationPlan,
   history: QuestHistoryItem[],
   feedback: QuestFeedbackSummary,
+  availablePlaceTypes: string[],
 ): string {
   const name = (profile.name as string) || "Путник";
   const lifeContext = profile.life_context ?? "—";
@@ -328,6 +346,10 @@ function buildPrompt(
       `  Не связано с целью: ${feedback.notRelevant}`,
       `  Не хватило времени: ${feedback.noTime}`,
     ].join("\n");
+  const hasTrainingPlace = availablePlaceTypes.includes("training");
+  const placeContext = hasTrainingPlace
+    ? "  Сохранена точка training (зал/фитнес). Можно создать не более одного задания в зале."
+    : "  Подходящих сохранённых мест нет. Геозадания запрещены.";
 
   return `Ты — планировщик действий в приложении LEVL. Создай ровно три небольших задания, которые двигают человека к целям и снижают сопротивление началу.
 
@@ -357,6 +379,9 @@ ${recentLines}
 ПОЧЕМУ ПОЛЬЗОВАТЕЛЬ ОТКЛОНЯЛ ЗАДАНИЯ ЗА 14 ДНЕЙ:
 ${feedbackLines}
 
+ДОСТУПНЫЕ МЕСТА:
+${placeContext}
+
 ПРИНЦИПЫ:
 - Не мотивируй словами и не стыди. Уменьшай порог входа.
 - Каждое задание начинается с наблюдаемого действия: открыть, написать, отправить, выбрать, пройти, выполнить.
@@ -366,9 +391,10 @@ ${feedbackLines}
 - tip — минимальная версия на случай сильного сопротивления, которую можно начать меньше чем за минуту.
 - successCriterion — одно наблюдаемое условие, после которого нельзя спорить, что задание закончено.
 - actionType — один из focus, movement, reflection, communication, result, routine. Только одно основное действие в задании.
-- verificationType — timer только для focus и movement; self_confirm для reflection, communication, result и routine.
+- verificationType — timer для focus и обычного movement; location_timer только для тренировки в сохранённой точке training; self_confirm для остальных действий.
 - verificationMinutes — длительность чистого действия для timer, от 5 до 60 минут и не больше estimatedMinutes. Для self_confirm всегда 0.
-- Не создавай задания, которым нужна конкретная геолокация: сохранённые места появятся в следующей версии.
+- requiredPlaceType — "training" только для location_timer, иначе пустая строка.
+- ${hasTrainingPlace ? "Можно предложить одно задание в сохранённом зале, только если оно связано с целями пользователя." : "Не создавай задания, которым нужна конкретная геолокация."}
 - Задание должно быть уважительным к человеку, который много прокрастинирует: маленьким, но не бессмысленным.
 
 ПРАВИЛА:
@@ -383,9 +409,10 @@ ${feedbackLines}
 9. description — конкретное действие плюс проверяемый результат
 10. successCriterion — короткое предложение без абстрактных слов
 11. actionType — только focus, movement, reflection, communication, result или routine
-12. verificationType — только self_confirm или timer
+12. verificationType — только self_confirm, timer или location_timer
 13. verificationMinutes — целое число; 0 для self_confirm
-14. Язык: русский
+14. requiredPlaceType — training только для location_timer, иначе ""
+15. Язык: русский
 
 ФОРМАТ ОТВЕТА (только JSON, без markdown, без пояснений):
 [
@@ -401,7 +428,8 @@ ${feedbackLines}
     "successCriterion": "Конкретный наблюдаемый результат уже готов.",
     "actionType": "reflection",
     "verificationType": "self_confirm",
-    "verificationMinutes": 0
+    "verificationMinutes": 0,
+    "requiredPlaceType": ""
   }
 ]`;
 }

@@ -12,6 +12,8 @@ import '../../../../shared/models/quest_model.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/providers/level_up_provider.dart';
 import '../../../../core/notifications/notification_service.dart';
+import '../../../life_map/application/device_location_service.dart';
+import '../../../life_map/domain/saved_place.dart';
 
 part 'quest_provider.g.dart';
 
@@ -71,6 +73,13 @@ class QuestNotifier extends _$QuestNotifier {
         }
       } catch (_) {}
 
+      final savedPlaces = await isar.savedPlaceLocals
+          .filter()
+          .userIdEqualTo(profile.supabaseId)
+          .findAll();
+      final availablePlaceTypes =
+          savedPlaces.map((place) => place.type.name).toSet().toList()..sort();
+
       return {
         'name': profile.name,
         'level': profile.level,
@@ -83,6 +92,7 @@ class QuestNotifier extends _$QuestNotifier {
         'spheres': profile.spheresJson,
         'goals': goals,
         'painPoints': characterState['painPoints'] ?? '',
+        'availablePlaceTypes': availablePlaceTypes,
       };
     } catch (_) {
       return {};
@@ -230,24 +240,32 @@ class QuestNotifier extends _$QuestNotifier {
   }
 
   /// Start a timer-backed verification and persist it across app restarts.
-  Future<bool> startQuestVerification(String questId) async {
+  Future<String?> startQuestVerification(String questId) async {
     final current = state.valueOrNull ?? [];
     final questIndex = current.indexWhere((q) => q.id == questId);
-    if (questIndex == -1) return false;
+    if (questIndex == -1) return 'Задание не найдено.';
 
     final quest = current[questIndex];
-    if (quest.status != QuestStatus.pending ||
-        quest.verificationType != QuestVerificationType.timer) {
-      return false;
+    if (quest.status != QuestStatus.pending || !quest.isTimedVerification) {
+      return 'Для этого задания таймер не требуется.';
     }
     if (quest.verificationStatus == QuestVerificationStatus.inProgress) {
-      return true;
+      return null;
+    }
+
+    if (quest.verificationType == QuestVerificationType.locationTimer) {
+      final locationError = await _verifyQuestLocation(quest);
+      if (locationError != null) return locationError;
     }
 
     final startedAt = DateTime.now();
+    final locationChecks =
+        quest.verificationType == QuestVerificationType.locationTimer ? 1 : 0;
     final started = quest.copyWith(
       verificationStatus: QuestVerificationStatus.inProgress,
       verificationStartedAt: startedAt,
+      locationChecksPassed: locationChecks,
+      lastLocationCheckAt: locationChecks == 0 ? null : startedAt,
     );
     final updated = [...current];
     updated[questIndex] = started;
@@ -260,13 +278,104 @@ class QuestNotifier extends _$QuestNotifier {
     if (local != null) {
       local.verificationStatus = QuestVerificationStatus.inProgress;
       local.verificationStartedAt = startedAt;
+      local.locationChecksPassed = locationChecks;
+      local.lastLocationCheckAt = locationChecks == 0 ? null : startedAt;
       await isar.writeTxn(() async {
         await isar.questLocals.put(local);
       });
     }
 
-    _syncVerificationStart(questId, startedAt);
-    return true;
+    _syncVerificationStart(
+      questId,
+      startedAt,
+      locationChecksPassed: locationChecks,
+      lastLocationCheckAt: locationChecks == 0 ? null : startedAt,
+    );
+    return null;
+  }
+
+  Future<String?> recordQuestLocationCheck(String questId) async {
+    final current = state.valueOrNull ?? [];
+    final questIndex = current.indexWhere((quest) => quest.id == questId);
+    if (questIndex == -1) return 'Задание не найдено.';
+
+    final quest = current[questIndex];
+    final now = DateTime.now();
+    if (quest.status != QuestStatus.pending ||
+        quest.verificationType != QuestVerificationType.locationTimer ||
+        quest.verificationStatus != QuestVerificationStatus.inProgress) {
+      return 'Геопроверка для этого задания сейчас недоступна.';
+    }
+    if (quest.locationChecksPassed >= quest.requiredLocationChecks) return null;
+    if (!quest.locationCheckSpacingReadyAt(now)) {
+      return 'Следующая отметка станет доступна через минуту.';
+    }
+
+    final locationError = await _verifyQuestLocation(quest);
+    if (locationError != null) return locationError;
+
+    final checksPassed = quest.locationChecksPassed + 1;
+    final checked = quest.copyWith(
+      locationChecksPassed: checksPassed,
+      lastLocationCheckAt: now,
+    );
+    final updated = [...current];
+    updated[questIndex] = checked;
+    state = AsyncData(updated);
+
+    final isar = await ref.read(isarProvider.future);
+    final local = await _questQueryFirst(
+      isar.questLocals.filter().supabaseIdEqualTo(questId),
+    );
+    if (local != null) {
+      local.locationChecksPassed = checksPassed;
+      local.lastLocationCheckAt = now;
+      await isar.writeTxn(() async {
+        await isar.questLocals.put(local);
+      });
+    }
+    _syncLocationCheckpoint(questId, checksPassed, now);
+    return null;
+  }
+
+  Future<String?> _verifyQuestLocation(Quest quest) async {
+    final requiredType = SavedPlaceType.values
+        .where((type) => type.name == quest.requiredPlaceType)
+        .firstOrNull;
+    if (requiredType == null) {
+      return 'У задания не указано место. Обнови задания дня.';
+    }
+
+    final isar = await ref.read(isarProvider.future);
+    final matchingPlaces = (await isar.savedPlaceLocals
+            .filter()
+            .userIdEqualTo(quest.userId)
+            .findAll())
+        .where((place) => place.type == requiredType)
+        .toList();
+    if (matchingPlaces.isEmpty) {
+      return 'Сначала сохрани место «${requiredType.label}» на карте.';
+    }
+
+    try {
+      final point = await const DeviceLocationService().currentPoint();
+      SavedPlaceLocal nearest = matchingPlaces.first;
+      var nearestDistance = nearest.distanceTo(point.latitude, point.longitude);
+      for (final place in matchingPlaces.skip(1)) {
+        final distance = place.distanceTo(point.latitude, point.longitude);
+        if (distance < nearestDistance) {
+          nearest = place;
+          nearestDistance = distance;
+        }
+      }
+      final accuracyBuffer = point.accuracyMeters.clamp(0, 50);
+      if (nearestDistance > nearest.radiusMeters + accuracyBuffer) {
+        return 'Ты пока не в точке «${nearest.name}» — примерно ${nearestDistance.round()} м до неё.';
+      }
+      return null;
+    } on DeviceLocationException catch (error) {
+      return error.message;
+    }
   }
 
   /// Mark a verified quest as completed and add XP.
@@ -432,16 +541,36 @@ class QuestNotifier extends _$QuestNotifier {
 
   Future<void> _syncVerificationStart(
     String questId,
-    DateTime startedAt,
-  ) async {
+    DateTime startedAt, {
+    required int locationChecksPassed,
+    DateTime? lastLocationCheckAt,
+  }) async {
     try {
       final client = ref.read(supabaseClientProvider);
       await client.from('quests').update({
         'verification_status': 'in_progress',
         'verification_started_at': startedAt.toUtc().toIso8601String(),
+        'location_checks_passed': locationChecksPassed,
+        'last_location_check_at':
+            lastLocationCheckAt?.toUtc().toIso8601String(),
       }).eq('id', questId);
     } catch (_) {
       // Local verification remains active if remote sync fails.
+    }
+  }
+
+  Future<void> _syncLocationCheckpoint(
+    String questId,
+    int checksPassed,
+    DateTime checkedAt,
+  ) async {
+    try {
+      await ref.read(supabaseClientProvider).from('quests').update({
+        'location_checks_passed': checksPassed,
+        'last_location_check_at': checkedAt.toUtc().toIso8601String(),
+      }).eq('id', questId);
+    } catch (_) {
+      // Coordinates stay local; only the checkpoint count and time are synced.
     }
   }
 
@@ -595,6 +724,9 @@ class QuestNotifier extends _$QuestNotifier {
           ..actionType = q.actionType
           ..verificationType = q.verificationType
           ..verificationMinutes = q.verificationMinutes
+          ..requiredPlaceType = q.requiredPlaceType
+          ..locationChecksPassed = q.locationChecksPassed
+          ..lastLocationCheckAt = q.lastLocationCheckAt
           ..suggestedProofType = q.suggestedProofType
           ..proofPrompt = q.proofPrompt
           ..verificationStatus = q.verificationStatus
@@ -631,6 +763,9 @@ class QuestNotifier extends _$QuestNotifier {
             actionType: l.actionType,
             verificationType: l.verificationType,
             verificationMinutes: l.verificationMinutes,
+            requiredPlaceType: l.requiredPlaceType,
+            locationChecksPassed: l.locationChecksPassed,
+            lastLocationCheckAt: l.lastLocationCheckAt,
             suggestedProofType: l.suggestedProofType,
             proofPrompt: l.proofPrompt,
             verificationStatus: l.verificationStatus,

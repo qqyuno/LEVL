@@ -8,6 +8,9 @@ Quest _quest({
   DateTime? verificationStartedAt,
   int estimatedMinutes = 15,
   int verificationMinutes = 0,
+  String requiredPlaceType = '',
+  int locationChecksPassed = 0,
+  DateTime? lastLocationCheckAt,
   String successCriterion = 'Готов один конкретный результат.',
 }) {
   return Quest(
@@ -21,6 +24,9 @@ Quest _quest({
     successCriterion: successCriterion,
     verificationType: verificationType,
     verificationMinutes: verificationMinutes,
+    requiredPlaceType: requiredPlaceType,
+    locationChecksPassed: locationChecksPassed,
+    lastLocationCheckAt: lastLocationCheckAt,
     verificationStatus: verificationStatus,
     verificationStartedAt: verificationStartedAt,
     createdAt: DateTime(2026, 7, 16),
@@ -152,6 +158,98 @@ void main() {
           startedAt.add(const Duration(minutes: 5)),
         ),
         const Duration(minutes: 7),
+      );
+    });
+
+    test('maps a location timer returned by the edge function', () {
+      final quest = Quest.fromEdgeFunction(
+        {
+          'id': 'gym-quest',
+          'title': 'Проведи тренировку в зале',
+          'description': 'Выполни тренировку в сохранённом зале.',
+          'tip': 'Начни с разминки.',
+          'verificationType': 'location_timer',
+          'verificationMinutes': 20,
+          'requiredPlaceType': 'training',
+        },
+        '1',
+        'user-1',
+      );
+
+      expect(quest.verificationType, QuestVerificationType.locationTimer);
+      expect(quest.requiredPlaceType, 'training');
+      expect(quest.requiredLocationChecks, 2);
+      expect(quest.requiredPlaceLabel, 'Тренировка');
+    });
+
+    test('location timer needs both elapsed time and final place check', () {
+      final startedAt = DateTime(2026, 8, 5, 12);
+      final unfinished = _quest(
+        verificationType: QuestVerificationType.locationTimer,
+        verificationStatus: QuestVerificationStatus.inProgress,
+        verificationStartedAt: startedAt,
+        verificationMinutes: 20,
+        requiredPlaceType: 'training',
+        locationChecksPassed: 1,
+        lastLocationCheckAt: startedAt,
+      );
+      final finishedAt = startedAt.add(const Duration(minutes: 20));
+
+      expect(unfinished.verificationReadyAt(finishedAt), isFalse);
+      expect(unfinished.locationFinalCheckAvailableAt(finishedAt), isTrue);
+      expect(
+        unfinished.copyWith(locationChecksPassed: 2).verificationReadyAt(
+              finishedAt,
+            ),
+        isTrue,
+      );
+    });
+
+    test('long location timer exposes a midpoint checkpoint', () {
+      final startedAt = DateTime(2026, 8, 5, 12);
+      final quest = _quest(
+        verificationType: QuestVerificationType.locationTimer,
+        verificationStatus: QuestVerificationStatus.inProgress,
+        verificationStartedAt: startedAt,
+        verificationMinutes: 60,
+        requiredPlaceType: 'training',
+        locationChecksPassed: 1,
+        lastLocationCheckAt: startedAt,
+      );
+
+      expect(quest.requiredLocationChecks, 3);
+      expect(
+        quest.locationCheckpointAvailableAt(
+          startedAt.add(const Duration(minutes: 29)),
+        ),
+        isFalse,
+      );
+      expect(
+        quest.locationCheckpointAvailableAt(
+          startedAt.add(const Duration(minutes: 30)),
+        ),
+        isTrue,
+      );
+    });
+
+    test('location checks cannot be repeated immediately', () {
+      final lastCheck = DateTime(2026, 8, 5, 12);
+      final quest = _quest(
+        verificationType: QuestVerificationType.locationTimer,
+        lastLocationCheckAt: lastCheck,
+      );
+
+      expect(
+        quest.locationCheckSpacingReadyAt(
+          lastCheck.add(const Duration(seconds: 59)),
+        ),
+        isFalse,
+      );
+      expect(
+        quest.locationCheckSpacingReadyAt(
+          lastCheck.add(const Duration(minutes: 1)),
+        ),
+        isTrue,
       );
     });
 

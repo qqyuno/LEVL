@@ -852,11 +852,12 @@ class _QuestVerificationPanelState
   String _proofImageName = '';
   String _proofImageMimeType = 'image/jpeg';
   bool _isPickingImage = false;
+  bool _isCheckingLocation = false;
 
   @override
   void initState() {
     super.initState();
-    if (widget.initialQuest.verificationType == QuestVerificationType.timer) {
+    if (widget.initialQuest.isTimedVerification) {
       _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
         if (mounted) setState(() {});
       });
@@ -923,6 +924,40 @@ class _QuestVerificationPanelState
     );
   }
 
+  Future<void> _startVerification(Quest quest) async {
+    if (_isCheckingLocation) return;
+    if (quest.verificationType == QuestVerificationType.locationTimer) {
+      setState(() => _isCheckingLocation = true);
+    }
+    HapticFeedback.mediumImpact();
+    final error = await ref
+        .read(questNotifierProvider.notifier)
+        .startQuestVerification(quest.id);
+    if (!mounted) return;
+    setState(() => _isCheckingLocation = false);
+    if (error != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
+    }
+  }
+
+  Future<void> _recordLocationCheck(Quest quest, {required bool finish}) async {
+    if (_isCheckingLocation) return;
+    setState(() => _isCheckingLocation = true);
+    HapticFeedback.mediumImpact();
+    final error = await ref
+        .read(questNotifierProvider.notifier)
+        .recordQuestLocationCheck(quest.id);
+    if (!mounted) return;
+    setState(() => _isCheckingLocation = false);
+    if (error != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+    if (finish) Navigator.pop(context, _completionEvidence());
+  }
+
   Quest _currentQuest() {
     final quests = ref.watch(questNotifierProvider).valueOrNull ?? const [];
     for (final quest in quests) {
@@ -936,7 +971,9 @@ class _QuestVerificationPanelState
     final quest = _currentQuest();
     final now = DateTime.now();
     final remaining = quest.verificationRemainingAt(now);
-    final isTimer = quest.verificationType == QuestVerificationType.timer;
+    final isTimer = quest.isTimedVerification;
+    final isLocationTimer =
+        quest.verificationType == QuestVerificationType.locationTimer;
     final isRunning =
         quest.verificationStatus == QuestVerificationStatus.inProgress &&
             remaining > Duration.zero;
@@ -1025,12 +1062,19 @@ class _QuestVerificationPanelState
                     QuestVerificationStatus.notStarted)
                   _TimerStartBody(
                     minutes: quest.effectiveVerificationMinutes,
-                    onStart: () async {
-                      HapticFeedback.mediumImpact();
-                      await ref
-                          .read(questNotifierProvider.notifier)
-                          .startQuestVerification(quest.id);
-                    },
+                    isLocation: isLocationTimer,
+                    isBusy: _isCheckingLocation,
+                    placeLabel: quest.requiredPlaceLabel,
+                    onStart: () => _startVerification(quest),
+                  )
+                else if (isLocationTimer)
+                  _LocationTimerProgressBody(
+                    quest: quest,
+                    remaining: remaining,
+                    isBusy: _isCheckingLocation,
+                    onCheckpoint: () =>
+                        _recordLocationCheck(quest, finish: false),
+                    onFinish: () => _recordLocationCheck(quest, finish: true),
                   )
                 else
                   _TimerProgressBody(
@@ -1356,22 +1400,31 @@ class _SelfConfirmationBody extends StatelessWidget {
 
 class _TimerStartBody extends StatelessWidget {
   final int minutes;
+  final bool isLocation;
+  final bool isBusy;
+  final String placeLabel;
   final VoidCallback onStart;
 
-  const _TimerStartBody({required this.minutes, required this.onStart});
+  const _TimerStartBody({
+    required this.minutes,
+    required this.isLocation,
+    required this.isBusy,
+    required this.placeLabel,
+    required this.onStart,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const Icon(
-          Icons.timer_outlined,
+        Icon(
+          isLocation ? Icons.location_on_outlined : Icons.timer_outlined,
           size: 46,
-          color: AppColors.textPrimary,
+          color: isLocation ? AppColors.sphereEnergy : AppColors.textPrimary,
         ),
         const SizedBox(height: 10),
         Text(
-          '$minutes минут фокуса',
+          isLocation ? '$minutes минут в точке' : '$minutes минут фокуса',
           style: GoogleFonts.dmSans(
             fontSize: 17,
             fontWeight: FontWeight.w700,
@@ -1380,7 +1433,9 @@ class _TimerStartBody extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Таймер сохранится, даже если приложение будет свёрнуто.',
+          isLocation
+              ? 'Система проверит точку «$placeLabel» сейчас и перед завершением. Постоянного фонового слежения нет.'
+              : 'Таймер сохранится, даже если приложение будет свёрнуто.',
           textAlign: TextAlign.center,
           style: GoogleFonts.dmSans(
             fontSize: 13,
@@ -1390,10 +1445,118 @@ class _TimerStartBody extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         _VerificationPrimaryButton(
-          label: 'Начать',
-          icon: Icons.play_arrow_rounded,
-          onPressed: onStart,
+          label: isBusy
+              ? 'Проверяю точку'
+              : isLocation
+                  ? 'Проверить место и начать'
+                  : 'Начать',
+          icon: isLocation ? Icons.my_location : Icons.play_arrow_rounded,
+          onPressed: isBusy ? null : onStart,
         ),
+      ],
+    );
+  }
+}
+
+class _LocationTimerProgressBody extends StatelessWidget {
+  const _LocationTimerProgressBody({
+    required this.quest,
+    required this.remaining,
+    required this.isBusy,
+    required this.onCheckpoint,
+    required this.onFinish,
+  });
+
+  final Quest quest;
+  final Duration remaining;
+  final bool isBusy;
+  final VoidCallback onCheckpoint;
+  final VoidCallback onFinish;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final totalSeconds = quest.effectiveVerificationMinutes * 60;
+    final remainingSeconds = remaining.inSeconds.clamp(0, totalSeconds);
+    final progress =
+        totalSeconds == 0 ? 1.0 : 1 - (remainingSeconds / totalSeconds);
+    final checkpointAvailable = quest.locationCheckpointAvailableAt(now) ||
+        (remaining == Duration.zero &&
+            quest.locationChecksPassed < quest.requiredLocationChecks - 1);
+    final finalCheckAvailable = quest.locationFinalCheckAvailableAt(now);
+
+    return Column(
+      children: [
+        SizedBox.square(
+          dimension: 116,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox.expand(
+                child: CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 5,
+                  backgroundColor: AppColors.divider,
+                  color: finalCheckAvailable
+                      ? AppColors.gold
+                      : AppColors.sphereEnergy,
+                ),
+              ),
+              remaining == Duration.zero
+                  ? const Icon(
+                      Icons.location_on,
+                      size: 38,
+                      color: AppColors.sphereEnergy,
+                    )
+                  : Text(
+                      _formatDuration(remaining),
+                      style: GoogleFonts.dmSans(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          '${quest.locationChecksPassed} из ${quest.requiredLocationChecks} точек подтверждено',
+          style: GoogleFonts.dmSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          remaining > Duration.zero
+              ? 'Таймер идёт. LEVL не отслеживает перемещение в фоне.'
+              : finalCheckAvailable
+                  ? 'Время прошло. Подтверди, что ты всё ещё в нужной точке.'
+                  : 'Нужна ещё одна контрольная отметка в этом месте.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.dmSans(
+            fontSize: 13,
+            height: 1.4,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        if (checkpointAvailable) ...[
+          const SizedBox(height: 18),
+          _VerificationPrimaryButton(
+            label: isBusy ? 'Проверяю точку' : 'Зафиксировать присутствие',
+            icon: Icons.my_location,
+            onPressed: isBusy ? null : onCheckpoint,
+          ),
+        ] else if (finalCheckAvailable) ...[
+          const SizedBox(height: 18),
+          _VerificationPrimaryButton(
+            label: isBusy ? 'Проверяю точку' : 'Проверить место и завершить',
+            icon: Icons.verified_rounded,
+            onPressed: isBusy ? null : onFinish,
+          ),
+        ],
       ],
     );
   }
@@ -1487,7 +1650,7 @@ class _TimerProgressBody extends StatelessWidget {
 class _VerificationPrimaryButton extends StatelessWidget {
   final String label;
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   const _VerificationPrimaryButton({
     required this.label,
@@ -1709,14 +1872,22 @@ class _VerificationBadge extends StatelessWidget {
     final isVerified =
         quest.verificationStatus == QuestVerificationStatus.verified ||
             quest.status == QuestStatus.completed;
-    final isTimer = quest.verificationType == QuestVerificationType.timer;
+    final isTimer = quest.isTimedVerification;
+    final isLocation =
+        quest.verificationType == QuestVerificationType.locationTimer;
     final isRunning =
         quest.verificationStatus == QuestVerificationStatus.inProgress;
     final String label;
     if (isVerified) {
       label = 'Проверено';
+    } else if (isLocation && isRunning) {
+      label =
+          'В точке · ${quest.locationChecksPassed}/${quest.requiredLocationChecks}';
     } else if (isTimer && isRunning) {
       label = 'Таймер идёт';
+    } else if (isLocation) {
+      label =
+          '${quest.requiredPlaceLabel} · ${quest.effectiveVerificationMinutes} мин';
     } else if (isTimer) {
       label = 'Таймер · ${quest.effectiveVerificationMinutes} мин';
     } else {
