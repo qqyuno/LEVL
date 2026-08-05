@@ -7,6 +7,7 @@ import '../../features/auth/presentation/screens/welcome_page.dart';
 import '../../features/dashboard/presentation/screens/dashboard_page.dart';
 import '../../features/character/presentation/screens/character_page.dart';
 import '../../features/ai_mentor/presentation/screens/chat_page.dart';
+import '../../features/life_map/presentation/screens/life_map_page.dart';
 import '../../features/onboarding/presentation/screens/onboarding_page.dart';
 import '../../features/onboarding/presentation/providers/onboarding_provider.dart';
 import '../../shared/widgets/level_up_overlay.dart';
@@ -19,6 +20,7 @@ abstract class AppRoutes {
   static const welcome = '/welcome';
   static const onboarding = '/onboarding';
   static const dashboard = '/dashboard';
+  static const lifeMap = '/map';
   static const character = '/character';
   static const aiMentor = '/mentor';
   static const notificationSettings = '/settings/notifications';
@@ -93,6 +95,11 @@ GoRouter appRouter(AppRouterRef ref) {
             builder: (_, __) => const DashboardPage(),
           ),
           GoRoute(
+            path: AppRoutes.lifeMap,
+            name: 'lifeMap',
+            builder: (_, __) => const LifeMapPage(),
+          ),
+          GoRoute(
             path: AppRoutes.character,
             name: 'character',
             builder: (_, __) => const CharacterPage(),
@@ -115,6 +122,7 @@ class _MainShell extends StatelessWidget {
 
   static const _tabs = [
     AppRoutes.dashboard,
+    AppRoutes.lifeMap,
     AppRoutes.character,
     AppRoutes.aiMentor,
   ];
@@ -122,7 +130,7 @@ class _MainShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
-    final currentIndex = _tabs.indexOf(location).clamp(0, 2);
+    final currentIndex = _tabs.indexOf(location).clamp(0, 3);
 
     return Scaffold(
       body: Stack(
@@ -149,6 +157,11 @@ class _MainShell extends StatelessWidget {
               icon: Icon(Icons.home_outlined, color: AppColors.textSecondary),
               selectedIcon: Icon(Icons.home, color: AppColors.textPrimary),
               label: 'Путь',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.map_outlined, color: AppColors.textSecondary),
+              selectedIcon: Icon(Icons.map, color: AppColors.textPrimary),
+              label: 'Карта',
             ),
             NavigationDestination(
               icon: Icon(Icons.person_outline, color: AppColors.textSecondary),

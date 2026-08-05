@@ -81,5 +81,7 @@
 	</array>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>LEVL accesses your library only when you choose a photo or screenshot as optional task proof.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>LEVL uses your location only when you save a place or verify a location-based task.</string>
 </dict>
 </plist>
