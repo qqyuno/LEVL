@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/analytics/product_analytics.dart';
 import '../../../../core/audio/audio_service.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -15,6 +16,7 @@ import '../../../../shared/models/user_model.dart';
 import '../../../../shared/models/quest_model.dart';
 import '../../../../shared/widgets/premium_face_avatar_widget.dart';
 import '../providers/quest_provider.dart';
+import '../widgets/quest_completion_impact_sheet.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -59,17 +61,13 @@ class DashboardPage extends ConsumerWidget {
                         context,
                         quest,
                       );
-                      if (evidence == null) return;
-                      await ref
-                          .read(questNotifierProvider.notifier)
-                          .completeQuest(
-                            quest.id,
-                            proofType: evidence.type,
-                            proofValue: evidence.value,
-                            proofImageBytes: evidence.imageBytes,
-                            proofImageName: evidence.imageName,
-                            proofMimeType: evidence.imageMimeType,
-                          );
+                      if (evidence == null || !context.mounted) return;
+                      await _completeQuestWithImpact(
+                        context,
+                        ref,
+                        quest,
+                        evidence,
+                      );
                     },
                   ),
                 ),
@@ -106,16 +104,12 @@ class DashboardPage extends ConsumerWidget {
                       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
                       child: _MainQuestCard(
                         quest: mainQuest,
-                        onComplete: (evidence) => ref
-                            .read(questNotifierProvider.notifier)
-                            .completeQuest(
-                              mainQuest.id,
-                              proofType: evidence.type,
-                              proofValue: evidence.value,
-                              proofImageBytes: evidence.imageBytes,
-                              proofImageName: evidence.imageName,
-                              proofMimeType: evidence.imageMimeType,
-                            ),
+                        onComplete: (evidence) => _completeQuestWithImpact(
+                          context,
+                          ref,
+                          mainQuest,
+                          evidence,
+                        ),
                       ),
                     );
                   },
@@ -168,16 +162,12 @@ class DashboardPage extends ConsumerWidget {
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _QuestCard(
                             quest: daily[index],
-                            onComplete: (evidence) => ref
-                                .read(questNotifierProvider.notifier)
-                                .completeQuest(
-                                  daily[index].id,
-                                  proofType: evidence.type,
-                                  proofValue: evidence.value,
-                                  proofImageBytes: evidence.imageBytes,
-                                  proofImageName: evidence.imageName,
-                                  proofMimeType: evidence.imageMimeType,
-                                ),
+                            onComplete: (evidence) => _completeQuestWithImpact(
+                              context,
+                              ref,
+                              daily[index],
+                              evidence,
+                            ),
                           ),
                         ),
                         childCount: daily.length,
@@ -193,6 +183,76 @@ class DashboardPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+Future<void> _completeQuestWithImpact(
+  BuildContext context,
+  WidgetRef ref,
+  Quest quest,
+  _QuestCompletionEvidence evidence,
+) async {
+  final questsBefore =
+      ref.read(questNotifierProvider).valueOrNull ?? const <Quest>[];
+  final completedBefore = questsBefore
+      .where((item) => item.status == QuestStatus.completed)
+      .length
+      .clamp(0, QuestCompletionImpactSheet.totalRouteNodes);
+  final userBefore = ref.read(userProfileNotifierProvider).valueOrNull;
+
+  final completed =
+      await ref.read(questNotifierProvider.notifier).completeQuest(
+            quest.id,
+            proofType: evidence.type,
+            proofValue: evidence.value,
+            proofImageBytes: evidence.imageBytes,
+            proofImageName: evidence.imageName,
+            proofMimeType: evidence.imageMimeType,
+          );
+
+  if (!context.mounted) return;
+  if (!completed) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Не удалось зафиксировать результат. Проверь условия.'),
+      ),
+    );
+    return;
+  }
+
+  HapticFeedback.mediumImpact();
+  ref.read(audioServiceProvider).playQuestComplete();
+  unawaited(
+    ref.read(productAnalyticsProvider).track(
+      ProductEvent.completionImpactShown,
+      properties: {
+        'category': quest.category.name,
+        'route_node': (completedBefore + 1).clamp(
+          0,
+          QuestCompletionImpactSheet.totalRouteNodes,
+        ),
+      },
+    ),
+  );
+  final config = userBefore?.characterStateJson.isNotEmpty == true
+      ? AvatarConfig.fromJsonString(userBefore!.characterStateJson)
+      : const AvatarConfig();
+  final openMap = await showQuestCompletionImpact(
+    context,
+    quest: quest,
+    completedBefore: completedBefore,
+    avatarConfig: config,
+    level: userBefore?.level ?? 1,
+    streak: userBefore?.currentStreak ?? 0,
+  );
+  if (openMap == true && context.mounted) {
+    unawaited(
+      ref.read(productAnalyticsProvider).track(
+        ProductEvent.lifeMapOpened,
+        properties: {'source': 'completion_impact'},
+      ),
+    );
+    context.go(AppRoutes.lifeMap);
   }
 }
 
@@ -1953,8 +2013,6 @@ class _MainQuestCardState extends ConsumerState<_MainQuestCard> {
   Future<void> _handleComplete() async {
     final evidence = await _showQuestVerification(context, widget.quest);
     if (evidence == null || !mounted) return;
-    HapticFeedback.mediumImpact();
-    ref.read(audioServiceProvider).playQuestComplete();
     setState(() => _showBurst = true);
     widget.onComplete(evidence);
     Future.delayed(const Duration(milliseconds: 1200), () {
@@ -2198,8 +2256,6 @@ class _QuestCardState extends ConsumerState<_QuestCard> {
   Future<void> _handleComplete() async {
     final evidence = await _showQuestVerification(context, widget.quest);
     if (evidence == null || !mounted) return;
-    HapticFeedback.mediumImpact();
-    ref.read(audioServiceProvider).playQuestComplete();
     setState(() => _showBurst = true);
     widget.onComplete(evidence);
     Future.delayed(const Duration(milliseconds: 1200), () {

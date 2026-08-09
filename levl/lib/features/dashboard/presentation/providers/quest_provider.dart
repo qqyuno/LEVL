@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
@@ -5,6 +6,7 @@ import 'package:isar/isar.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/audio/audio_service.dart';
+import '../../../../core/analytics/product_analytics.dart';
 import '../../../../core/supabase/isar_service.dart';
 import '../../../../core/supabase/supabase_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -219,7 +221,24 @@ class QuestNotifier extends _$QuestNotifier {
       await _saveToIsar(quests);
 
       state = AsyncData(quests);
+      unawaited(
+        ref.read(productAnalyticsProvider).track(
+          ProductEvent.questsGenerated,
+          properties: {
+            'count': quests.length,
+            'has_location_task': quests.any(
+              (quest) =>
+                  quest.verificationType == QuestVerificationType.locationTimer,
+            ),
+          },
+        ),
+      );
     } catch (e, st) {
+      unawaited(
+        ref
+            .read(productAnalyticsProvider)
+            .track(ProductEvent.questGenerationFailed),
+      );
       // If Edge Function fails, try to show any cached quests
       final isar = await ref.read(isarProvider.future);
       final allCached = await _questQuery(
@@ -291,6 +310,17 @@ class QuestNotifier extends _$QuestNotifier {
       locationChecksPassed: locationChecks,
       lastLocationCheckAt: locationChecks == 0 ? null : startedAt,
     );
+    unawaited(
+      ref.read(productAnalyticsProvider).track(
+        ProductEvent.verificationStarted,
+        properties: {
+          'category': quest.category.name,
+          'verification_type': quest.verificationType.name,
+          'minutes': quest.effectiveVerificationMinutes,
+          'is_main': quest.isMainGoalTask,
+        },
+      ),
+    );
     return null;
   }
 
@@ -335,6 +365,15 @@ class QuestNotifier extends _$QuestNotifier {
       });
     }
     _syncLocationCheckpoint(questId, checksPassed, now);
+    unawaited(
+      ref.read(productAnalyticsProvider).track(
+        ProductEvent.locationCheckpointRecorded,
+        properties: {
+          'checks_passed': checksPassed,
+          'checks_required': quest.requiredLocationChecks,
+        },
+      ),
+    );
     return null;
   }
 
@@ -465,6 +504,18 @@ class QuestNotifier extends _$QuestNotifier {
       proofMimeType: proofMimeType,
       proofAddedAt: proofAddedAt,
     );
+    unawaited(
+      ref.read(productAnalyticsProvider).track(
+        ProductEvent.questCompleted,
+        properties: {
+          'category': quest.category.name,
+          'verification_type': quest.verificationType.name,
+          'proof_added': effectiveProofType != QuestProofType.none,
+          'is_main': quest.isMainGoalTask,
+          'xp': quest.xpReward,
+        },
+      ),
+    );
     return true;
   }
 
@@ -493,6 +544,16 @@ class QuestNotifier extends _$QuestNotifier {
     }
 
     _syncFeedbackToSupabase(questId, reason);
+    unawaited(
+      ref.read(productAnalyticsProvider).track(
+        ProductEvent.questRejected,
+        properties: {
+          'category': quest.category.name,
+          'reason': reason.value,
+          'is_main': quest.isMainGoalTask,
+        },
+      ),
+    );
   }
 
   Future<void> _addXpToProfile(int xp, QuestCategory category) async {

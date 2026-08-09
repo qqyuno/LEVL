@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../../core/analytics/product_analytics.dart';
 import '../../../../core/supabase/isar_service.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../core/supabase/supabase_service.dart';
@@ -185,6 +187,17 @@ class OnboardingNotifier extends _$OnboardingNotifier {
       if (userId != 'local') {
         _syncProfileToSupabase(client, userId, userName);
       }
+
+      unawaited(
+        ref.read(productAnalyticsProvider).track(
+          ProductEvent.onboardingCompleted,
+          properties: {
+            'daily_minutes': state.dailyMinutes,
+            'spheres_count': state.spheres.length,
+            'goals_count': state.sphereGoals.length,
+          },
+        ),
+      );
 
       return null;
     } catch (e) {

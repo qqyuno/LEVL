@@ -1,8 +1,4 @@
-import 'dart:io';
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:levl/shared/models/avatar_config.dart';
 import 'package:levl/shared/widgets/premium_face_avatar_widget.dart';
@@ -14,59 +10,55 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final previewKey = GlobalKey();
     await tester.pumpWidget(
       MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
           backgroundColor: const Color(0xFFF4F4F1),
           body: Center(
-            child: RepaintBoundary(
-              key: previewKey,
-              child: Container(
-                width: 1000,
-                height: 1100,
-                padding: const EdgeInsets.all(32),
-                color: const Color(0xFFF4F4F1),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _SectionTitle('Тон кожи'),
-                    SizedBox(height: 12),
-                    _VariantRow(
-                      configs: [
-                        AvatarConfig(skinTone: 0),
-                        AvatarConfig(skinTone: 1),
-                        AvatarConfig(skinTone: 2),
-                        AvatarConfig(skinTone: 3),
-                      ],
-                      labels: ['Светлый', 'Натуральный', 'Теплый', 'Глубокий'],
-                    ),
-                    SizedBox(height: 28),
-                    _SectionTitle('Брови'),
-                    SizedBox(height: 12),
-                    _VariantRow(
-                      configs: [
-                        AvatarConfig(brows: 0),
-                        AvatarConfig(brows: 1),
-                        AvatarConfig(brows: 2),
-                        AvatarConfig(brows: 3),
-                      ],
-                      labels: ['Естественные', 'Прямые', 'Густые', 'Собранные'],
-                    ),
-                    SizedBox(height: 28),
-                    _SectionTitle('Цвет глаз'),
-                    SizedBox(height: 12),
-                    _VariantRow(
-                      configs: [
-                        AvatarConfig(eyeColor: 0),
-                        AvatarConfig(eyeColor: 1),
-                        AvatarConfig(eyeColor: 2),
-                      ],
-                      labels: ['Карие', 'Серо-синие', 'Зеленые'],
-                    ),
-                  ],
-                ),
+            child: Container(
+              width: 1000,
+              height: 1100,
+              padding: const EdgeInsets.all(32),
+              color: const Color(0xFFF4F4F1),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SectionTitle('Тон кожи'),
+                  SizedBox(height: 12),
+                  _VariantRow(
+                    configs: [
+                      AvatarConfig(skinTone: 0),
+                      AvatarConfig(skinTone: 1),
+                      AvatarConfig(skinTone: 2),
+                      AvatarConfig(skinTone: 3),
+                    ],
+                    labels: ['Светлый', 'Натуральный', 'Теплый', 'Глубокий'],
+                  ),
+                  SizedBox(height: 28),
+                  _SectionTitle('Брови'),
+                  SizedBox(height: 12),
+                  _VariantRow(
+                    configs: [
+                      AvatarConfig(brows: 0),
+                      AvatarConfig(brows: 1),
+                      AvatarConfig(brows: 2),
+                      AvatarConfig(brows: 3),
+                    ],
+                    labels: ['Естественные', 'Прямые', 'Густые', 'Собранные'],
+                  ),
+                  SizedBox(height: 28),
+                  _SectionTitle('Цвет глаз'),
+                  SizedBox(height: 12),
+                  _VariantRow(
+                    configs: [
+                      AvatarConfig(eyeColor: 0),
+                      AvatarConfig(eyeColor: 1),
+                      AvatarConfig(eyeColor: 2),
+                    ],
+                    labels: ['Карие', 'Серо-синие', 'Зеленые'],
+                  ),
+                ],
               ),
             ),
           ),
@@ -75,15 +67,9 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 800));
 
-    final boundary =
-        previewKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-    final image = await boundary.toImage(pixelRatio: 1);
-    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-    final output = Platform.environment['AVATAR_PREVIEW_PATH'] ??
-        '${Directory.systemTemp.path}\\levl_avatar_preview.png';
-    await File(output).writeAsBytes(bytes!.buffer.asUint8List());
-
-    expect(File(output).lengthSync(), greaterThan(1000));
+    expect(find.text('Тон кожи'), findsOneWidget);
+    expect(find.text('Цвет глаз'), findsOneWidget);
+    expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }
