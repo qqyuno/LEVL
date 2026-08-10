@@ -73,6 +73,7 @@ flutter:
   assets:
     - assets/character/
     - assets/character_v2/faces/
+    - assets/character_v2/body/
     - assets/animations/
     - assets/animations/lottie/
     - assets/sounds/
