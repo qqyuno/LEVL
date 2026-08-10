@@ -13,6 +13,7 @@ import '../../features/onboarding/presentation/providers/onboarding_provider.dar
 import '../../shared/widgets/level_up_overlay.dart';
 import '../../features/settings/presentation/screens/notification_settings_page.dart';
 import '../../features/settings/presentation/screens/legal_page.dart';
+import '../../features/weekly_recap/presentation/screens/weekly_recap_page.dart';
 
 part 'app_router.g.dart';
 
@@ -26,6 +27,7 @@ abstract class AppRoutes {
   static const notificationSettings = '/settings/notifications';
   static const privacyPolicy = '/settings/privacy';
   static const terms = '/settings/terms';
+  static const weeklyRecap = '/weekly-recap';
 }
 
 @Riverpod(keepAlive: true)
@@ -83,6 +85,11 @@ GoRouter appRouter(AppRouterRef ref) {
         path: AppRoutes.terms,
         name: 'terms',
         builder: (_, __) => const LegalPage(document: LegalDocument.terms),
+      ),
+      GoRoute(
+        path: AppRoutes.weeklyRecap,
+        name: 'weeklyRecap',
+        builder: (_, __) => const WeeklyRecapPage(),
       ),
 
       // --- Main app with bottom navigation ---

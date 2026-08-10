@@ -16,6 +16,7 @@ import '../../../../shared/providers/level_up_provider.dart';
 import '../../../../core/notifications/notification_service.dart';
 import '../../../life_map/application/device_location_service.dart';
 import '../../../life_map/domain/saved_place.dart';
+import '../../../weekly_recap/presentation/providers/weekly_recap_provider.dart';
 
 part 'quest_provider.g.dart';
 
@@ -126,6 +127,9 @@ class QuestNotifier extends _$QuestNotifier {
         if (diff == 1) {
           profile.currentStreak += 1; // consecutive day
         } else {
+          ref
+              .read(returnAfterAbsenceProvider.notifier)
+              .show((diff - 1).clamp(1, 365));
           profile.currentStreak = 1; // missed days — reset
         }
       }
@@ -516,6 +520,7 @@ class QuestNotifier extends _$QuestNotifier {
         },
       ),
     );
+    ref.invalidate(weeklyRecapProvider);
     return true;
   }
 

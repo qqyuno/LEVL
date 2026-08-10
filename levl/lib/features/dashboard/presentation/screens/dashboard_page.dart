@@ -17,6 +17,7 @@ import '../../../../shared/models/quest_model.dart';
 import '../../../../shared/widgets/premium_face_avatar_widget.dart';
 import '../providers/quest_provider.dart';
 import '../widgets/quest_completion_impact_sheet.dart';
+import '../../../weekly_recap/presentation/providers/weekly_recap_provider.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -25,6 +26,7 @@ class DashboardPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(userProfileNotifierProvider);
     final questsAsync = ref.watch(questNotifierProvider);
+    final missedDays = ref.watch(returnAfterAbsenceProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -39,6 +41,48 @@ class DashboardPage extends ConsumerWidget {
             slivers: [
               SliverToBoxAdapter(child: _DashboardHeader(user: user)),
               SliverToBoxAdapter(child: _HeroSegment(user: user)),
+              if (missedDays != null)
+                SliverToBoxAdapter(
+                  child: questsAsync.when(
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                    data: (quests) {
+                      final restartQuest = quests
+                          .where((quest) => quest.status == QuestStatus.pending)
+                          .firstOrNull;
+                      if (restartQuest == null) {
+                        return const SizedBox.shrink();
+                      }
+                      return _ReturnAfterAbsenceCard(
+                        missedDays: missedDays,
+                        quest: restartQuest,
+                        onDismiss: () => ref
+                            .read(returnAfterAbsenceProvider.notifier)
+                            .dismiss(),
+                        onAccept: () async {
+                          ref
+                              .read(returnAfterAbsenceProvider.notifier)
+                              .dismiss();
+                          unawaited(
+                            ref.read(productAnalyticsProvider).track(
+                              ProductEvent.restartActionAccepted,
+                              properties: {
+                                'missed_days': missedDays,
+                                'verification_type':
+                                    restartQuest.verificationType.name,
+                              },
+                            ),
+                          );
+                          await _openQuestFlow(
+                            context,
+                            ref,
+                            restartQuest,
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
               SliverToBoxAdapter(
                 child: questsAsync.when(
                   loading: () => _SystemCommandCenter(
@@ -57,17 +101,7 @@ class DashboardPage extends ConsumerWidget {
                     user: user,
                     quests: quests,
                     onComplete: (quest) async {
-                      final evidence = await _showQuestVerification(
-                        context,
-                        quest,
-                      );
-                      if (evidence == null || !context.mounted) return;
-                      await _completeQuestWithImpact(
-                        context,
-                        ref,
-                        quest,
-                        evidence,
-                      );
+                      await _openQuestFlow(context, ref, quest);
                     },
                   ),
                 ),
@@ -184,6 +218,16 @@ class DashboardPage extends ConsumerWidget {
       ),
     );
   }
+}
+
+Future<void> _openQuestFlow(
+  BuildContext context,
+  WidgetRef ref,
+  Quest quest,
+) async {
+  final evidence = await _showQuestVerification(context, quest);
+  if (evidence == null || !context.mounted) return;
+  await _completeQuestWithImpact(context, ref, quest, evidence);
 }
 
 Future<void> _completeQuestWithImpact(
@@ -389,10 +433,29 @@ class _DashboardHeaderState extends State<_DashboardHeader>
                 ),
               ),
               const SizedBox(width: 8),
-              // Settings gear
-              GestureDetector(
-                onTap: () => context.push(AppRoutes.notificationSettings),
-                child: const Icon(
+              IconButton(
+                tooltip: 'Итоги недели',
+                constraints: const BoxConstraints.tightFor(
+                  width: 36,
+                  height: 36,
+                ),
+                padding: EdgeInsets.zero,
+                onPressed: () => context.push(AppRoutes.weeklyRecap),
+                icon: const Icon(
+                  Icons.calendar_view_week_outlined,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
+              ),
+              IconButton(
+                tooltip: 'Настройки',
+                constraints: const BoxConstraints.tightFor(
+                  width: 36,
+                  height: 36,
+                ),
+                padding: EdgeInsets.zero,
+                onPressed: () => context.push(AppRoutes.notificationSettings),
+                icon: const Icon(
                   Icons.settings_outlined,
                   color: AppColors.textSecondary,
                   size: 20,
@@ -404,6 +467,117 @@ class _DashboardHeaderState extends State<_DashboardHeader>
       ),
     );
   }
+}
+
+class _ReturnAfterAbsenceCard extends StatelessWidget {
+  const _ReturnAfterAbsenceCard({
+    required this.missedDays,
+    required this.quest,
+    required this.onDismiss,
+    required this.onAccept,
+  });
+
+  final int missedDays;
+  final Quest quest;
+  final VoidCallback onDismiss;
+  final VoidCallback onAccept;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 12, 16),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.keyboard_return_rounded,
+                  size: 16,
+                  color: AppColors.gold,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'ТЫ СНОВА ЗДЕСЬ',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.gold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  tooltip: 'Скрыть',
+                  constraints: const BoxConstraints.tightFor(
+                    width: 32,
+                    height: 32,
+                  ),
+                  padding: EdgeInsets.zero,
+                  onPressed: onDismiss,
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                ),
+              ],
+            ),
+            Text(
+              'Пауза в $missedDays ${_missedDayLabel(missedDays)} ничего не обнуляет. Догонять не нужно.',
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                height: 1.4,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              quest.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.dmSans(
+                fontSize: 16,
+                height: 1.25,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: FilledButton.icon(
+                onPressed: onAccept,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.textPrimary,
+                  foregroundColor: AppColors.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: const Icon(Icons.arrow_forward_rounded, size: 17),
+                label: const Text('Взять один шаг'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _missedDayLabel(int value) {
+  final mod100 = value % 100;
+  if (mod100 >= 11 && mod100 <= 14) return 'дней';
+  return switch (value % 10) {
+    1 => 'день',
+    2 || 3 || 4 => 'дня',
+    _ => 'дней',
+  };
 }
 
 // ---------------------------------------------------------------------------

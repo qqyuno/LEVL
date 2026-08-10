@@ -14,6 +14,8 @@ enum ProductEvent {
   questRejected,
   completionImpactShown,
   lifeMapOpened,
+  weeklyRecapOpened,
+  restartActionAccepted,
 }
 
 final productAnalyticsProvider = Provider<ProductAnalytics>((ref) {
@@ -73,6 +75,8 @@ class ProductAnalytics {
       ProductEvent.questRejected => 'quest_rejected',
       ProductEvent.completionImpactShown => 'completion_impact_shown',
       ProductEvent.lifeMapOpened => 'life_map_opened',
+      ProductEvent.weeklyRecapOpened => 'weekly_recap_opened',
+      ProductEvent.restartActionAccepted => 'restart_action_accepted',
     };
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/quest_model.dart';
 import '../../../dashboard/presentation/providers/quest_provider.dart';
@@ -90,20 +92,27 @@ class _MapHeader extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                width: 48,
-                height: 48,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppColors.textPrimary,
+              Tooltip(
+                message: 'Итоги недели',
+                child: InkWell(
                   borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '${(progress * 100).round()}%',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.surface,
+                  onTap: () => context.push(AppRoutes.weeklyRecap),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.textPrimary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${(progress * 100).round()}%',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.surface,
+                      ),
+                    ),
                   ),
                 ),
               ),
