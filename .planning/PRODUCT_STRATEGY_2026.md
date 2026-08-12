@@ -71,7 +71,16 @@ network. AI is an invisible engine for adaptation, not the product headline.
 
 ## Current Product Priority
 
-The highest-impact next slice is visible consequence v1: after a verified
-action, show the earned XP, sphere growth, route movement, and a direct path to
-the updated Life Map. This closes the core loop using systems already present
-in the app.
+The verified-action loop, private analytics, weekly recap, full-body character
+studio, and the first reward-gated wardrobe are implemented.
+
+The highest-impact next slice is reward inventory v1: achievements grant owned
+items through an explicit inventory, the character studio explains the unlock
+condition, and equipping an item persists across sessions and devices. This
+turns customization into a visible consequence of real progress instead of a
+standalone editor.
+
+After that, build the release foundation (production application identifiers,
+signing, privacy declarations, account deletion, crash reporting, and shared
+subscription entitlements), then add the private social foundation. Live player
+locations and open chat remain outside the first release.
