@@ -41,16 +41,4 @@ class CharacterAssetManifest {
     layers.sort((a, b) => a.slot.index.compareTo(b.slot.index));
     return layers;
   }
-
-  static const pilot = CharacterAssetManifest(
-    views: {
-      CharacterView.front: [
-        CharacterLayerAsset(
-          slot: CharacterLayerSlot.composite,
-          assetPath:
-              'assets/character_v2/body/levl_body_male_front_base_v1.png',
-        ),
-      ],
-    },
-  );
 }

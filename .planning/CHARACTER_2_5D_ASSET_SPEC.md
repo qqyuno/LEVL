@@ -8,6 +8,9 @@
 - Base outfit: matte charcoal, no logos or accessories
 - Status: integrated and visually verified in the separate full-screen outfit
   studio; the existing premium face editor remains a separate working flow
+- Wardrobe pilot: four aligned front composites (`Focus`, `Momentum`,
+  `Operator`, `Breakthrough`) with preview, equip state, rarity, and real
+  level/streak gates. The selection is persisted through `AvatarConfig.top`.
 
 ## Non-Negotiable Quality Rules
 
@@ -42,6 +45,8 @@ Each view will eventually contain separate transparent layers in this order:
 
 1. Produce matching front-three-quarter and side assets.
 2. Confirm that identity and body proportions remain stable across all views.
-3. Extract the neutral outfit into replaceable top, lower, and shoe layers.
-4. Connect the first real clothing selection to `AvatarConfig`.
+3. Extract the approved front composites into replaceable top, lower, and shoe
+   layers without changing the wardrobe contract.
+4. Add a reward inventory source so event outfits (including football kits)
+   can be granted without hard-coding ownership in the UI.
 5. Add swipe rotation after at least three aligned views pass visual review.

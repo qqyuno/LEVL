@@ -2,14 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:levl/features/character/domain/character_asset_manifest.dart';
 
 void main() {
-  test('pilot exposes only its real front view', () {
-    expect(CharacterAssetManifest.pilot.supports(CharacterView.front), isTrue);
-    expect(
-      CharacterAssetManifest.pilot.supports(CharacterView.side),
-      isFalse,
-    );
-  });
-
   test('layer assets render in the stable production order', () {
     const manifest = CharacterAssetManifest(
       views: {
