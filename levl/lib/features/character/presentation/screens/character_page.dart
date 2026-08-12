@@ -10,6 +10,7 @@ import '../../../../shared/widgets/premium_face_avatar_widget.dart';
 import '../../../dashboard/presentation/providers/quest_provider.dart';
 import '../widgets/stats_radar_chart.dart';
 import 'avatar_editor_screen.dart';
+import 'full_body_editor_screen.dart';
 
 class CharacterPage extends ConsumerWidget {
   const CharacterPage({super.key});
@@ -150,6 +151,51 @@ class CharacterPage extends ConsumerWidget {
                                   ),
                                 ],
                               ),
+                            ),
+                            const SizedBox(height: 18),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _openAvatarEditor(context),
+                                    style: OutlinedButton.styleFrom(
+                                      minimumSize: const Size.fromHeight(46),
+                                      foregroundColor: AppColors.textPrimary,
+                                      side: const BorderSide(
+                                        color: AppColors.divider,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    icon: const Icon(
+                                      Icons.face_retouching_natural_rounded,
+                                      size: 18,
+                                    ),
+                                    label: const Text('Лицо'),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: FilledButton.icon(
+                                    onPressed: () =>
+                                        _openFullBodyEditor(context),
+                                    style: FilledButton.styleFrom(
+                                      minimumSize: const Size.fromHeight(46),
+                                      backgroundColor: AppColors.textPrimary,
+                                      foregroundColor: AppColors.surface,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    icon: const Icon(
+                                      Icons.accessibility_new_rounded,
+                                      size: 18,
+                                    ),
+                                    label: const Text('Образ'),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -354,6 +400,12 @@ class CharacterPage extends ConsumerWidget {
   void _openAvatarEditor(BuildContext context) {
     Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(builder: (_) => const AvatarEditorScreen()),
+    );
+  }
+
+  void _openFullBodyEditor(BuildContext context) {
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(builder: (_) => const FullBodyEditorScreen()),
     );
   }
 

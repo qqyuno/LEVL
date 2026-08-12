@@ -6,8 +6,8 @@
 - Canvas: 1024 x 1536 portrait
 - Direction: serious premium progression app, realistic 2.5D, neutral pose
 - Base outfit: matte charcoal, no logos or accessories
-- Status: asset candidate for composition tests; it does not replace the
-  existing premium face editor yet
+- Status: integrated and visually verified in the separate full-screen outfit
+  studio; the existing premium face editor remains a separate working flow
 
 ## Non-Negotiable Quality Rules
 
@@ -40,9 +40,8 @@ Each view will eventually contain separate transparent layers in this order:
 
 ## Next Character Slice
 
-1. Validate the front base inside a 390 x 844 editor stage without replacing
-   the current face preview.
-2. Produce matching front-three-quarter and side assets.
-3. Confirm that identity and body proportions remain stable across all views.
-4. Extract the neutral outfit into replaceable top, lower, and shoe layers.
-5. Only then connect swipe rotation and clothing controls to `AvatarConfig`.
+1. Produce matching front-three-quarter and side assets.
+2. Confirm that identity and body proportions remain stable across all views.
+3. Extract the neutral outfit into replaceable top, lower, and shoe layers.
+4. Connect the first real clothing selection to `AvatarConfig`.
+5. Add swipe rotation after at least three aligned views pass visual review.
